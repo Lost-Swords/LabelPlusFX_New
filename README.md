@@ -9,9 +9,10 @@
 
 
 <!-- PROJECT LOGO -->
+[简体中文](/README_ZH.md) | English
 <br />
 <p align="center">
-  <a href="https://github.com/Meodinger/LabelPlusFX">
+  <a href="https://github.com/Lost-Swords/LabelPlusFX_New">
     <img src="images/logo.png" alt="Logo" width="80" height="80" />
   </a>
   <h3 align="center">Label Plus FX</h3>
@@ -21,9 +22,9 @@
     <br />
     <a href="https://www.kdocs.cn/l/cpRyDN2Perkb">View Manual</a>
     ·
-    <a href="https://github.com/Meodinger/LabelPlusFX/issues">Report Bug</a>
+    <a href="hhttps://github.com/Lost-Swords/LabelPlusFX_New">Report Bug</a>
     ·
-    <a href="https://github.com/Meodinger/LabelPlusFX/issues">Request Feature</a>
+    <a href="https://github.com/Lost-Swords/LabelPlusFX_New">Request Feature</a>
   </p>
 </p>
 
@@ -117,9 +118,13 @@ Distributed under the AGPLv3 License. See `LICENSE` for more information.
 <!-- CONTACT -->
 ## Contact
 
+### original
 Meodinger Wang - [@Meodinger_Wang](https://twitter.com/Meodinger_Wang) - meodinger@qq.com
 
 Project Link: [https://github.com/Meodinger/LabelPlusFX](https://github.com/Meodinger/LabelPlusFX)
+
+### current
+Ding Ye - kanaumachi@gmail.com
 
 <!-- SPONSOR -->
 
