@@ -5,6 +5,7 @@ import ink.meodinger.lpfx.util.component.genTextFormatter
 
 import javafx.scene.control.TextFormatter
 import java.io.File
+import java.lang.ProcessHandle.Info
 
 
 /**
@@ -16,7 +17,7 @@ import java.io.File
 /**
  * Current Version
  */
-val V: Version = Version(2, 3, 4)
+val V: Version = Version(INFO["application.version"])
 
 /**
  * Default Filename Placeholder. It's Esperanto!

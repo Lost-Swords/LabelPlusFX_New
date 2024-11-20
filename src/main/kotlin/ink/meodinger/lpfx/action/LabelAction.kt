@@ -47,19 +47,27 @@ class LabelAction(
         val builder = StringBuilder().apply {
             append("Applied new props to <$targetPicName:${targetTransLabel.index.pad(2)}> ")
         }
-
         if (newLabelIndex != NOT_FOUND) {
             builder.append("@index: ${targetTransLabel.index.pad(2)} -> ${index.pad(2)}; ")
-            if (targetTransLabel.index  == index) return
-            val transLabel = TransLabel(
-                index,
-                targetTransLabel.groupId,
-                targetTransLabel.x,
-                targetTransLabel.y,
-                targetTransLabel.text
-            )
-            removeTransLabel(targetPicName,targetTransLabel)
-            addTransLabel(targetPicName,transLabel)
+            Logger.info("index "+index+" and newIndex "+newLabelIndex+" and targetTransLabel.index " + targetTransLabel.index,"labelAction")
+            if (targetTransLabel.index  == index ) {
+                if( index == newLabelIndex) return
+                Logger.info("revert the label from $newLabelIndex to $oriLabelIndex","labelAction")
+                val transLabel =  state.transFile.getTransLabel(state.currentPicName, newLabelIndex)
+                removeTransLabel(targetPicName,transLabel)
+                addTransLabel(targetPicName,targetTransLabel)
+            } else {
+                val transLabel = TransLabel(
+                    newLabelIndex,
+                    targetTransLabel.groupId,
+                    targetTransLabel.x,
+                    targetTransLabel.y,
+                    targetTransLabel.text
+                )
+                removeTransLabel(targetPicName,targetTransLabel)
+                addTransLabel(targetPicName,transLabel)
+            }
+
         }
         if (newGroupId != NOT_FOUND) {
             builder.append("@groupId: ${targetTransLabel.groupId.pad(2)} -> ${groupId.pad(2)}; ")

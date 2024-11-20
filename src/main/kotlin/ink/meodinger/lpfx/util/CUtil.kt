@@ -1,5 +1,6 @@
 package ink.meodinger.lpfx.util
 
+import ink.meodinger.lpfx.options.Logger
 import javafx.application.Application
 import java.util.regex.Pattern
 import kotlin.reflect.KProperty
@@ -25,7 +26,7 @@ data class Version(val a: Int, val b: Int, val c: Int): Comparable<Version> {
          */
         val V0: Version = Version(0, 0, 0)
 
-        private val pattern = Pattern.compile("v[0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{1,2}", Pattern.CASE_INSENSITIVE)
+        private val pattern = Pattern.compile("(v)?[0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{1,2}", Pattern.CASE_INSENSITIVE)
         private fun check(i : Int): Int {
             if (i in 0..99) return i
             throw IllegalArgumentException("Version number must in 0..99, got $i")
@@ -38,26 +39,14 @@ data class Version(val a: Int, val b: Int, val c: Int): Comparable<Version> {
          */
         fun of(version: String): Version {
             if (!pattern.matcher(version).matches()) return V0
-            val l = version.split(".")
-
-            return Version(l[0].substring(1).toInt(), l[1].toInt(), l[2].toInt())
+            val l = version.removePrefix("v").removePrefix("V").split(".")
+            return Version(l[0].toInt(), l[1].toInt(), l[2].toInt())
         }
         /**
          * Construct a Version from a String in the format "vX.Y.Z"
          */
         operator fun invoke(version: String): Version {
-            val trimmedVersion = version.trim()
-            if (!trimmedVersion.startsWith("v")) return V0
-            val parts = trimmedVersion.substring(1).split(".")
-
-            if (parts.size != 3) return V0 // 确保有三部分
-            val (major, minor, patch) = parts.map { it.toIntOrNull() } // 转换为整数
-
-            return if (major != null && minor != null && patch != null) {
-                Version(major, minor, patch)
-            } else {
-                V0 // 如果转换失败，返回 V0
-            }
+            return this.of(version)
         }
     }
 

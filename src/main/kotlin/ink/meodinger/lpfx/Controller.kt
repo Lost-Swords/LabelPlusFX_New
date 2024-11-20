@@ -1192,7 +1192,8 @@ class Controller(private val state: State) {
      * @param showWhenUpdated If true, show info if already updated
      */
     fun checkUpdate(showWhenUpdated: Boolean = false) {
-        val release = "https://github.com/Meodinger/LabelPlusFX/releases"
+        Logger.info("begin check Update，Current version is $V", "Controller")
+        val release = INFO["checkUpdate.downloadUrl"]
         val delay = 1000 * 60 * 24 * 30L
 
         val time = Date().time
@@ -1206,7 +1207,6 @@ class Controller(private val state: State) {
             Logger.info("Fetching latest version...", "Controller")
             val version = fetchLatestSync()
             if (version != Version.V0) Logger.info("Got latest version: $version (current $V)", "Controller")
-
             Platform.runLater {
                 if (version > V) {
                     val suppressNoticeButtonType = ButtonType(I18N["update.dialog.suppress"], ButtonBar.ButtonData.OK_DONE)
@@ -1243,7 +1243,7 @@ class Controller(private val state: State) {
         }()
     }
     private fun fetchLatestSync(): Version {
-        val api = "https://api.github.com/repos/Meodinger/LabelPlusFX/releases"
+        val api = INFO["checkUpdate.versionUrl"]
         try {
             val proxy = ProxySelector.getDefault().select(URI(api))[0].also {
                 if (it.type() != Proxy.Type.DIRECT) Logger.info("Using proxy $it", "Controller")
@@ -1252,7 +1252,10 @@ class Controller(private val state: State) {
             if (connection.responseCode != 200) throw ConnectException("Response code ${connection.responseCode}")
 
             return ObjectMapper().readTree(connection.inputStream).let {
-                if (it.isArray) Version.of(it[0]["name"].asText())
+                if (it.isArray) {
+                    Logger.info("version "+it[0]["tag_name"].asText(), "Controller")
+                    Version.of(it[0]["tag_name"].asText())
+                }
                 else throw IOException("Should get an array, but not")
             }
         } catch (e: NoRouteToHostException) {
