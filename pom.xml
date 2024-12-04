@@ -198,6 +198,20 @@
                             </arguments>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>run-bat</id> <!-- 自定义一个ID -->
+                        <phase>package</phase> <!-- 指定执行阶段 -->
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>cmd</executable>
+                            <arguments>
+                                <argument>/c</argument> <!-- 运行命令并终止 -->
+                                <argument>${project.basedir}/script/jpackage/build.bat</argument> <!-- 替换为你的 .bat 脚本路径 -->
+                            </arguments>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 

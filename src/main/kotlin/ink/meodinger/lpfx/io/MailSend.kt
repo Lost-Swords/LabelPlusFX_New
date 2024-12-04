@@ -26,24 +26,25 @@ private const val TARGET_USER = "meodinger@qq.com"
  */
 fun sendMailSync(text: String, vararg files: File?) {
     // properties
-    val props = Properties()
-    props.setProperty("mail.transport.protocol", "smtp")
-    props.setProperty("mail.smtp.auth", "true")
-    props.setProperty("mail.smtp.host", "smtp.163.com")
-
-    // message
-    val message = MimeMessage(Session.getInstance(props))
-
-    message.subject = "LPFX log report - ${System.getProperty("user.name")}"
-    message.setFrom(REPORT_USER)
-    message.setContent(MimeMultipart().apply {
-        addBodyPart(MimeBodyPart().apply { setText(text) })
-        for (file in files) if (file.exists()) addBodyPart(MimeBodyPart().apply { attachFile(file) })
-    })
-
-    message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(TARGET_USER))
-
-    Transport.send(message, REPORT_USER, REPORT_AUTH)
+//    TODO 重写方法
+//    val props = Properties()
+//    props.setProperty("mail.transport.protocol", "smtp")
+//    props.setProperty("mail.smtp.auth", "true")
+//    props.setProperty("mail.smtp.host", "smtp.163.com")
+//
+//    // message
+//    val message = MimeMessage(Session.getInstance(props))
+//
+//    message.subject = "LPFX log report - ${System.getProperty("user.name")}"
+//    message.setFrom(REPORT_USER)
+//    message.setContent(MimeMultipart().apply {
+//        addBodyPart(MimeBodyPart().apply { setText(text) })
+//        for (file in files) if (file.exists()) addBodyPart(MimeBodyPart().apply { attachFile(file) })
+//    })
+//
+//    message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(TARGET_USER))
+//
+//    Transport.send(message, REPORT_USER, REPORT_AUTH)
 }
 
 /**
