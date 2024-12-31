@@ -14,6 +14,7 @@ import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.Shape
+import javafx.scene.shape.StrokeType
 import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
 import javafx.scene.text.Text
@@ -83,6 +84,16 @@ class CLabel(
      */
     var isTextOpaque: Boolean by textOpaqueProperty
 
+    private val selectedStrokeProperty: BooleanProperty = SimpleBooleanProperty(false)
+    /**
+     * Whether the text of the Selected CLabel has stroke
+     */
+    fun selectedStrokeProperty(): BooleanProperty = selectedStrokeProperty
+    /**
+     * @see selectedStrokeProperty
+     */
+    var isSelectedStroke: Boolean by selectedStrokeProperty
+
     private val colorOpacityProperty: DoubleProperty = SimpleDoubleProperty(1.0)
     /**
      * The opacity of the CLabel
@@ -92,6 +103,16 @@ class CLabel(
      * @see colorOpacityProperty
      */
     var colorOpacity: Double by colorOpacityProperty
+
+    private val selectedProperty: BooleanProperty = SimpleBooleanProperty(false)
+    /**
+     * the state of the CLabel
+     */
+    fun selectedProperty(): BooleanProperty = selectedProperty
+    /**
+     * @see selectedProperty
+     */
+    var isSelected: Boolean by selectedProperty
 
     // endregion
 
@@ -115,7 +136,7 @@ class CLabel(
      */
     override fun createDefaultSkin(): Skin<CLabel> = CLabelSkin(this)
 
-    private class CLabelSkin(private val control: CLabel) : Skin<CLabel> {
+    private class CLabelSkin(private val cLabel: CLabel) : Skin<CLabel> {
 
         private val root = Pane()
         private val text = Text()
@@ -125,38 +146,38 @@ class CLabel(
 
         init {
             root.apply {
-                prefWidthProperty().bind(control.pickerRadiusProperty)
-                prefHeightProperty().bind(control.pickerRadiusProperty)
+                prefWidthProperty().bind(cLabel.pickerRadiusProperty)
+                prefHeightProperty().bind(cLabel.pickerRadiusProperty)
             }
             text.apply {
                 textOrigin = VPos.CENTER
 
-                textProperty().bind(control.indexProperty.asString())
+                textProperty().bind(cLabel.indexProperty.asString())
                 fillProperty().bind(Bindings.createObjectBinding(
                     {
-                        if (control.isTextOpaque) Color.WHITE else Color.WHITE.opacity(control.colorOpacity)
-                    }, control.textOpaqueProperty, control.colorOpacityProperty
+                        if (cLabel.isTextOpaque) Color.WHITE else Color.WHITE.opacity(cLabel.colorOpacity)
+                    }, cLabel.textOpaqueProperty, cLabel.colorOpacityProperty
                 ))
                 fontProperty().bind(Bindings.createObjectBinding(
                     {
-                        Font.font(MonoFont, FontWeight.BOLD, (if (control.index < 10) 1.7 else 1.3) * control.radius)
-                    }, control.indexProperty, control.radiusProperty
+                        Font.font(MonoFont, FontWeight.BOLD, (if (cLabel.index < 10) 1.7 else 1.3) * cLabel.radius)
+                    }, cLabel.indexProperty, cLabel.radiusProperty
                 ))
                 layoutXProperty().bind(Bindings.createDoubleBinding(
                     {
-                        control.pickerRadius - boundsInLocal.width / 2
-                    }, control.indexProperty, control.pickerRadiusProperty
+                        cLabel.pickerRadius - boundsInLocal.width / 2
+                    }, cLabel.indexProperty, cLabel.pickerRadiusProperty
                 ))
                 layoutYProperty().bind(Bindings.createDoubleBinding(
                     {
-                        control.pickerRadius
-                    }, control.indexProperty, control.pickerRadiusProperty
+                        cLabel.pickerRadius
+                    }, cLabel.indexProperty, cLabel.pickerRadiusProperty
                 ))
             }
             circle.apply {
-                radiusProperty().bind(control.radiusProperty)
-                centerXProperty().bind(control.pickerRadiusProperty)
-                centerYProperty().bind(control.pickerRadiusProperty)
+                radiusProperty().bind(cLabel.radiusProperty)
+                centerXProperty().bind(cLabel.pickerRadiusProperty)
+                centerYProperty().bind(cLabel.pickerRadiusProperty)
             }
 
             // Update
@@ -168,20 +189,43 @@ class CLabel(
                 clip = Shape.subtract(circle, text).apply {
                     fillProperty().bind(Bindings.createObjectBinding(
                         {
-                            control.color.opacity(control.colorOpacity)
-                        }, control.colorProperty, control.colorOpacityProperty
+                            cLabel.color.opacity(cLabel.colorOpacity)
+                        }, cLabel.colorProperty, cLabel.colorOpacityProperty,cLabel.selectedProperty
                     ))
                 }
-                root.children.setAll(text, clip)
+
+                if(cLabel.isSelected && cLabel.isSelectedStroke) {
+                    // Create a new circle with a stroke
+                    val strokeCircle = Circle().apply {
+                        radiusProperty().bind(cLabel.radiusProperty)
+                        centerXProperty().bind(cLabel.pickerRadiusProperty)
+                        centerYProperty().bind(cLabel.pickerRadiusProperty)
+                        strokeType = StrokeType.OUTSIDE
+                        strokeWidth = 3.0
+                        strokeProperty().bind(Bindings.createObjectBinding(
+                            {
+                                Color.BLACK.opacity(cLabel.colorOpacity)
+                            },cLabel.colorOpacityProperty
+                        ))
+                        fill = Color.TRANSPARENT
+                    }
+                    root.children.setAll(strokeCircle,text, clip)
+                } else {
+                    root.children.setAll(text, clip)
+                }
+
+
             }
-            control.indexProperty.addListener(updateListener)
-            control.radiusProperty.addListener(updateListener)
+            cLabel.indexProperty.addListener(updateListener)
+            cLabel.radiusProperty.addListener(updateListener)
+            cLabel.selectedProperty.addListener(updateListener)
+            cLabel.selectedStrokeProperty().addListener(updateListener)
 
             // Manually update the first time
             updateListener.changed(null, null, null)
         }
 
-        override fun getSkinnable(): CLabel = control
+        override fun getSkinnable(): CLabel = cLabel
 
         override fun getNode(): Node = root
 

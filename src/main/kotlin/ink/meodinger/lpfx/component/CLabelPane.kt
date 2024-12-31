@@ -41,7 +41,9 @@ import kotlin.math.abs
 /**
  * A scalable, draggable ScrollPane that can display image, text and labels
  */
-class CLabelPane : ScrollPane() {
+class CLabelPane(
+    private val state: State
+)  : ScrollPane() {
 
     companion object {
         // Text display constants
@@ -346,6 +348,10 @@ class CLabelPane : ScrollPane() {
     fun labelTextOpaqueProperty(): BooleanProperty = labelTextOpaqueProperty
     var isLabelTextOpaque: Boolean by labelTextOpaqueProperty
 
+    private val labelSelectedStrokeProperty: BooleanProperty = SimpleBooleanProperty(false)
+    fun labelSelectedStrokeProperty(): BooleanProperty = labelSelectedStrokeProperty
+    var isLabelSelectedStroke: Boolean by labelSelectedStrokeProperty
+
     private val labelColorOpacityProperty: DoubleProperty = SimpleDoubleProperty(0.5)
     fun labelColorOpacityProperty(): DoubleProperty = labelColorOpacityProperty
     var labelColorOpacity: Double by labelColorOpacityProperty
@@ -372,6 +378,21 @@ class CLabelPane : ScrollPane() {
      */
     val selectedLabels: Set<Int> by selectedLabelsProperty
     private var selectedIndices: ObservableSet<Int> by selectedLabelsProperty
+
+    // endregion
+
+    // region Properties:CurrentSelection
+
+    private val currentLabelIndexProperty: IntegerProperty = SimpleIntegerProperty(NOT_FOUND)
+    /**
+     * Index of current selected TransLabel
+     */
+    fun currentLabelIndexProperty(): IntegerProperty = currentLabelIndexProperty
+    /**
+     * @see currentLabelIndexProperty
+     */
+    var currentLabelIndex: Int by currentLabelIndexProperty
+
 
     // endregion
 
@@ -606,6 +627,10 @@ class CLabelPane : ScrollPane() {
                 }
             }
         })
+        state.currentLabelIndexProperty().addListener { _, oldValue, newValue ->
+            labelNodes.firstOrNull{it.index == oldValue}?.isSelected = false
+            labelNodes.firstOrNull{it.index == newValue}?.isSelected = true
+        }
     }
 
     private fun createLabel(transLabel: TransLabel) {
@@ -614,6 +639,7 @@ class CLabelPane : ScrollPane() {
             colorProperty().bind(transLabel.colorProperty())
             radiusProperty().bind(labelRadiusProperty)
             textOpaqueProperty().bind(labelTextOpaqueProperty)
+            selectedStrokeProperty().bind(labelSelectedStrokeProperty)
             colorOpacityProperty().bind(labelColorOpacityProperty)
 
             // Tooltip
@@ -759,6 +785,7 @@ class CLabelPane : ScrollPane() {
         label.colorProperty().unbind()
         label.radiusProperty().unbind()
         label.textOpaqueProperty().unbind()
+        label.selectedStrokeProperty().unbind()
         label.colorOpacityProperty().unbind()
 
         // Remove view

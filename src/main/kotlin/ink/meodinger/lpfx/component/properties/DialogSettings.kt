@@ -92,6 +92,7 @@ class DialogSettings : AbstractPropertiesDialog() {
     private val lLabelRadius = CInputLabel()
     private val lLabelAlpha = CInputLabel()
     private val lCheckTextOpaque = CheckBox(I18N["settings.label.text_opaque"])
+    private val lCheckSelectedStroke = CheckBox(I18N["settings.label.selected_stroke"])
 
     private val xCheckUpdate = CheckBox(I18N["settings.other.auto_check_upd"])
     private val xCheckAutoOp = CheckBox(I18N["settings.other.auto_open_last"])
@@ -211,7 +212,8 @@ class DialogSettings : AbstractPropertiesDialog() {
                     // 2 |        |  Alpha
                     // 3 |        |  ------O---- 0x80
                     // 4 |        |  O TextOpaque
-                    // 5 ----------    *HTLP TEXT*
+                    // 5 |        |   selectedColorPicker
+                    // 6 ----------    *HTLP TEXT*
                     add(lLabelPane, 0, 0, 1, 6) {
                         val lLabelPaneBorderWidth = 2.0
 
@@ -233,10 +235,13 @@ class DialogSettings : AbstractPropertiesDialog() {
                             radiusProperty().bind(lSliderRadius.valueProperty())
                             colorOpacityProperty().bind(lSliderAlpha.valueProperty())
                             textOpaqueProperty().bind(lCheckTextOpaque.selectedProperty())
+                            selectedStrokeProperty().bind(lCheckSelectedStroke.selectedProperty())
+
 
                             // Draggable & drag-limitation
                             var shiftX = 0.0
                             var shiftY = 0.0
+                            isSelected = true
                             addEventHandler(MouseEvent.MOUSE_PRESSED) {
                                 // Mark immediately when this event will be consumed
                                 it.consume() // disable further propagation
@@ -341,7 +346,8 @@ class DialogSettings : AbstractPropertiesDialog() {
                         }
                     }
                     add(lCheckTextOpaque, 1, 4, 2, 1)
-                    add(Label(I18N["settings.label.helpText"]), 1, 5, 2, 1) {
+                    add(lCheckSelectedStroke, 1, 5, 2, 1)
+                    add(Label(I18N["settings.label.helpText"]), 1, 6, 2, 1) {
                         isWrapText = true
                         textAlignment = TextAlignment.CENTER
                     }
@@ -581,6 +587,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         lSliderAlpha.value = Settings.labelColorOpacity
 
         lCheckTextOpaque.isSelected = Settings.labelTextOpaque
+        lCheckSelectedStroke.isSelected = Settings.labelSelectedStroke
 
         // Other
         xCheckUpdate.isSelected = Settings.autoCheckUpdate
@@ -676,6 +683,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.LabelRadius] = lSliderRadius.value
         map[Settings.LabelColorOpacity] = lSliderAlpha.value
         map[Settings.LabelTextOpaque] = lCheckTextOpaque.isSelected
+        map[Settings.LabelSelectedStroke ] = lCheckSelectedStroke.isSelected
 
         return map
     }

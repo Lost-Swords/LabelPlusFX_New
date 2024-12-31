@@ -39,9 +39,10 @@ import java.io.IOException
 import java.net.*
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.*
 import javax.imageio.ImageIO
 import javax.net.ssl.HttpsURLConnection
+import kotlin.collections.ArrayList
 import kotlin.math.roundToInt
 
 
@@ -104,8 +105,11 @@ class Controller(private val state: State) {
         }
     }
 
-    private var accumulator: Long = 16 * 60 * 60 * ONE_SECOND  // Shift to 1970/01/02 00:00 GMT+8
-    private val accumulatorFormatter = SimpleDateFormat("HH:mm:ss")
+
+    private var accumulator: Long = 0
+    private val accumulatorFormatter = SimpleDateFormat("HH:mm:ss").apply {
+        timeZone = TimeZone.getTimeZone("UTC") // set TimeZone
+    }
     private val accumulatorManager = TimerTaskManager(0, ONE_SECOND) {
         if (state.isOpened) {
             accumulator += ONE_SECOND
@@ -640,7 +644,7 @@ class Controller(private val state: State) {
             it.consume() // Consume used event
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, changePicHandler)
-        Logger.info("Transformed A/D", "Controller")
+        Logger.info("Transformed Q/W pressed", "Controller")
 
         // Transform number key press to CTreeView select
         val numberBuilder = StringBuilder()

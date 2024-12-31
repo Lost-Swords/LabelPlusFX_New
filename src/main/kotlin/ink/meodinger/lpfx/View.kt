@@ -112,7 +112,7 @@ class View(private val state: State) : BorderPane() {
     /**
      * LabelPane, display Image & Labels
      */
-    val cLabelPane: CLabelPane = CLabelPane()
+    val cLabelPane: CLabelPane = CLabelPane(state)
 
     /**
      * TreeView, display labels by label-index or by groupId
@@ -350,6 +350,7 @@ class View(private val state: State) : BorderPane() {
                     labelRadiusProperty().bind(Settings.labelRadiusProperty())
                     labelColorOpacityProperty().bind(Settings.labelColorOpacityProperty())
                     labelTextOpaqueProperty().bind(Settings.labelTextOpaqueProperty())
+                    labelSelectedStrokeProperty().bind(Settings.labelSelectedStrokeProperty())
                     newPictureScaleProperty().bind(Settings.newPictureScaleProperty())
                     useWheelToScaleProperty().bind(Settings.useWheelToScaleProperty())
                 }
@@ -780,6 +781,7 @@ class View(private val state: State) : BorderPane() {
             Settings.LabelRadius              -> Settings.labelRadius                 = value as Double
             Settings.LabelColorOpacity        -> Settings.labelColorOpacity           = value as Double
             Settings.LabelTextOpaque          -> Settings.labelTextOpaque             = value as Boolean
+            Settings.LabelSelectedStroke      -> Settings.labelSelectedStroke         = value as Boolean
             Settings.AutoCheckUpdate          -> Settings.autoCheckUpdate             = value as Boolean
             Settings.AutoOpenLastFile         -> Settings.autoOpenLastFile            = value as Boolean
             Settings.InstantTranslate         -> Settings.instantTranslate            = value as Boolean

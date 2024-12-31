@@ -7,7 +7,7 @@
 
     <groupId>ink.meodinger</groupId>
     <artifactId>lpfx</artifactId>
-    <version>2.3.4</version>
+    <version>2.3.5</version>
     <packaging>jar</packaging>
 
     <name>lpfx</name>
@@ -199,16 +199,17 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>run-bat</id> <!-- 自定义一个ID -->
-                        <phase>package</phase> <!-- 指定执行阶段 -->
+                        <id>run-bat</id> <!-- ID -->
+                        <phase>package</phase> <!-- runtime-->
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <configuration>
                             <executable>cmd</executable>
                             <arguments>
-                                <argument>/c</argument> <!-- 运行命令并终止 -->
-                                <argument>${project.basedir}/script/jpackage/build.bat</argument> <!-- 替换为你的 .bat 脚本路径 -->
+                                <argument>/c</argument>
+                                <argument>${project.basedir}/script/jpackage/build.bat</argument>
+                                <argument>${project.version}</argument><!-- runtime-->
                             </arguments>
                         </configuration>
                     </execution>
