@@ -200,7 +200,7 @@
                     </execution>
                     <execution>
                         <id>run-bat</id> <!-- ID -->
-                        <phase>package</phase> <!-- runtime-->
+                        <phase>deploy</phase> <!-- runtime-->
                         <goals>
                             <goal>exec</goal>
                         </goals>

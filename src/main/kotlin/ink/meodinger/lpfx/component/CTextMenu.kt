@@ -90,7 +90,7 @@ class CTextMenu(
     private fun getQuickInputItems(t: TextInputControl): List<MenuItem> {
         return Settings.quickInputTexts.map {
             MenuItem(it).apply {
-                onAction =  EventHandler {  t.appendText(text) }
+                onAction =  EventHandler { t.insertText(t.caretPosition, text) }
             }
         }
     }

@@ -20,6 +20,7 @@ import ink.meodinger.lpfx.util.string.isMathematicalDecimal
 import javafx.collections.FXCollections
 import javafx.geometry.Insets
 import javafx.geometry.Pos
+import javafx.geometry.VPos
 import javafx.scene.Cursor
 import javafx.scene.Node
 import javafx.scene.control.*
@@ -76,7 +77,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         alignment = Pos.TOP_CENTER
         padding = Insets(16.0)
         vgap = 16.0
-        hgap = 16.0
+        hgap = 32.0
     }
     private val qLabelHint = Label(I18N["settings.quick_input.hint"])
 
@@ -149,7 +150,8 @@ class DialogSettings : AbstractPropertiesDialog() {
                     val scrollPane = ScrollPane(stackPane)
                     stackPane.prefWidthProperty().bind(scrollPane.widthProperty() - 16.0)
 
-                    center(scrollPane) { style = "-fx-background-color:transparent;" }
+                    center(scrollPane) {
+                        style = "-fx-background-color:transparent;" }
                     bottom(HBox()) {
                         alignment = Pos.CENTER_RIGHT
                         padding = Insets(16.0, 8.0, 8.0, 16.0)
@@ -212,7 +214,7 @@ class DialogSettings : AbstractPropertiesDialog() {
                     // 2 |        |  Alpha
                     // 3 |        |  ------O---- 0x80
                     // 4 |        |  O TextOpaque
-                    // 5 |        |   selectedColorPicker
+                    // 5 |        |  0 selectedColorPicker
                     // 6 ----------    *HTLP TEXT*
                     add(lLabelPane, 0, 0, 1, 6) {
                         val lLabelPaneBorderWidth = 2.0
@@ -347,6 +349,7 @@ class DialogSettings : AbstractPropertiesDialog() {
                     }
                     add(lCheckTextOpaque, 1, 4, 2, 1)
                     add(lCheckSelectedStroke, 1, 5, 2, 1)
+                    GridPane.setValignment(lCheckSelectedStroke, VPos.TOP)
                     add(Label(I18N["settings.label.helpText"]), 1, 6, 2, 1) {
                         isWrapText = true
                         textAlignment = TextAlignment.CENTER

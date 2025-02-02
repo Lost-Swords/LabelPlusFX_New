@@ -1,5 +1,8 @@
 package ink.meodinger.lpfx.io
 
+import ink.meodinger.lpfx.INFO
+import ink.meodinger.lpfx.get
+import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.type.LPFXTask
 import ink.meodinger.lpfx.util.file.exists
 
@@ -17,7 +20,7 @@ import java.util.*
 // DO NOT USE FOR PRIVATE, I trust you.
 private const val REPORT_USER = "labelplusfx_report@163.com"
 private const val REPORT_AUTH = "SUWAYUTJSKWQNDOF"
-private const val TARGET_USER = "meodinger@qq.com"
+//private const val TARGET_USER =
 
 /**
  * Send a mail to Meodinger
@@ -27,24 +30,27 @@ private const val TARGET_USER = "meodinger@qq.com"
 fun sendMailSync(text: String, vararg files: File?) {
     // properties
 //    TODO 重写方法
-//    val props = Properties()
-//    props.setProperty("mail.transport.protocol", "smtp")
-//    props.setProperty("mail.smtp.auth", "true")
-//    props.setProperty("mail.smtp.host", "smtp.163.com")
-//
-//    // message
-//    val message = MimeMessage(Session.getInstance(props))
-//
-//    message.subject = "LPFX log report - ${System.getProperty("user.name")}"
-//    message.setFrom(REPORT_USER)
-//    message.setContent(MimeMultipart().apply {
-//        addBodyPart(MimeBodyPart().apply { setText(text) })
-//        for (file in files) if (file.exists()) addBodyPart(MimeBodyPart().apply { attachFile(file) })
-//    })
-//
-//    message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(TARGET_USER))
-//
-//    Transport.send(message, REPORT_USER, REPORT_AUTH)
+    val targetUser = INFO["errorEmail.address"]
+    Logger.info("Ready to send the mail to $targetUser","MailSend")
+    val props = Properties()
+    props.setProperty("mail.transport.protocol", "smtp")
+    props.setProperty("mail.smtp.auth", "true")
+    props.setProperty("mail.smtp.host", "smtp.163.com")
+
+    // message
+    val message = MimeMessage(Session.getInstance(props))
+
+    message.subject = "LPFX log report - ${System.getProperty("user.name")}"
+    message.setFrom(REPORT_USER)
+    message.setContent(MimeMultipart().apply {
+        addBodyPart(MimeBodyPart().apply { setText(text) })
+        for (file in files) if (file.exists()) addBodyPart(MimeBodyPart().apply { attachFile(file) })
+    })
+
+    message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(targetUser))
+
+    Transport.send(message, REPORT_USER, REPORT_AUTH)
+    Logger.info("Sended the mail to $targetUser","MailSend")
 }
 
 /**
