@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import javafx.application.Platform
 import javafx.beans.binding.Bindings
 import javafx.beans.binding.ObjectBinding
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.collections.SetChangeListener
@@ -314,47 +315,48 @@ class Controller(private val state: State) {
             }
         }
         cLabelPane.setOnLabelCreate handler@{
-            when (state.workMode) {
-                WorkMode.InputMode -> doNothing()
-                WorkMode.LabelMode -> {
-                    if (state.currentGroupId == NOT_FOUND) return@handler
+            if(state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) return@handler
+            if (state.currentGroupId == NOT_FOUND) return@handler
 
-                    // Use next as new label index if current found
-                    val newIndex =
-                        if (state.currentLabelIndex != NOT_FOUND) state.currentLabelIndex + 1
-                        else state.transFile.getTransList(state.currentPicName).size + 1
+            // Use next as new label index if current found
+            val newIndex =
+                if (state.currentLabelIndex != NOT_FOUND) state.currentLabelIndex + 1
+                else state.transFile.getTransList(state.currentPicName).size + 1
 
-                    state.doAction(LabelAction(
-                        ActionType.ADD, state,
-                        state.currentPicName,
-                        TransLabel(newIndex, state.currentGroupId, it.labelX, it.labelY, "")
-                    ))
-                    // Update selection
-                    cTreeView.selectLabel(newIndex, clear = true, scrollTo = true)
-                    // If instant translate
-                    if (Settings.instantTranslate) cTransArea.requestFocus()
-                }
-            }
+            state.doAction(LabelAction(
+                ActionType.ADD, state,
+                state.currentPicName,
+                TransLabel(newIndex, state.currentGroupId, it.labelX, it.labelY, "")
+            ))
+            // Update selection
+            cTreeView.selectLabel(newIndex, clear = true, scrollTo = true)
+            // If instant translate
+            if (Settings.instantTranslate) cTransArea.requestFocus()
+
         }
         cLabelPane.setOnLabelRemove handler@{
-            when (state.workMode) {
-                WorkMode.InputMode -> doNothing()
-                WorkMode.LabelMode -> {
-                    // Clear selection if current label will be removed
-                    if (it.labelIndex == state.currentLabelIndex) state.currentLabelIndex = NOT_FOUND
+            if(state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) return@handler
 
-                    state.doAction(LabelAction(
-                        ActionType.REMOVE, state,
-                        state.currentPicName,
-                        state.transFile.getTransLabel(state.currentPicName, it.labelIndex)
-                    ))
-                }
-            }
+            // Clear selection if current label will be removed
+            if (it.labelIndex == state.currentLabelIndex) state.currentLabelIndex = NOT_FOUND
+
+            state.doAction(LabelAction(
+                ActionType.REMOVE, state,
+                state.currentPicName,
+                state.transFile.getTransLabel(state.currentPicName, it.labelIndex)
+            ))
         }
         cLabelPane.setOnLabelHover  handler@{
             when (state.workMode) {
                 WorkMode.InputMode -> {
-                    cLabelPane.showLabelText(it.labelIndex, it.displayX, it.displayY)
+                    if(it.sourceEvent.isControlDown) {
+                        val transLabel = state.transFile.getTransLabel(state.currentPicName, it.labelIndex)
+                        val transGroup = state.transFile.groupList[transLabel.groupId]
+                        cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY)
+                    } else {
+                      cLabelPane.showLabelText(it.labelIndex, it.displayX, it.displayY)
+                    }
+
                 }
                 WorkMode.LabelMode -> {
                     val transLabel = state.transFile.getTransLabel(state.currentPicName, it.labelIndex)
@@ -387,15 +389,17 @@ class Controller(private val state: State) {
             ))
         }
         cLabelPane.setOnLabelOther  handler@{
-            when (state.workMode) {
-                WorkMode.InputMode -> doNothing()
-                WorkMode.LabelMode -> {
-                    if (state.currentGroupId == NOT_FOUND) return@handler
-
-                    val transGroup = state.transFile.groupList[state.currentGroupId]
-                    cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY)
-                }
+            if(state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) {
+                cLabelPane.clearAllText()
+                return@handler
             }
+
+            if (state.currentGroupId == NOT_FOUND) return@handler
+
+            val transGroup = state.transFile.groupList[state.currentGroupId]
+            cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY)
+
+
         }
         Logger.info("Registered CLabelPane Handler", "Controller")
     }
