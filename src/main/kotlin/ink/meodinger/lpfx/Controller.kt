@@ -315,6 +315,7 @@ class Controller(private val state: State) {
             }
         }
         cLabelPane.setOnLabelCreate handler@{
+            // support add/delete label by ctrl+mouse in InputMode
             if(state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) return@handler
             if (state.currentGroupId == NOT_FOUND) return@handler
 
@@ -335,16 +336,20 @@ class Controller(private val state: State) {
 
         }
         cLabelPane.setOnLabelRemove handler@{
+            // support add/delete label by ctrl+mouse in InputMode
             if(state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) return@handler
 
-            // Clear selection if current label will be removed
-            if (it.labelIndex == state.currentLabelIndex) state.currentLabelIndex = NOT_FOUND
 
             state.doAction(LabelAction(
                 ActionType.REMOVE, state,
                 state.currentPicName,
                 state.transFile.getTransLabel(state.currentPicName, it.labelIndex)
             ))
+
+            // Clear selection if current label will be removed
+            if( it.labelIndex <= state.currentLabelIndex && state.currentLabelIndex != 0) {
+                state.currentLabelIndex--;
+            }
         }
         cLabelPane.setOnLabelHover  handler@{
             when (state.workMode) {

@@ -108,7 +108,7 @@ class CLabel(
     /**
      * the state of the CLabel
      */
-    fun selectedProperty(): BooleanProperty = selectedProperty
+    private fun selectedProperty(): BooleanProperty = selectedProperty
     /**
      * @see selectedProperty
      */
