@@ -22,7 +22,7 @@
     <br />
     <a href="https://www.kdocs.cn/l/cpRyDN2Perkb">View Manual</a>
     ·
-    <a href="hhttps://github.com/Lost-Swords/LabelPlusFX_New">Report Bug</a>
+    <a href="https://github.com/Lost-Swords/LabelPlusFX_New">Report Bug</a>
     ·
     <a href="https://github.com/Lost-Swords/LabelPlusFX_New">Request Feature</a>
   </p>
