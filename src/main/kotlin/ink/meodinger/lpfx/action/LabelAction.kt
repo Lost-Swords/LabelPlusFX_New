@@ -99,6 +99,9 @@ class LabelAction(
             throw IllegalArgumentException(String.format(I18N["exception.action.label_group_invalid.i"], transLabel.groupId))
 
         for (label in list) if (label.index >= transLabel.index) label.index++
+        if( transLabel.index >= list.size) {
+            transLabel.index = list.size + 1
+        }
         list.add(transLabel.index -1 ,transLabel)
         @Suppress("DEPRECATION") state.transFile.installLabel(transLabel)
 
@@ -111,6 +114,15 @@ class LabelAction(
         @Suppress("DEPRECATION") state.transFile.disposeLabel(transLabel)
         list.remove(transLabel)
         for (label in list) if (label.index > transLabel.index) label.index--
+        if( transLabel.index <= state.currentLabelIndex ) {
+            // If the index of the transLabel is less than or equal to the currentLabelIndex,
+            // adjust the currentLabelIndex accordingly.
+            if( state.currentLabelIndex <= 1) {
+                state.currentLabelIndex = NOT_FOUND
+            } else {
+                state.currentLabelIndex--
+            }
+        }
 
         Logger.info("Removed $picName @ $transLabel", "Action")
     }

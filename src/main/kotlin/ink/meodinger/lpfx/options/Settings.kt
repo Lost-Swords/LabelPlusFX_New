@@ -45,6 +45,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     const val LabelColorOpacity        = "LabelColorOpacity"
     const val LabelTextOpaque          = "LabelTextOpaque"
     const val LabelSelectedStroke      = "LabelSelectedStroke"
+    const val UseSWPrism               = "UseSWPrism"
     const val AutoCheckUpdate          = "AutoCheckUpdate"
     const val AutoOpenLastFile         = "AutoOpenLastFile"
     const val InstantTranslate         = "InstantTranslate"
@@ -95,6 +96,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         CProperty(LabelColorOpacity, "80"),
         CProperty(LabelTextOpaque, false),
         CProperty(LabelSelectedStroke, false),
+        CProperty(UseSWPrism, false),
         CProperty(AutoCheckUpdate, true),
         CProperty(AutoOpenLastFile, false),
         CProperty(InstantTranslate, false),
@@ -157,6 +159,10 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     private val labelSelectedStrokeProperty: BooleanProperty = SimpleBooleanProperty()
     fun labelSelectedStrokeProperty(): BooleanProperty = labelSelectedStrokeProperty
     var labelSelectedStroke: Boolean by labelSelectedStrokeProperty
+
+    private val useSWPrismProperty: BooleanProperty = SimpleBooleanProperty()
+    fun useSWPrismProperty(): BooleanProperty = useSWPrismProperty
+    var useSWPrism: Boolean by useSWPrismProperty
 
     private val autoCheckUpdateProperty: BooleanProperty = SimpleBooleanProperty()
     fun autoCheckUpdateProperty(): BooleanProperty = autoCheckUpdateProperty
@@ -221,6 +227,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         labelColorOpacity           = this[LabelColorOpacity].asInteger(16) / 255.0
         labelTextOpaque             = this[LabelTextOpaque].asBoolean()
         labelSelectedStroke         = this[LabelSelectedStroke].asBoolean()
+        useSWPrism                  = this[UseSWPrism].asBoolean()
         autoCheckUpdate             = this[AutoCheckUpdate].asBoolean()
         autoOpenLastFile            = this[AutoOpenLastFile].asBoolean()
         instantTranslate            = this[InstantTranslate].asBoolean()
@@ -248,6 +255,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         this[LabelColorOpacity]       .set((labelColorOpacity * 255).roundToInt().toString(16).padStart(2, '0'))
         this[LabelTextOpaque]         .set(labelTextOpaque)
         this[LabelSelectedStroke]     .set(labelSelectedStroke)
+        this[UseSWPrism]              .set(useSWPrism)
         this[AutoCheckUpdate]         .set(autoCheckUpdate)
         this[AutoOpenLastFile]        .set(autoOpenLastFile)
         this[InstantTranslate]        .set(instantTranslate)

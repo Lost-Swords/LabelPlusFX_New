@@ -62,10 +62,14 @@ object Config {
      * Whether IME assistance enabled
      */
     val enableIMEAssistance: Boolean get() = isWin && enableJNI
+    /**
+     * Whether using software prism
+     */
+    val prism: String? = System.getProperty("prism.order")
 
     /**
      * Whether using software prism
      */
-    val usingSWPrism: Boolean = System.getProperty("prism.order")?.equals("sw") ?: false
+    val usingSWPrism: Boolean = prism?.equals("sw") ?: false
 
 }

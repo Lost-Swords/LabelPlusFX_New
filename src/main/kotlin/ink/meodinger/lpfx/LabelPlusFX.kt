@@ -1,13 +1,19 @@
 package ink.meodinger.lpfx
 
+
+
+
+import ink.meodinger.lpfx.component.dialog.showConfirm
 import ink.meodinger.lpfx.component.dialog.showException
-import ink.meodinger.lpfx.component.properties.*
+import ink.meodinger.lpfx.component.dialog.showInfo
+import ink.meodinger.lpfx.component.properties.AbstractPropertiesDialog
+import ink.meodinger.lpfx.component.properties.DialogLogs
+import ink.meodinger.lpfx.component.properties.DialogSettings
 import ink.meodinger.lpfx.component.tools.*
 import ink.meodinger.lpfx.options.*
 import ink.meodinger.lpfx.util.HookedApplication
 import ink.meodinger.lpfx.util.component.withOwner
 import ink.meodinger.lpfx.util.property.onChange
-
 import javafx.application.Platform
 import javafx.beans.value.ChangeListener
 import javafx.embed.swing.SwingFXUtils
@@ -18,6 +24,7 @@ import javafx.stage.Stage
 import java.awt.SystemTray
 import java.awt.TrayIcon
 import java.io.File
+import java.io.PrintStream
 import java.awt.MenuItem as AwtMenuItem
 import java.awt.PopupMenu as AwtPopupMenu
 
@@ -141,7 +148,6 @@ class LabelPlusFX: HookedApplication() {
 
         // Start Logger Timer
         Logger.tic()
-
         Logger.info("App initializing...", "Application")
         Options.load()
         Logger.info("App initialized", "Application")
@@ -226,11 +232,12 @@ class LabelPlusFX: HookedApplication() {
             val file = RecentFiles.lastFile?.takeIf(File::exists)?.takeIf(File::isFile)
             if (file != null) Platform.runLater { state.controller.open(file, file.parentFile) }
         }
-        // Register restore hook
-        if (Config.isWin && Config.usingSWPrism) {
-            state.application.addShutdownHook("RestorePrism", ::useHardwarePrism)
+        // Notify user about graphics switch
+        if (Config.isWin && Config.usingSWPrism && !Settings.useSWPrism) {
+           showInfo(state.stage,String.format(I18N["graphic_switch.open_message"], I18N["graphic_switch.SW"]))
+        }else if (Config.isWin && !Config.usingSWPrism && Settings.useSWPrism) {
+            showInfo(state.stage,String.format(I18N["graphic_switch.open_message"], I18N["graphic_switch.HW"]))
         }
-
         // endregion
 
         Logger.toc()
@@ -242,6 +249,12 @@ class LabelPlusFX: HookedApplication() {
      */
     override fun stop() {
         Logger.info("App stopping...", "Application")
+        // Register restore hook
+        if (Config.isWin && Config.usingSWPrism && !Settings.useSWPrism) {
+            state.application.addShutdownHook("RestorePrism", ::useHardwarePrism)
+        }else if (Config.isWin && !Config.usingSWPrism && Settings.useSWPrism) {
+            state.application.addShutdownHook("RestorePrism", ::useSoftwarePrism)
+        }
 
         runHooks {
             Logger.error("Exception occurred during hooks run", "Application")

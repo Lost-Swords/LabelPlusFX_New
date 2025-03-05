@@ -95,6 +95,7 @@ class DialogSettings : AbstractPropertiesDialog() {
     private val lCheckTextOpaque = CheckBox(I18N["settings.label.text_opaque"])
     private val lCheckSelectedStroke = CheckBox(I18N["settings.label.selected_stroke"])
 
+    private val xUseSWPrism = CheckBox(I18N["settings.other.use_sw_prism"])
     private val xCheckUpdate = CheckBox(I18N["settings.other.auto_check_upd"])
     private val xCheckAutoOp = CheckBox(I18N["settings.other.auto_open_last"])
     private val xCheckInstTr = CheckBox(I18N["settings.other.inst_trans"])
@@ -364,35 +365,40 @@ class DialogSettings : AbstractPropertiesDialog() {
                     hgap = 16.0
 
                     //   0        1
-                    // 0 O UpdateCheck
-                    // 1 O OpenLastFile
-                    // 2 O InstantTranslate
-                    // 3 O CheckFormatWhenSave
-                    // 4 O UseMeoFileAsDefault
-                    // 5 O UseExportTemplate
-                    // 6   |  template text  |
+                    // 0 0 xUseSWPrism
+                    // 1 1 UpdateCheck
+                    // 2 2 OpenLastFile
+                    // 3 3 InstantTranslate
+                    // 4 4 CheckFormatWhenSave
+                    // 5 5 UseMeoFileAsDefault
+                    // 6 6 UseExportTemplate
+                    // 7   |  template text  |
+                    // 8 xCheckUseCustomBaiduKey
+                    // 9 Translate_keys.key
+                    // 10 Translate_keys.app_id
 
-                    add(xCheckUpdate, 0, 0, 2, 1)
-                    add(xCheckAutoOp, 0, 1, 2, 1)
-                    add(xCheckInstTr, 0, 2, 2, 1)
-                    add(xCheckFormat, 0, 3, 2, 1)
-                    add(xCheckUseMeo, 0, 4, 2, 1)
-                    add(xCheckUseTmp, 0, 5, 2, 1)
-                    add(xFieldTemplate, 1, 6) {
+                    add(xUseSWPrism, 0, 0, 2, 1)
+                    add(xCheckUpdate, 0, 1, 2, 1)
+                    add(xCheckAutoOp, 0, 2, 2, 1)
+                    add(xCheckInstTr, 0, 3, 2, 1)
+                    add(xCheckFormat, 0, 4, 2, 1)
+                    add(xCheckUseMeo, 0, 5, 2, 1)
+                    add(xCheckUseTmp, 0, 6, 2, 1)
+                    add(xFieldTemplate, 1, 7) {
                         disableProperty().bind(!xCheckUseTmp.selectedProperty())
                         textFormatter = genTextFormatter<String> { it.text.replace(Regex("[:*?<>|/\"\\\\]"), "") }
                         tooltip = Tooltip(I18N["settings.other.template.hint"]).apply {
                             showDelay = Duration(500.0)
                         }
                     }
-                    add(xCheckUseCustomBaiduKey, 0, 7, 2, 1)
-                    add(Label(I18N["settings.other.Translate_keys.key"]), 0, 8)
-                    add(xFieldBaiduTranslateKey, 1, 8) {
+                    add(xCheckUseCustomBaiduKey, 0, 8, 2, 1)
+                    add(Label(I18N["settings.other.Translate_keys.key"]), 0, 9)
+                    add(xFieldBaiduTranslateKey, 1, 9) {
                         disableProperty().bind(!xCheckUseCustomBaiduKey.selectedProperty())
 
                     }
-                    add(Label(I18N["settings.other.Translate_keys.app_id"]), 0, 9)
-                    add(xFieldBaiduTranslateAppId, 1, 9) {
+                    add(Label(I18N["settings.other.Translate_keys.app_id"]), 0, 10)
+                    add(xFieldBaiduTranslateAppId, 1, 10) {
                         disableProperty().bind(!xCheckUseCustomBaiduKey.selectedProperty())
                     }
                 }
@@ -593,6 +599,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         lCheckSelectedStroke.isSelected = Settings.labelSelectedStroke
 
         // Other
+        xUseSWPrism.isSelected  = Settings.useSWPrism
         xCheckUpdate.isSelected = Settings.autoCheckUpdate
         xCheckAutoOp.isSelected = Settings.autoOpenLastFile
         xCheckInstTr.isSelected = Settings.instantTranslate
@@ -600,6 +607,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         xCheckUseMeo.isSelected = Settings.useMeoFileAsDefault
         xCheckUseTmp.isSelected = Settings.useExportNameTemplate
         xFieldTemplate.text = Settings.exportNameTemplate
+
         xCheckUseCustomBaiduKey.isSelected = Settings.useCustomBaiduKey
         xFieldBaiduTranslateKey.text = Settings.baiduTransLateKey
         xFieldBaiduTranslateAppId.text = Settings.baiduTransLateAppId
@@ -693,6 +701,7 @@ class DialogSettings : AbstractPropertiesDialog() {
     private fun convertOther(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
+        map[Settings.UseSWPrism] = xUseSWPrism.isSelected
         map[Settings.AutoCheckUpdate] = xCheckUpdate.isSelected
         map[Settings.AutoOpenLastFile] = xCheckAutoOp.isSelected
         map[Settings.InstantTranslate] = xCheckInstTr.isSelected

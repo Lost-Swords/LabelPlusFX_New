@@ -33,6 +33,20 @@ fun transfer(ori: File, dst: File, overwrite: Boolean = true) {
 }
 
 /**
+ * Append a line to a file if it does not already exist in the file
+ * @param file The file to append to
+ * @param line The line to append
+ */
+@Throws(IOException::class)
+fun appendLine(file: File, line: String) {
+    if (!file.exists()) throw IOException("Source file `$file` not exists")
+    val lines = file.readLines()
+    if (!lines.contains(line)) {
+        file.appendText("\n$line", Charsets.UTF_8)
+    }
+}
+
+/**
  * Whether this file exists. `null` is treat as not exist.
  */
 @Throws(SecurityException::class)

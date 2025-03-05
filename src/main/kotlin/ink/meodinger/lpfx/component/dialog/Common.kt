@@ -174,6 +174,16 @@ fun showError(owner: Window?, header: String?, content: String, title: String): 
 fun showConfirm(owner: Window?, content: String): Optional<ButtonType> {
     return showConfirm(owner, null, content, I18N["common.confirm"])
 }
+
+
+/**
+ * Show message for confirm
+ * @param content Message to show
+ * @return ButtonType? YES | NO
+ */
+fun showConfirmWithoutCancel(owner: Window?, content: String): Optional<ButtonType> {
+    return showConfirmWithoutCancel(owner, null, content, I18N["common.confirm"])
+}
 /**
  * Show message for confirm
  * @param title Dialog title
@@ -186,6 +196,18 @@ fun showConfirm(owner: Window?, header: String?, content: String, title: String)
     return showDialog(owner, DialogType.CONFIRM, title, header, content, ButtonType.YES, ButtonType.NO, ButtonType.CANCEL)
 }
 
+
+/**
+ * Show message for confirm
+ * @param title Dialog title
+ * @param header Header text, nullable
+ * @param content Content text
+ * @param owner Owner window
+ * @return ButtonType? YES | NO | CANCEL
+ */
+fun showConfirmWithoutCancel(owner: Window?, header: String?, content: String, title: String): Optional<ButtonType> {
+    return showDialog(owner, DialogType.CONFIRM, title, header, content, ButtonType.YES, ButtonType.NO)
+}
 
 ////////////////////////////////////////////////////////////
 ///// Others

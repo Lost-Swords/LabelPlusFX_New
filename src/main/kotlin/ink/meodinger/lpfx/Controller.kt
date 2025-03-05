@@ -150,11 +150,11 @@ class Controller(private val state: State) {
                 if (file.exists()) {
                     var imageByFX = Image(file.toURI().toURL().toString())
 
-                    //if the image is too large,limit the size of image
-                    if(imageByFX.width > 5000 || imageByFX.height > 5000) {
-                        Logger.info("limit the size of image because `$file` is too large  ", "Controller")
-                        imageByFX = Image(file.toURI().toURL().toString(),5000.0,5000.0,true,true)
-                    }
+//                    //if the image is too large,limit the size of image
+//                    if(imageByFX.width > 5000 || imageByFX.height > 5000) {
+//                        Logger.info("limit the size of image because `$file` is too large  ", "Controller")
+//                        imageByFX = Image(file.toURI().toURL().toString(),5000.0,5000.0,true,true)
+//                    }
 
                     if (!imageByFX.isError) {
                         imageByFX
@@ -346,10 +346,6 @@ class Controller(private val state: State) {
                 state.transFile.getTransLabel(state.currentPicName, it.labelIndex)
             ))
 
-            // Clear selection if current label will be removed
-            if( it.labelIndex <= state.currentLabelIndex && state.currentLabelIndex != 0) {
-                state.currentLabelIndex--;
-            }
         }
         cLabelPane.setOnLabelHover  handler@{
             when (state.workMode) {
@@ -490,12 +486,10 @@ class Controller(private val state: State) {
             // when Config::usingSWPrism is true, here is next time LPFX starts.
             if (Config.isWin && !Config.usingSWPrism) {
                 if (it != null && (it.width >= 4096 || it.height >= 4096)) {
-                    val result = showConfirm(state.stage, "Switch to SW? (only once)")
+                    val result = showConfirmWithoutCancel(state.stage, I18N["graphic_switch.message"])
                     if (result.isPresent && result.get() == ButtonType.YES) {
                         state.application.addShutdownHook("UseSWPrism", ::useSoftwarePrism)
                         state.application.stop()
-                    } else {
-                        showError(state.stage, "Image too Large!")
                     }
                 }
             }
@@ -555,6 +549,28 @@ class Controller(private val state: State) {
             if (cTransArea.isBound) state.isChanged = true
         })
         Logger.info("Listened for isChanged", "Controller")
+
+        // Setting.isUseSWPrism
+        Settings.useSWPrismProperty().addListener { _, oldValue, newValue ->
+            Logger.info("test useSWprism", "Controller")
+            if(Config.isMac) return@addListener
+            if (!oldValue && newValue && !Config.usingSWPrism) {
+                state.application.addShutdownHook("UseSWPrism", ::useSoftwarePrism)
+                val result = showConfirmWithoutCancel(state.stage, I18N["graphic_switch.switch_message"])
+                if (result.isPresent && result.get() == ButtonType.YES) {
+                    state.application.stop()
+                }
+            } else if (oldValue && !newValue && Config.usingSWPrism) {
+                state.application.addShutdownHook("UseHWPrism", ::useHardwarePrism)
+                val result = showConfirmWithoutCancel(state.stage, I18N["graphic_switch.switch_message"])
+                if (result.isPresent && result.get() == ButtonType.YES) {
+                    state.application.stop()
+                }
+            }
+
+        }
+        Logger.info("Listened for Setting.isUseSWPrism", "Controller")
+
     }
     /**
      * Properties' effect on view

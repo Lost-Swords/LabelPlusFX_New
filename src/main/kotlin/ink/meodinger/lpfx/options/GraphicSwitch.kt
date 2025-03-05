@@ -1,7 +1,9 @@
 package ink.meodinger.lpfx.options
 
 import ink.meodinger.lpfx.Config
+import ink.meodinger.lpfx.util.file.appendLine
 import ink.meodinger.lpfx.util.file.transfer
+
 
 import java.io.File
 
@@ -11,13 +13,25 @@ import java.io.File
  * Have fun with my code!
  */
 
-
 /**
  * App config file
  */
 private val CFG_File: File = Config.workingDir.resolve("app/LabelPlusFX.cfg")
-private val HW_File: File = Config.workingDir.resolve("app/LabelPlusFX-HW.cfg")
-private val SW_File: File = Config.workingDir.resolve("app/LabelPlusFX-SW.cfg")
+private val HW_File: File = Config.workingDir.resolve("app/LabelPlusFX-HW.cfg").apply {
+    // Check if the file exists, if not, copy from CFG_File and execute transfer function
+    if (!exists()) {
+        transfer(CFG_File, this)
+        appendLine(this,"java-options=-Dprism.order=d3d" )
+
+    }
+}
+private val SW_File: File = Config.workingDir.resolve("app/LabelPlusFX-SW.cfg").apply {
+    // Check if the file exists, if not, copy from CFG_File and execute transfer function
+    if (!exists()) {
+        transfer(CFG_File, this)
+        appendLine(this,"java-options=-Dprism.order=sw" )
+    }
+}
 
 /**
  * Switch Prism to software, require restart the application.
