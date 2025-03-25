@@ -145,7 +145,7 @@ class View(private val state: State) : BorderPane() {
     private val filterBMP     = FileChooser.ExtensionFilter(I18N["file_type.picture_bmp"], "*.${EXTENSION_PIC_BMP}")
     private val filterGIF     = FileChooser.ExtensionFilter(I18N["file_type.picture_gif"], "*.${EXTENSION_PIC_GIF}")
     private val filterPNG     = FileChooser.ExtensionFilter(I18N["file_type.picture_png"], "*.${EXTENSION_PIC_PNG}")
-    private val filterJPEG    = FileChooser.ExtensionFilter(I18N["file_type.picture_jpeg"], "*.${EXTENSION_PIC_JPG}", "*.${EXTENSION_PIC_JPEG}")
+    private val filterJPEG    = FileChooser.ExtensionFilter(I18N["file_type.picture_jpeg"], "*.${EXTENSION_PIC_JPG}", "*.${EXTENSION_PIC_JPEG}", "*.${EXTENSION_PIC_JFIF}")
     private val filterTIFF    = FileChooser.ExtensionFilter(I18N["file_type.picture_tiff"], "*.${EXTENSION_PIC_TIF}", "*.${EXTENSION_PIC_TIFF}")
     private val filterWEBP    = FileChooser.ExtensionFilter(I18N["file_type.picture_webp"], "*.${EXTENSION_PIC_WEBP}")
     private val filterFile    = FileChooser.ExtensionFilter(I18N["file_type.translation"],  List(EXTENSIONS_FILE.size) { index -> "*.${EXTENSIONS_FILE[index]}" })

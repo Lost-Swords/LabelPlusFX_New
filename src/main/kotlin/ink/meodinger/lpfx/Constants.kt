@@ -50,6 +50,11 @@ const val EXTENSION_PIC_JPG : String = "jpg"
  */
 const val EXTENSION_PIC_JPEG: String = "jpeg"
 /**
+ * Extension: jfif
+ */
+const val EXTENSION_PIC_JFIF: String = "jfif"
+
+/**
  * Extension: tif
  */
 const val EXTENSION_PIC_TIF : String = "tif"
@@ -87,6 +92,7 @@ val EXTENSIONS_PIC: List<String> = listOf(
     EXTENSION_PIC_PNG,
     EXTENSION_PIC_JPG,
     EXTENSION_PIC_JPEG,
+    EXTENSION_PIC_JFIF,
     EXTENSION_PIC_TIF,
     EXTENSION_PIC_TIFF,
     EXTENSION_PIC_WEBP,

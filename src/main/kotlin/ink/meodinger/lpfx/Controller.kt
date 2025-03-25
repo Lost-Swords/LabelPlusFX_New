@@ -148,7 +148,7 @@ class Controller(private val state: State) {
                 // Opened and selected
                 val file = state.getPicFileNow()
                 if (file.exists()) {
-                    var imageByFX = Image(file.toURI().toURL().toString())
+                    val imageByFX = Image(file.toURI().toURL().toString())
 
 //                    //if the image is too large,limit the size of image
 //                    if(imageByFX.width > 5000 || imageByFX.height > 5000) {

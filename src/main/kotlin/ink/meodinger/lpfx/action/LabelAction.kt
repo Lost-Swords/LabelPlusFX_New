@@ -99,7 +99,7 @@ class LabelAction(
             throw IllegalArgumentException(String.format(I18N["exception.action.label_group_invalid.i"], transLabel.groupId))
 
         for (label in list) if (label.index >= transLabel.index) label.index++
-        if( transLabel.index >= list.size) {
+        if( transLabel.index > list.size + 1) {
             transLabel.index = list.size + 1
         }
         list.add(transLabel.index -1 ,transLabel)
