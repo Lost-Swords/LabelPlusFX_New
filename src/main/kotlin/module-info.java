@@ -2,8 +2,7 @@
 module lpfx {
     // Kotlin
     requires kotlin.stdlib;
-    requires kotlin.stdlib.jdk7;
-    requires kotlin.stdlib.jdk8;
+
     // Swing
     requires java.desktop;
     // JavaFX

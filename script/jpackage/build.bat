@@ -1,17 +1,17 @@
 @echo off
 if "%1"=="" (
-    set VERSION=0.0.0
+    set /p VERSION=Please enter the version number:
 ) else (
     set VERSION=%1
 )
-echo VERSION: %1
+echo VERSION: %VERSION%
 set DIR=%~dp0..\..
 rd /S /Q ".\LabelPlusFX"
 set MODULES="%DIR%\target\build"
 set ICON="%DIR%\images\icons\cat.ico"
 set SCRIPT_DIR=%~dp0
 
-jpackage --verbose --type app-image --app-version %VERSION% --copyright "Meodinger Tech (C) 2024" --name LabelPlusFX --icon %ICON% --dest %SCRIPT_DIR% --module-path %MODULES% --add-modules lpfx,jdk.crypto.cryptoki --module lpfx/ink.meodinger.lpfx.LauncherKt  --java-options "-Dprism.maxvram=2G"
+jpackage --verbose --type app-image --app-version %VERSION% --copyright "Meodinger Tech (C) 2025" --name LabelPlusFX --icon %ICON% --dest %SCRIPT_DIR% --module-path %MODULES% --add-modules lpfx,jdk.crypto.cryptoki --module lpfx/ink.meodinger.lpfx.LauncherKt
 
 setlocal enabledelayedexpansion
 
