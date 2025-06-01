@@ -16,6 +16,7 @@
 /script/jpackage/*
 !/script/jpackage/build.*
 !/script/jpackage/LabelPlusFXDict.lnk
+!/script/jpackage/*.dll
 
 lpfx.iml
 lpfx.ipr
