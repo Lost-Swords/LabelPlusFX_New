@@ -815,8 +815,6 @@ class Controller(private val state: State) {
             if (!(it.isControlDown || it.isMetaDown) || it.code != KeyCode.ENTER) return@handler
             // Mark immediately when this event will be consumed
             it.consume() // stop further propagation
-
-//            val itemIndex = getNextLabelItemIndex(cTreeView.selectionModel.selectedIndex, if (it.isShiftDown) -1 else 1)
             // transform
             if (it.isShiftDown) {
                    // Go to previous label
