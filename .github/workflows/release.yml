@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - v2-fork # Trigger on push to v2-fork branch
+    paths:
+      - 'pom.xml'
+  pull_request:
+    branches:
+      - v2-fork # Trigger on PRs targeting the v2-fork branch
+    paths:
+      - 'pom.xml'
 
 jobs:
   build-windows:

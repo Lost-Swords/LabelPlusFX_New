@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - v2-fork-develop # Trigger on push to test branch
+    paths:
+      - 'pom.xml'
 
 jobs:
   build-windows:
