@@ -3,10 +3,7 @@
 on:
   push:
     branches:
-      - v2-fork-develop # 当推送到 test 分支时触发
-
-env:
-  VERSION: test-${{ github.sha }}
+      - v2-fork-develop # Trigger on push to test branch
 
 jobs:
   build-windows:
@@ -28,12 +25,21 @@ jobs:
         with:
           maven-version: 3.8.6
 
+      - name: Extract version from pom.xml (Windows)
+        shell: pwsh
+        run: |
+          [xml]$pom = Get-Content pom.xml
+          $version = $pom.project.version
+          Write-Output "VERSION=$version"
+          Write-Output "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV
+
       - name: Build project with Maven
         run: mvn clean package
 
       - name: Run build.bat
         shell: cmd
-        run: |          cd script\jpackage
+        run: |
+          cd script\jpackage
           build.bat %VERSION%
 
       - name: Archive Windows ZIP
@@ -55,7 +61,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          'setup-jdks': true
+
+      - name: Extract version from pom.xml
+        id: version
+        run: |
+          VERSION=$(xpath -q -e '/project/version/text()' pom.xml)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4
@@ -69,7 +80,8 @@ jobs:
         run: chmod +x script/jpackage/build.sh
 
       - name: Run build.sh
-        run: |          cd script/jpackage
+        run: |
+          cd script/jpackage
           ./build.sh ${{ env.VERSION }}
 
       - name: Archive macOS ZIP

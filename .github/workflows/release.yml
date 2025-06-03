@@ -3,10 +3,7 @@ name: Build & Package
 on:
   push:
     branches:
-      - v2-fork # 当代码被推送到 v2-fork 分支时触发（包括从 v2-fork-develop 合并）
-
-env:
-  VERSION: ${{ github.sha }} # 使用 commit hash 作为测试版本号，也可以使用 tag
+      - v2-fork # Trigger on push to v2-fork branch
 
 jobs:
   build-windows:
@@ -28,14 +25,22 @@ jobs:
         with:
           maven-version: 3.8.6
 
+      - name: Extract version from pom.xml (Windows)
+        shell: pwsh
+        run: |
+          [xml]$pom = Get-Content pom.xml
+          $version = $pom.project.version
+          Write-Output "VERSION=$version"
+          Write-Output "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV
+
       - name: Build project with Maven
         run: mvn clean package
 
-      - name: Run build.sh
+      - name: Run build.bat
+        shell: cmd
         run: |
-          cd script/jpackage
-          ./build.sh ${{ env.VERSION }}
-
+          cd script\jpackage
+          build.bat %VERSION%
 
       - name: Archive Windows ZIP
         uses: actions/upload-artifact@v4
@@ -56,7 +61,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          'setup-jdks': true
+
+      - name: Extract version from pom.xml
+        id: version
+        run: |
+          VERSION=$(xpath -q -e '/project/version/text()' pom.xml)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4
@@ -73,7 +83,6 @@ jobs:
         run: |
           cd script/jpackage
           ./build.sh ${{ env.VERSION }}
-
 
       - name: Archive macOS ZIP
         uses: actions/upload-artifact@v4
