@@ -11,7 +11,16 @@ set MODULES="%DIR%\target\build"
 set ICON="%DIR%\images\icons\cat.ico"
 set SCRIPT_DIR=%~dp0
 
-jpackage --verbose --type app-image --app-version %VERSION% --copyright "Meodinger Tech (C) 2025" --name LabelPlusFX --icon %ICON% --dest %SCRIPT_DIR% --module-path %MODULES% --add-modules lpfx,jdk.crypto.cryptoki --module lpfx/ink.meodinger.lpfx.LauncherKt
+jpackage --verbose ^
+    --type app-image ^
+    --app-version %VERSION% ^
+    --copyright "Meodinger Tech (C) 2025" ^
+    --name LabelPlusFX ^
+    --icon %ICON% ^
+    --dest %SCRIPT_DIR% ^
+    --input "%DIR%\target\build" ^
+    --main-jar lpfx-%VERSION%.jar ^
+    --main-class ink.meodinger.lpfx.LauncherKt
 
 setlocal enabledelayedexpansion
 
@@ -43,6 +52,8 @@ powershell.exe -Command "Compress-Archive -Path '%SCRIPT_DIR%\LabelPlusFX' -Dest
 
 
 endlocal
+
+pause
 
 echo:
 echo All completed

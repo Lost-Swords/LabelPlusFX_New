@@ -22,16 +22,16 @@ MODULES="$DIR/target/build"
 ICON="$DIR/images/icons/cat.icns"
 
 # Build Java application image using jpackage
-jpackage --verbose \
-    --type app-image \
-    --app-version "$VERSION" \
-    --copyright "Meodinger Tech (C) 2025" \
-    --name LabelPlusFX \
-    --icon "$ICON" \
-    --dest "$SCRIPT_DIR" \
-    --module-path "$MODULES" \
-    --add-modules jdk.crypto.cryptoki \
-    --module lpfx/ink.meodinger.lpfx.LauncherKt
+jpackage --verbose ^
+    --type app-image ^
+    --app-version %VERSION% ^
+    --copyright "Meodinger Tech (C) 2025" ^
+    --name LabelPlusFX ^
+    --icon %ICON% ^
+    --dest %SCRIPT_DIR% ^
+    --input "%DIR%\target\build" ^
+    --main-jar lpfx-%VERSION%.jar ^
+    --main-class ink.meodinger.lpfx.LauncherKt
 
 # Copy additional resource files into the output directory
 TARGET_DIR="$SCRIPT_DIR/LabelPlusFX"
