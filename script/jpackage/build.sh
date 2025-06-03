@@ -20,7 +20,6 @@ ZIP_NAME="LabelPlusFX-$VERSION-Mac.zip"
 
 # 清理旧目录
 rm -rf "$TARGET_DIR"
-mkdir -p "$TARGET_DIR"
 
 # 构建 Java 应用镜像
 echo "[INFO] Building Java application image..."
