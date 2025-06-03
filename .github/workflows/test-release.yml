@@ -14,11 +14,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 (Liberica Full)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'liberica'
+          java-package: jdk-full
 
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4
@@ -56,11 +57,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 with jpackage
+      - name: Set up JDK 17 (Liberica Full)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'liberica'
+          java-package: jdk-full
 
       - name: Extract version from pom.xml
         id: version
