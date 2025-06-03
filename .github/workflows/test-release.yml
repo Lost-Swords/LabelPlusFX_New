@@ -1,0 +1,79 @@
+﻿name: Test Build & Package
+
+on:
+  push:
+    branches:
+      - v2-fork-develop # 当推送到 test 分支时触发
+
+env:
+  VERSION: test-${{ github.sha }}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    name: Build Windows Package (Test)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: 3.8.6
+
+      - name: Build project with Maven
+        run: mvn clean package
+
+      - name: Run build.bat
+        shell: cmd
+        run: |          cd script\jpackage
+          build.bat %VERSION%
+
+      - name: Archive Windows ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: LabelPlusFX-win-test
+          path: LabelPlusFX/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Win64.zip
+
+  build-macos:
+    runs-on: macos-latest
+    name: Build macOS Package (Test)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 with jpackage
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          'setup-jdks': true
+
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: 3.8.6
+
+      - name: Build project with Maven
+        run: mvn clean package
+
+      - name: Make build.sh executable
+        run: chmod +x script/jpackage/build.sh
+
+      - name: Run build.sh
+        run: |          cd script/jpackage
+          ./build.sh ${{ env.VERSION }}
+
+      - name: Archive macOS ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: LabelPlusFX-mac-test
+          path: LabelPlusFX/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip

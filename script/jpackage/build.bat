@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 if "%1"=="" (
     set /p VERSION=Please enter the version number:
 ) else (
@@ -31,6 +31,16 @@ for %%F in (%FILE_LIST%) do (
         echo [Warning] Missing: %%F (skipped)
     )
 )
+set OUTPUT_DIR=%SCRIPT_DIR%\Output
+set ZIP_NAME=LabelPlusFX-%VERSION%-Win64.zip
+
+if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
+if exist "%OUTPUT_DIR%\%ZIP_NAME%" del "%OUTPUT_DIR%\%ZIP_NAME%"
+
+echo.
+echo Packing into ZIP: %ZIP_NAME%
+powershell.exe -Command "Compress-Archive -Path '%SCRIPT_DIR%\LabelPlusFX' -DestinationPath '%OUTPUT_DIR%\%ZIP_NAME%' -Force"
+
 
 endlocal
 

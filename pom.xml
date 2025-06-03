@@ -208,9 +208,10 @@
                             <executable>cmd</executable>
                             <arguments>
                                 <argument>/c</argument>
-                                <argument>${project.basedir}/script/jpackage/build.bat</argument>
+                                <argument>build.bat</argument>
                                 <argument>${project.version}</argument><!-- runtime-->
                             </arguments>
+                            <workingDirectory>${project.basedir}\script\jpackage</workingDirectory>
                         </configuration>
                     </execution>
                 </executions>
