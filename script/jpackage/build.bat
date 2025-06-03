@@ -50,10 +50,12 @@ echo.
 echo Packing into ZIP: %ZIP_NAME%
 powershell.exe -Command "Compress-Archive -Path '%SCRIPT_DIR%\LabelPlusFX' -DestinationPath '%OUTPUT_DIR%\%ZIP_NAME%' -Force"
 
-echo
-echo "Current directory structure:"
-ls -la "$SCRIPT_DIR"
-ls -la "$OUTPUT_DIR"
+echo.
+echo Current directory structure:
+dir "%SCRIPT_DIR%"
+echo.
+echo Output directory contents:
+dir "%OUTPUT_DIR%"
 
 endlocal
 

@@ -42,12 +42,26 @@ jobs:
           cd script\jpackage
           build.bat %VERSION%
 
-      - name: Archive Windows ZIP
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: LabelPlusFX-win-v2-fork
-          path: LabelPlusFX/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Win64.zip
+          tag_name: v${{ env.VERSION }}
+          release_name: LabelPlusFX ${{ env.VERSION }} Release
+          draft: false
+          prerelease: false
 
+      - name: Upload Windows ZIP to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
+          asset_name: LabelPlusFX-${{ env.VERSION }}-Win64.zip
+          asset_content_type: application/zip
   build-macos:
     runs-on: macos-latest
     name: Build macOS Package on v2-fork
@@ -84,8 +98,23 @@ jobs:
           cd script/jpackage
           ./build.sh ${{ env.VERSION }}
 
-      - name: Archive macOS ZIP
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: LabelPlusFX-mac-v2-fork
-          path: LabelPlusFX/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
+          tag_name: v${{ env.VERSION }}
+          release_name: LabelPlusFX ${{ env.VERSION }} Release
+          draft: false
+          prerelease: false
+
+      - name: Upload macOS ZIP to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
+          asset_name: LabelPlusFX-${{ env.VERSION }}-Mac.zip
+          asset_content_type: application/zip

@@ -46,7 +46,7 @@ jobs:
       - name: Archive Windows ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: LabelPlusFX-win-test
+          name: LabelPlusFX-${{ env.VERSION }}-Win64
           path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Win64.zip
 
   build-macos:
@@ -89,5 +89,5 @@ jobs:
       - name: Archive macOS ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: LabelPlusFX-mac-test
+          name: LabelPlusFX-${{ env.VERSION }}-Mac
           path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip

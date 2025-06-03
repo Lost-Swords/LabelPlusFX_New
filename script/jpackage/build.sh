@@ -39,10 +39,14 @@ jpackage --verbose \
 if [ ! -d "$TARGET_DIR" ]; then
     echo "[ERROR] Application folder not generated at: $TARGET_DIR"
     exit 1
+else
+    echo "[INFO] Application folder generated successfully."
+    echo "[INFO] Directory structure:"
+    ls -1 "$TARGET_DIR"
 fi
 
 # 拷贝额外资源文件
-FILE_LIST="IMEInterface.dylib IMEWrapper.dylib LabelPlusFXDict.alias"
+FILE_LIST="LabelPlusFXDict.alias"
 
 for file in $FILE_LIST; do
     if [ -f "$SCRIPT_DIR/$file" ]; then
