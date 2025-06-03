@@ -53,7 +53,6 @@ powershell.exe -Command "Compress-Archive -Path '%SCRIPT_DIR%\LabelPlusFX' -Dest
 
 endlocal
 
-pause
 
 echo:
 echo All completed
