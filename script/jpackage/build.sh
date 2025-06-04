@@ -30,7 +30,7 @@ jpackage --verbose \
     --name LabelPlusFX \
     --icon "$ICON" \
     --dest "$SCRIPT_DIR" \
-    --module-path %MODULES% \
+    --module-path $MODULES \
     --add-modules jdk.crypto.cryptoki \
     --module lpfx/ink.meodinger.lpfx.LauncherKt
 
