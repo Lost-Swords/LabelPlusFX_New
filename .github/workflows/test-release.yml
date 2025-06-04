@@ -154,7 +154,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ needs.build-windows.outputs.version }}
-          release_name: ${{ needs.build-windows.outputs.version }}
+          release_name: ${{ needs.build-windows.outputs.version }}-test
           body_path: changelog.md
           draft: false
           prerelease: true
