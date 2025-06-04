@@ -21,7 +21,8 @@ jobs:
   build-windows:
     runs-on: windows-latest
     name: Build Windows Package (Test)
-
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,11 +60,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LabelPlusFX-${{ env.VERSION }}-Win64
-          path: ${{ github.workspace }}/script/jpackage/LabelPlusFX/
+          path: ${{ github.workspace }}/script/jpackage/LabelPlusFX/n"
+
+
 
   build-macos:
     runs-on: macos-latest
     name: Build macOS Package (Test)
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
 
     steps:
       - name: Checkout code
@@ -108,7 +113,9 @@ jobs:
   create-release:
     needs: [ build-windows, build-macos ]
     runs-on: ubuntu-latest
-    name: Create GitHub Release
+    name: Create Draft GitHub Release
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
