@@ -31,7 +31,7 @@ jpackage --verbose \
     --icon "$ICON" \
     --dest "$SCRIPT_DIR" \
     --module-path %MODULES% \
-    --add-modules lpfx,jdk.crypto.cryptoki \
+    --add-modules jdk.crypto.cryptoki \
     --module lpfx/ink.meodinger.lpfx.LauncherKt
 
 
