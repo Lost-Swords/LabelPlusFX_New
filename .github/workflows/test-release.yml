@@ -1,4 +1,5 @@
-﻿name: Test Build & Package
+﻿name: Test Release
+run-name: Test Release — ${{ github.ref }}
 
 
 on:

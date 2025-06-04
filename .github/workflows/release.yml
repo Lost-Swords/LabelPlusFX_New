@@ -1,4 +1,5 @@
-name: Build & Package
+name: Release
+run-name: Release
 
 on:
   workflow_dispatch:
