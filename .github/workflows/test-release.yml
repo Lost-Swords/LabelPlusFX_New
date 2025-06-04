@@ -115,11 +115,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
           path: release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
           path: release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
