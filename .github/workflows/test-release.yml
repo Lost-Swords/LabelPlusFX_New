@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LabelPlusFX-${{ env.VERSION }}-Win64
-          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Win64/
+          path: ${{ github.workspace }}/script/jpackage/LabelPlusFX/
 
   build-macos:
     runs-on: macos-latest
@@ -102,7 +102,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LabelPlusFX-${{ env.VERSION }}-Mac
-          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac/
+          path: ${{ github.workspace }}/script/jpackage/LLabelPlusFX.app/
 
 
   create-release:
