@@ -1,11 +1,13 @@
 ﻿name: Test Build & Package
 
+
 on:
-  push:
-    branches:
-      - v2-fork-develop # Trigger on push to test branch
-    paths:
-      - 'pom.xml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: string
+        description: "Deployment environment"
+        default: "dev"
 
 jobs:
   build-windows:

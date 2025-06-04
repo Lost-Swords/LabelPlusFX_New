@@ -18,9 +18,9 @@ jpackage --verbose ^
     --name LabelPlusFX ^
     --icon %ICON% ^
     --dest %SCRIPT_DIR% ^
-    --input "%DIR%\target\build" ^
-    --main-jar lpfx-%VERSION%.jar ^
-    --main-class ink.meodinger.lpfx.LauncherKt
+    --module-path %MODULES% ^
+    --add-modules lpfx,jdk.crypto.cryptoki ^
+    --module lpfx/ink.meodinger.lpfx.LauncherKt
 
 setlocal enabledelayedexpansion
 
@@ -59,6 +59,6 @@ dir "%OUTPUT_DIR%"
 
 endlocal
 
-
+pause
 echo:
 echo All completed

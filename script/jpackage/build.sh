@@ -30,9 +30,11 @@ jpackage --verbose \
     --name LabelPlusFX \
     --icon "$ICON" \
     --dest "$SCRIPT_DIR" \
-    --input "$MODULES" \
-    --main-jar "lpfx-$VERSION.jar" \
-    --main-class ink.meodinger.lpfx.LauncherKt
+    --module-path %MODULES% \
+    --add-modules lpfx,jdk.crypto.cryptoki \
+    --module lpfx/ink.meodinger.lpfx.LauncherKt
+
+
 
 # 验证是否真的生成了内容
 if [ "$(ls -A "$TARGET_DIR")" ]; then
