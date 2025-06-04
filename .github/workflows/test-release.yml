@@ -140,22 +140,12 @@ jobs:
 
       - name: Extract Current Version Changelog
         run: |
-            VERSION="${{ needs.build-windows.outputs.version }}"
-            echo "Extracting changelog for version: $VERSION"
-            # 提取当前版本段落，去掉第一行标题
-            grep -A 50 "^## $$${VERSION}]" CHANGELOG.md | \
-              awk '
-              /^## $$[0-9]/ && !/^## $$'"${VERSION}"']/ {exit}
-              NR == 1 {next}
-              /^### / || /^- / {print}
-              ' > changelog.md
-            
-            cat changelog.md
-          
-
-      - name: Show changelog.md content
-        run: cat changelog.md
-
+          VERSION="${{ needs.build-windows.outputs.version }}"
+          echo "Extracting changelog for version: $VERSION"
+          head -40 CHANGELOG.md
+          sed -n "/^## \[$VERSION\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d' > changelog.md
+          cat changelog.md
+      
 
       - name: Create Draft Release
         uses: softprops/action-gh-release@v1
