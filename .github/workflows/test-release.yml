@@ -102,7 +102,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LabelPlusFX-${{ env.VERSION }}-Mac
-          path: ${{ github.workspace }}/script/jpackage/LLabelPlusFX.app/
+          path: ${{ github.workspace }}/script/jpackage/LabelPlusFX.app/
 
 
   create-release:
