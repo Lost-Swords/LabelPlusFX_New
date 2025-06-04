@@ -128,11 +128,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
-          path: release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
+          path: release/
       - uses: actions/download-artifact@v4
         with:
           name: LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
-          path: release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
+          path: release/
 
       - name: Extract Current Version Changelog
         run: |
@@ -158,23 +158,7 @@ jobs:
           body_path: changelog.md
           draft: false
           prerelease: true
+          files: |
+            release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64.zip
+            release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac.zip
 
-      - name: Upload Windows Artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64.zip
-          asset_name: LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64.zip
-          asset_content_type: application/zip
-
-      - name: Upload macOS Artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac.zip
-          asset_name: LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac.zip
-          asset_content_type: application/zip
