@@ -136,6 +136,9 @@ jobs:
           name: LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
           path: release/
 
+      - name: List files after download
+        run: ls -lh release/
+
       - name: Extract Current Version Changelog
         run: |
             VERSION="${{ needs.build-windows.outputs.version }}"
@@ -161,6 +164,6 @@ jobs:
           draft: true
           prerelease: false
           files: |
-            release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
-            release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
+            release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64.zip
+            release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac.zip
 
