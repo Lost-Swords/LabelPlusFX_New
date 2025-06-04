@@ -79,6 +79,9 @@ jobs:
         with:
           maven-version: 3.8.6
 
+      - name: Clean Maven cache
+        run: mvn dependency:purge-local-repository -DactTransitively=false -DreResolve=false
+
       - name: Build project with Maven
         run: mvn clean package
 

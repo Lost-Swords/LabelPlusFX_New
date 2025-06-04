@@ -113,8 +113,21 @@
     <build>
         <resources>
             <resource>
-                <directory>src/main/resources/</directory>
+                <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <!-- 显式排除二进制文件 -->
+                <excludes>
+                    <exclude>**/*.zip</exclude>
+                    <exclude>**/*.bin</exclude> <!-- 其他二进制文件扩展名 -->
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <!-- 只包含需要原样复制的二进制文件 -->
+                <includes>
+                    <include>**/*.zip</include>
+                </includes>
             </resource>
         </resources>
         <sourceDirectory>src/main/kotlin</sourceDirectory>
