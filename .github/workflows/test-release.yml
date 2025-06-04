@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LabelPlusFX-${{ env.VERSION }}-Win64
-          path: ${{ github.workspace }}/script/jpackage/LabelPlusFX/
+          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Win64.zip
 
 
 
@@ -110,8 +110,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LabelPlusFX-${{ env.VERSION }}-Mac
-          path: ${{ github.workspace }}/script/jpackage/LabelPlusFX.app/
-
+          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
 
   create-release:
     needs: [ build-windows, build-macos ]
@@ -152,6 +151,11 @@ jobs:
               ' > changelog.md
             
             cat changelog.md
+          
+
+      - name: Show changelog.md content
+        run: cat changelog.md
+
 
       - name: Create Draft Release
         uses: softprops/action-gh-release@v1
@@ -160,7 +164,7 @@ jobs:
         with:
           tag_name: v${{ needs.build-windows.outputs.version }}-test
           name: ${{ needs.build-windows.outputs.version }}-test
-          body: "This is a test changelog content"
+          body_path: changelog.md
           draft: true
           prerelease: false
           files: |
