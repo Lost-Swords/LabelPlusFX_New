@@ -46,6 +46,7 @@ jobs:
           $version = $pom.project.version
           Write-Output "VERSION=$version"
           Write-Output "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV
+          echo "::set-output name=version::$version"
 
       - name: Build project with Maven
         run: mvn clean package
@@ -86,6 +87,7 @@ jobs:
         run: |
           VERSION=$(xpath -q -e '/project/version/text()' pom.xml)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "::set-output name=version::$VERSION" 
 
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4
