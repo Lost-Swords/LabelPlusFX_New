@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LabelPlusFX-${{ env.VERSION }}-Win64
-          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Win64.zip
+          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Win64/
 
   build-macos:
     runs-on: macos-latest
@@ -102,4 +102,69 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LabelPlusFX-${{ env.VERSION }}-Mac
-          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
+          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac/
+
+
+  create-release:
+    needs: [ build-windows, build-macos ]
+    runs-on: ubuntu-latest
+    name: Create GitHub Release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
+          path: release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
+      - uses: actions/download-artifact@v3
+        with:
+          name: LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
+          path: release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
+
+      - name: Extract Current Version Changelog
+        run: |
+            VERSION="${{ needs.build-windows.outputs.version }}"
+            echo "Extracting changelog for version: $VERSION"
+            # 提取当前版本段落，去掉第一行标题
+            grep -A 50 "^## $$${VERSION}]" CHANGELOG.md | \
+              awk '
+              /^## $$[0-9]/ && !/^## $$'"${VERSION}"']/ {exit}
+              NR == 1 {next}
+              /^### / || /^- / {print}
+              ' > changelog.md
+            
+            cat changelog.md
+
+      - name: Create Draft Release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.build-windows.outputs.version }}
+          release_name: ${{ needs.build-windows.outputs.version }}
+          body_path: changelog.md
+          draft: false
+          prerelease: true
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64.zip
+          asset_name: LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64.zip
+          asset_content_type: application/zip
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac.zip
+          asset_name: LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac.zip
+          asset_content_type: application/zip

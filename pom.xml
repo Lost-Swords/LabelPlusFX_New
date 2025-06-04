@@ -234,15 +234,6 @@
                                         <exports>com.twelvemonkeys.imageio.plugins.webp;</exports>
                                     </moduleInfo>
                                 </module>
-                                <module>
-                                    <artifact>
-                                        <groupId>org.jsoup</groupId>
-                                        <artifactId>jsoup</artifactId>
-                                    </artifact>
-                                    <moduleInfo>
-                                        <name>org.jsoup</name>
-                                    </moduleInfo>
-                                </module>
                             </modules>
                         </configuration>
                     </execution>
