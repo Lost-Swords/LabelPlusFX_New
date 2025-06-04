@@ -151,7 +151,7 @@
                             <failOnWarning>false</failOnWarning>
                             <jdepsExtraArgs>
                                 <arg>--module-path</arg>
-                                <arg>${project.build.directory}\build</arg>
+                                <arg>${project.build.directory}/build</arg>
                                 <arg>--ignore-missing-deps</arg>
                                 <arg>--multi-release</arg>
                                 <arg>17</arg>
@@ -339,7 +339,7 @@
                                 <argument>build.bat</argument>
                                 <argument>${project.version}</argument><!-- runtime-->
                             </arguments>
-                            <workingDirectory>${project.basedir}\script\jpackage</workingDirectory>
+                            <workingDirectory>${project.basedir}/script/jpackage</workingDirectory>
                         </configuration>
                     </execution>
                 </executions>
