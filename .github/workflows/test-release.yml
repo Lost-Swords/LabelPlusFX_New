@@ -40,13 +40,13 @@ jobs:
           maven-version: 3.8.6
 
       - name: Extract version from pom.xml (Windows)
+        id: extract-version
         shell: pwsh
         run: |
           [xml]$pom = Get-Content pom.xml
           $version = $pom.project.version
-          Write-Output "VERSION=$version"
-          Write-Output "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV
-          echo "::set-output name=version::$version"
+          echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          echo "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Build project with Maven
         run: mvn clean package
@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LabelPlusFX-${{ env.VERSION }}-Win64
-          path: ${{ github.workspace }}/script/jpackage/LabelPlusFX/n"
+          path: ${{ github.workspace }}/script/jpackage/LabelPlusFX/"
 
 
 
@@ -83,11 +83,12 @@ jobs:
           java-package: jdk-full
 
       - name: Extract version from pom.xml
-        id: version
+        id: extract-version
         run: |
           VERSION=$(xpath -q -e '/project/version/text()' pom.xml)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "::set-output name=version::$VERSION" 
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
 
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4
