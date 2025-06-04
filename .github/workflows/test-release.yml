@@ -124,12 +124,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Artifacts
+      - name: Download Windows Artifact
         uses: actions/download-artifact@v4
         with:
           name: LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
           path: release/
-      - uses: actions/download-artifact@v4
+
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
         with:
           name: LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
           path: release/
@@ -155,10 +157,10 @@ jobs:
         with:
           tag_name: v${{ needs.build-windows.outputs.version }}-test
           name: ${{ needs.build-windows.outputs.version }}-test
-          body_path: changelog.md
-          draft: false
-          prerelease: true
+          body: "This is a test changelog content"
+          draft: true
+          prerelease: false
           files: |
-            release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64.zip
-            release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac.zip
+            release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
+            release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
 
