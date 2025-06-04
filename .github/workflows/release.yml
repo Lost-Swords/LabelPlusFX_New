@@ -1,6 +1,12 @@
 name: Build & Package
 
 on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: string
+        description: "Deployment environment"
+        default: "dev"
   push:
     branches:
       - v2-fork # Trigger on push to v2-fork branch
@@ -15,17 +21,19 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    name: Build Windows Package on v2-fork
-
+    name: Build Windows Package
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 (Liberica Full)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'liberica'
+          java-package: jdk-full
 
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4
@@ -33,12 +41,13 @@ jobs:
           maven-version: 3.8.6
 
       - name: Extract version from pom.xml (Windows)
+        id: extract-version
         shell: pwsh
         run: |
           [xml]$pom = Get-Content pom.xml
           $version = $pom.project.version
-          Write-Output "VERSION=$version"
-          Write-Output "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV
+          echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          echo "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Build project with Maven
         run: mvn clean package
@@ -49,45 +58,38 @@ jobs:
           cd script\jpackage
           build.bat %VERSION%
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Archive Windows ZIP
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v${{ env.VERSION }}
-          release_name: LabelPlusFX ${{ env.VERSION }} Release
-          draft: false
-          prerelease: false
+          name: LabelPlusFX-${{ env.VERSION }}-Win64
+          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Win64.zip
 
-      - name: Upload Windows ZIP to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
-          asset_name: LabelPlusFX-${{ env.VERSION }}-Win64.zip
-          asset_content_type: application/zip
+
+
   build-macos:
     runs-on: macos-latest
-    name: Build macOS Package on v2-fork
+    name: Build macOS Package
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 with jpackage
+      - name: Set up JDK 17 (Liberica Full)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'liberica'
+          java-package: jdk-full
 
       - name: Extract version from pom.xml
-        id: version
+        id: extract-version
         run: |
           VERSION=$(xpath -q -e '/project/version/text()' pom.xml)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
 
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4
@@ -105,23 +107,57 @@ jobs:
           cd script/jpackage
           ./build.sh ${{ env.VERSION }}
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Archive macOS ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: LabelPlusFX-${{ env.VERSION }}-Mac
+          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
+
+  create-release:
+    needs: [ build-windows, build-macos ]
+    runs-on: ubuntu-latest
+    name: Create Draft GitHub Release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
+          path: release/
+
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
+          path: release/
+
+      - name: List files after download
+        run: ls -lh release/
+
+      - name: Extract Current Version Changelog
+        run: |
+          VERSION="${{ needs.build-windows.outputs.version }}"
+          echo "Extracting changelog for version: $VERSION"
+          head -40 CHANGELOG.md
+          sed -n "/^## \[$VERSION\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d' > changelog.md
+          cat changelog.md
+
+
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ env.VERSION }}
-          release_name: LabelPlusFX ${{ env.VERSION }} Release
+          tag_name: v${{ needs.build-windows.outputs.version }}
+          name: ${{ needs.build-windows.outputs.version }}
+          body_path: changelog.md
           draft: false
           prerelease: false
-
-      - name: Upload macOS ZIP to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
-          asset_name: LabelPlusFX-${{ env.VERSION }}-Mac.zip
-          asset_content_type: application/zip
+          files: |
+            release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64.zip
+            release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac.zip
