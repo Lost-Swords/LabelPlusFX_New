@@ -6,18 +6,8 @@ on:
     inputs:
       environment:
         type: string
-        description: "Deployment environment"
-        default: "dev"
-  push:
-    branches:
-      - v2-fork # Trigger on push to v2-fork branch
-    paths:
-      - 'pom.xml'
-  pull_request:
-    branches:
-      - v2-fork # Trigger on PRs targeting the v2-fork branch
-    paths:
-      - 'pom.xml'
+        description: "Production environment"
+        default: "pro"
 
 jobs:
   build-windows:
