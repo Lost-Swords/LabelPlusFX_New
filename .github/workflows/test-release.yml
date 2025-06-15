@@ -9,14 +9,6 @@ on:
         type: string
         description: "Deployment environment"
         default: "dev"
-  push:
-    branches:
-      - v2-fork-develop # Trigger on push to test branch
-    paths:
-      - 'pom.xml'
-      - 'script/jpackage/build.bat'
-      - 'script/jpackage/build.sh'
-      - '.github/workflows/test-release.yml'
 
 jobs:
   build-windows:
