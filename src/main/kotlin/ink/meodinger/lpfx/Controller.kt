@@ -1,27 +1,38 @@
 package ink.meodinger.lpfx
 
-import ink.meodinger.lpfx.action.*
-import ink.meodinger.lpfx.component.*
-import ink.meodinger.lpfx.component.common.*
+import com.fasterxml.jackson.databind.ObjectMapper
+import ink.meodinger.lpfx.action.ActionType
+import ink.meodinger.lpfx.action.ComplexAction
+import ink.meodinger.lpfx.action.LabelAction
+import ink.meodinger.lpfx.component.CLabelPane
+import ink.meodinger.lpfx.component.CTreeLabelItem
+import ink.meodinger.lpfx.component.common.CFileChooser
 import ink.meodinger.lpfx.component.dialog.*
-import ink.meodinger.lpfx.io.*
+import ink.meodinger.lpfx.io.export
+import ink.meodinger.lpfx.io.load
+import ink.meodinger.lpfx.io.pack
 import ink.meodinger.lpfx.options.*
-import ink.meodinger.lpfx.type.*
+import ink.meodinger.lpfx.type.LPFXTask
+import ink.meodinger.lpfx.type.TransFile
+import ink.meodinger.lpfx.type.TransGroup
+import ink.meodinger.lpfx.type.TransLabel
 import ink.meodinger.lpfx.util.Version
-import ink.meodinger.lpfx.util.component.*
+import ink.meodinger.lpfx.util.component.add
+import ink.meodinger.lpfx.util.component.expand
+import ink.meodinger.lpfx.util.component.s
+import ink.meodinger.lpfx.util.component.withContent
 import ink.meodinger.lpfx.util.doNothing
-import ink.meodinger.lpfx.util.event.*
-import ink.meodinger.lpfx.util.file.*
-import ink.meodinger.lpfx.util.image.*
-import ink.meodinger.lpfx.util.property.*
+import ink.meodinger.lpfx.util.event.isDoubleClick
+import ink.meodinger.lpfx.util.file.transfer
+import ink.meodinger.lpfx.util.image.resizeByRadius
+import ink.meodinger.lpfx.util.property.onChange
+import ink.meodinger.lpfx.util.property.onNew
+import ink.meodinger.lpfx.util.property.transform
 import ink.meodinger.lpfx.util.string.sortByDigit
 import ink.meodinger.lpfx.util.timer.TimerTaskManager
-
-import com.fasterxml.jackson.databind.ObjectMapper
 import javafx.application.Platform
 import javafx.beans.binding.Bindings
 import javafx.beans.binding.ObjectBinding
-import javafx.beans.property.SimpleBooleanProperty
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.collections.SetChangeListener
@@ -43,7 +54,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.imageio.ImageIO
 import javax.net.ssl.HttpsURLConnection
-import kotlin.collections.ArrayList
 import kotlin.math.roundToInt
 
 
@@ -723,6 +733,9 @@ class Controller(private val state: State) {
          * @return NOT_FOUND when have no next
          */
         fun getNextLabelItemIndex(from: Int, direction: Int): Int {
+            require(direction != 0) {
+                "Direction must not be zero. Got: $direction"
+            }
             // Make sure we have items to select
             cTreeView.getTreeItem(from).apply { this?.expand() }
 
@@ -749,13 +762,15 @@ class Controller(private val state: State) {
                     //  if selected first and try getting previous, return last
                     if (direction > 0) {
                         cPicBox.next()
-                        cTreeView.selectFirst()
-                        itemIndex = getNextLabelItemIndex(cTreeView.selectionModel.selectedIndex, direction-1)
+                        cTreeView.selectFirst(clear = true, scrollTo = false)
+                        cLabelPane.moveToLabel(cTreeView.selectedLabel)
+                        return
                     } else {
                         //  if selected last and try getting next, return first
                         cPicBox.back()
-                        cTreeView.selectLast()
-                        itemIndex = getNextLabelItemIndex(cTreeView.expandedItemCount, direction+1)
+                        cTreeView.selectLast(clear = true, scrollTo = false)
+                        cLabelPane.moveToLabel(cTreeView.selectedLabel)
+                       return
                     }
                 } else {
                     // if selected first and try getting previous, return last;
@@ -766,6 +781,7 @@ class Controller(private val state: State) {
             if(itemIndex == NOT_FOUND) {
                 return
             }
+            Logger.info("moveCurrLabelTo$itemIndex","moveCurrLabelTo")
             val item = cTreeView.getTreeItem(itemIndex) as CTreeLabelItem
             cLabelPane.moveToLabel(item.transLabel.index)
             cTreeView.selectLabel(item.transLabel.index, clear = true, scrollTo = true)
