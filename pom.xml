@@ -73,12 +73,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.13.2</version>
+            <version>2.13.4</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.13.2</version>
+            <version>2.13.4</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -86,14 +86,14 @@
             <version>2.13.4.2</version>
         </dependency>
 
-
+        <!--imageio-->
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-webp</artifactId>
             <version>3.12.0</version>
         </dependency>
 
-
+        <!--jsoup-->
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
@@ -112,19 +112,18 @@
 
     <build>
         <resources>
+            <!-- Configure resource filtering for main resources -->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <!-- 显式排除二进制文件 -->
                 <excludes>
                     <exclude>**/*.zip</exclude>
-                    <exclude>**/*.bin</exclude> <!-- 其他二进制文件扩展名 -->
+                    <exclude>**/*.bin</exclude>
                 </excludes>
             </resource>
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
-                <!-- 只包含需要原样复制的二进制文件 -->
                 <includes>
                     <include>**/*.zip</include>
                 </includes>
@@ -140,15 +139,20 @@
 
                 <executions>
                     <execution>
+                        <!-- Add module info for TwelveMonkeys imageio-webp -->
                         <id>module-imageio-webp</id>
                         <goals>
                             <goal>add-module-info</goal>
                         </goals>
                         <phase>package</phase>
                         <configuration>
+                            <!-- Output directory set to build folder -->
                             <outputDirectory>${project.build.directory}/build</outputDirectory>
+                            <!-- Overwrite existing files -->
                             <overwriteExistingFiles>true</overwriteExistingFiles>
+                            <!-- Ignore warnings during build -->
                             <failOnWarning>false</failOnWarning>
+                            <!-- Additional jdeps arguments -->
                             <jdepsExtraArgs>
                                 <arg>--module-path</arg>
                                 <arg>${project.build.directory}/build</arg>
@@ -156,7 +160,9 @@
                                 <arg>--multi-release</arg>
                                 <arg>17</arg>
                             </jdepsExtraArgs>
+                            <!-- Module configurations -->
                             <modules>
+                                <!-- Module: com.twelvemonkeys.common.lang -->
                                 <module>
                                     <artifact>
                                         <groupId>com.twelvemonkeys.common</groupId>
@@ -167,6 +173,7 @@
                                         <requires>static java.desktop</requires>
                                     </moduleInfo>
                                 </module>
+                                <!-- Module: com.twelvemonkeys.common.io -->
                                 <module>
                                     <artifact>
                                         <groupId>com.twelvemonkeys.common</groupId>
@@ -177,6 +184,7 @@
                                         <requires>static java.desktop;</requires>
                                     </moduleInfo>
                                 </module>
+                                <!-- Module: com.twelvemonkeys.common.image -->
                                 <module>
                                     <artifact>
                                         <groupId>com.twelvemonkeys.common</groupId>
@@ -188,6 +196,7 @@
                                         <exports>com.twelvemonkeys.image;</exports>
                                     </moduleInfo>
                                 </module>
+                                <!-- Module: com.twelvemonkeys.imageio.core -->
                                 <module>
                                     <artifact>
                                         <groupId>com.twelvemonkeys.imageio</groupId>
@@ -196,7 +205,8 @@
                                     </artifact>
                                     <moduleInfo>
                                         <name>com.twelvemonkeys.imageio.core</name>
-                                        <requires>static java.desktop;
+                                        <requires>
+                                            static java.desktop;
                                             com.twelvemonkeys.common.lang;
                                             com.twelvemonkeys.common.image;
                                             com.twelvemonkeys.common.io;
@@ -210,6 +220,7 @@
                                         </exports>
                                     </moduleInfo>
                                 </module>
+                                <!-- Module: com.twelvemonkeys.imageio.metadata -->
                                 <module>
                                     <artifact>
                                         <groupId>com.twelvemonkeys.imageio</groupId>
@@ -217,9 +228,13 @@
                                     </artifact>
                                     <moduleInfo>
                                         <name>com.twelvemonkeys.imageio.metadata</name>
-                                        <requires>static java.desktop;transitive com.twelvemonkeys.imageio.core;</requires>
+                                        <requires>
+                                            static java.desktop;
+                                            transitive com.twelvemonkeys.imageio.core;
+                                        </requires>
                                     </moduleInfo>
                                 </module>
+                                <!-- Module: com.twelvemonkeys.imageio.webp -->
                                 <module>
                                     <artifact>
                                         <groupId>com.twelvemonkeys.imageio</groupId>
@@ -227,7 +242,8 @@
                                     </artifact>
                                     <moduleInfo>
                                         <name>com.twelvemonkeys.imageio.webp</name>
-                                        <requires>static java.desktop;
+                                        <requires>
+                                            static java.desktop;
                                             transitive com.twelvemonkeys.core;
                                             transitive com.twelvemonkeys.imageio.metadata;
                                         </requires>
@@ -284,12 +300,13 @@
                 </executions>
             </plugin>
 
-            <!-- Run the Application (mvn exec:java@run) -->
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <executions>
+                    <!-- Run the Application (mvn exec:java@run) -->
                     <execution>
                         <id>run</id>
                         <goals>
@@ -303,6 +320,7 @@
                             </arguments>
                         </configuration>
                     </execution>
+                    <!-- Run the dic (mvn exec:java@run-bat) -->
                     <execution>
                         <id>dict</id>
                         <goals>
@@ -317,6 +335,7 @@
                             </arguments>
                         </configuration>
                     </execution>
+                    <!-- Run the bat (mvn exec:java@run-bat) -->
                     <execution>
                         <id>run-bat</id> <!-- ID -->
                         <phase>deploy</phase> <!-- runtime-->
@@ -374,6 +393,13 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- Update dependency versions -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.15.0</version>
             </plugin>
         </plugins>
     </build>
