@@ -95,9 +95,9 @@ class CComboBox<T> : HBox() {
         innerBox.selectionModelProperty().addListener(WeakChangeListener { _, o, n ->
             o?.selectedIndexProperty()?.removeListener(listenerSelection)
             n?.selectedIndexProperty()?.addListener(listenerSelection)
-
             index = selectionModel.selectedIndex
         })
+        innerBox.enableWheelScrolling()
 
         back.setOnMouseClicked { back() }
         next.setOnMouseClicked { next() }

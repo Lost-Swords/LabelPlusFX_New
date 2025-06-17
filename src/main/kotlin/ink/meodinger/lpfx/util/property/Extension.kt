@@ -3,6 +3,9 @@ package ink.meodinger.lpfx.util.property
 import javafx.beans.binding.Bindings
 import javafx.beans.binding.IntegerBinding
 import javafx.collections.*
+import javafx.scene.control.ChoiceDialog
+import javafx.scene.control.ComboBox
+import javafx.scene.input.ScrollEvent
 
 
 /**
@@ -72,4 +75,38 @@ fun <E> ObservableList<E>.observableSorted(sorter: (List<E>) -> List<E>): Observ
  */
 fun <E> ObservableList<E>.observableIndexOf(element: E): IntegerBinding {
     return Bindings.createIntegerBinding({ indexOf(element) }, this)
+}
+
+/**
+ * Enable wheel scrolling for the ChoiceDialog
+ */
+fun <T> ChoiceDialog<T>.enableWheelScrolling() {
+    dialogPane.addEventFilter(ScrollEvent.SCROLL) { event ->
+        val comboBox = dialogPane.scene.lookup(".combo-box") as? ComboBox<*> ?: return@addEventFilter
+        val delta = if (event.deltaY > 0) -1 else 1
+        val newIndex = comboBox.selectionModel.selectedIndex + delta
+        if (newIndex in 0 until comboBox.items.size) {
+            comboBox.selectionModel.select(newIndex)
+            event.consume()
+        }
+    }
+}
+
+/**
+ * Enable wheel scrolling for the ComboBox
+ */
+fun <T> ComboBox<T>.enableWheelScrolling(wrapAround: Boolean = false) {
+    addEventFilter(ScrollEvent.SCROLL) { event ->
+        if (isFocused || boundsInParent.contains(event.x, event.y)) {
+            val delta = if (event.deltaY > 0) -1 else 1
+            var newIndex = selectionModel.selectedIndex + delta
+            when {
+                wrapAround && newIndex < 0 -> newIndex = items.size - 1
+                wrapAround && newIndex >= items.size -> newIndex = 0
+                newIndex !in 0 until items.size -> return@addEventFilter
+            }
+            selectionModel.select(newIndex)
+            event.consume()
+        }
+    }
 }

@@ -61,8 +61,14 @@ class CTextMenu(
 
         //init QuickInputItems
         initQuickInputItems(quickInput)
-        textField.contextMenu = ContextMenu(
-            undoMI, redoMI, cutMI, copyMI, pasteMI, deleteMI, SeparatorMenuItem(), selectAllMI, quickInput
+        items.addAll(
+            undoMI, redoMI,
+            SeparatorMenuItem(),
+            cutMI, copyMI, pasteMI, deleteMI,
+            SeparatorMenuItem(),
+            selectAllMI,
+            SeparatorMenuItem(),
+            quickInput
         )
     }
 

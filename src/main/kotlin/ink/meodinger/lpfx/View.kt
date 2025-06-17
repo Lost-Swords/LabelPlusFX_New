@@ -486,6 +486,7 @@ class View(private val state: State) : BorderPane() {
                         if (it == NOT_FOUND) emptyString() else it.toString()
                     })
                     withContent(cTransArea) {
+                        contextMenu = cTextMenu
                         isWrapText = true
                         disableProperty().bind(!state.openedProperty())
                         ligatureRulesProperty().bind(Settings.ligatureRulesProperty())

@@ -11,6 +11,7 @@ import ink.meodinger.lpfx.util.component.withContent
 import ink.meodinger.lpfx.component.dialog.showError
 import ink.meodinger.lpfx.type.TransLabel
 import ink.meodinger.lpfx.util.doNothing
+import ink.meodinger.lpfx.util.property.enableWheelScrolling
 import ink.meodinger.lpfx.util.property.transform
 
 import javafx.collections.ListChangeListener
@@ -156,6 +157,7 @@ class CTreeMenu(
 
         val groups = state.transFile.groupList.map(TransGroup::name)
         val dialog = ChoiceDialog(groups[0], groups).apply {
+            enableWheelScrolling()
             initOwner(state.stage)
             title = I18N["context.move_to.dialog.title"]
             contentText =
@@ -201,7 +203,8 @@ class CTreeMenu(
         val item = items[0]
         val labels = state.transFile.getTransList(state.currentPicName).map(TransLabel::index)
 
-        val dialog = ChoiceDialog(labels[0], labels).apply {
+        val dialog = ChoiceDialog(item.transLabel.index, labels).apply {
+            enableWheelScrolling()
             initOwner(state.stage)
             title = I18N["context.move_to_index.dialog.title"]
             contentText = I18N["context.move_to_index.dialog.header"]
