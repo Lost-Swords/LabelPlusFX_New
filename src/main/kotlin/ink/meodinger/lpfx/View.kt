@@ -15,8 +15,9 @@ import ink.meodinger.lpfx.util.property.*
 import ink.meodinger.lpfx.util.string.deleteTrailing
 import ink.meodinger.lpfx.util.string.emptyString
 import ink.meodinger.lpfx.util.string.sortByDigit
-import ink.meodinger.lpfx.util.translator.convert2Simplified
-import ink.meodinger.lpfx.util.translator.convert2Traditional
+import ink.meodinger.lpfx.io.TranslationConstants
+import ink.meodinger.lpfx.io.convert2Simplified
+import ink.meodinger.lpfx.io.convert2Traditional
 
 import javafx.animation.Interpolator
 import javafx.animation.KeyFrame
@@ -539,10 +540,10 @@ class View(private val state: State) : BorderPane() {
     }
 
     private fun switchViewMode() {
-        state.viewMode = ViewMode.values()[(state.viewMode.ordinal + 1) % ViewMode.values().size]
+        state.viewMode = ViewMode.entries.toTypedArray()[(state.viewMode.ordinal + 1) % ViewMode.entries.size]
     }
     private fun switchWorkMode() {
-        state.workMode = WorkMode.values()[(state.workMode.ordinal + 1) % WorkMode.values().size]
+        state.workMode = WorkMode.entries.toTypedArray()[(state.workMode.ordinal + 1) % WorkMode.entries.size]
         state.viewMode = Settings.viewModes[state.workMode.ordinal]
     }
 
@@ -793,6 +794,7 @@ class View(private val state: State) : BorderPane() {
             Settings.UseCustomBaiduKey        -> Settings.useCustomBaiduKey           = value as Boolean
             Settings.BaiduTransLateKey        -> Settings.baiduTransLateKey           = value as String
             Settings.BaiduTransLateAppId      -> Settings.baiduTransLateAppId         = value as String
+            Settings.SelectedTranslationAPI   -> Settings.selectedTranslationAPI      = TranslationAPI.fromString(value as String)
             else -> doNothing()
         }
     }
@@ -802,7 +804,6 @@ class View(private val state: State) : BorderPane() {
         Logger.info("Generated logs settings", "MenuBar")
         Logger.debug("got $map", "MenuBar")
 
-        @Suppress("UNCHECKED_CAST")
         for ((key, value) in map) when (key) {
             Settings.LogLevel -> Settings.logLevel = value as Logger.LogLevel
             else -> doNothing()
@@ -840,7 +841,7 @@ class View(private val state: State) : BorderPane() {
         val converter = if (inverse) ::convert2Traditional else ::convert2Simplified
 
         val task = object : LPFXTask<Unit>() {
-            val DELIMITER = "#|#"
+            val DELIMITER = TranslationConstants.DELIMITER
             val state = this@View.state
 
             override fun call() {
@@ -865,6 +866,7 @@ class View(private val state: State) : BorderPane() {
                             return
                         }
                     }.iterator()
+                    Logger.info("Converting [$picName]", "MenuBar")
                     // Sometimes will get whitespaces at label start
                     labels.mapTo(actions) { LabelAction(ActionType.CHANGE, state, picName, it, newText = iterator.next().trim()) }
                 }

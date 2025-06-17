@@ -11,7 +11,7 @@ import ink.meodinger.lpfx.util.event.isDoubleClick
 import ink.meodinger.lpfx.util.property.*
 import ink.meodinger.lpfx.util.string.emptyString
 import ink.meodinger.lpfx.util.string.remove
-import ink.meodinger.lpfx.util.translator.translateJP
+import ink.meodinger.lpfx.io.translateJP
 
 import org.jsoup.Jsoup
 import org.jsoup.nodes.TextNode
@@ -107,7 +107,7 @@ class OnlineDict : Stage() {
                         // Mark immediately when this event will be consumed
                         it.consume() // disable further propagation
 
-                        transState = TransState.values()[(transState.ordinal + 1) % TransState.values().size]
+                        transState = TransState.entries.toTypedArray()[(transState.ordinal + 1) % TransState.entries.size]
                     }
 
                     if (Config.enableIMEAssistance) {

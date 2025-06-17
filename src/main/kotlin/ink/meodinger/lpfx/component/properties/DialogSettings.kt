@@ -27,9 +27,13 @@ import javafx.scene.control.*
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.*
 import javafx.scene.paint.Color
+import javafx.scene.text.Text
 import javafx.scene.text.TextAlignment
+import javafx.scene.text.TextFlow
 import javafx.util.Duration
 import javafx.util.StringConverter
+import java.awt.Desktop
+import java.net.URL
 import kotlin.math.ceil
 
 
@@ -103,9 +107,25 @@ class DialogSettings : AbstractPropertiesDialog() {
     private val xCheckUseMeo = CheckBox(I18N["settings.other.meo_default"])
     private val xCheckUseTmp = CheckBox(I18N["settings.other.template.enable"])
     private val xFieldTemplate = TextField()
-    private val xCheckUseCustomBaiduKey = CheckBox(I18N["settings.other.Translate_keys.enable"])
-    private val xFieldBaiduTranslateKey = TextField()
-    private val xFieldBaiduTranslateAppId = TextField()
+
+    // Tool
+    private val tComboTranslationAPI = CComboBox<TranslationAPI>()
+    private val tCheckUseCustomBaiduKey = CheckBox(I18N["settings.tool.translate_keys.enable"])
+    private val tFieldBaiduTranslateKey = TextField()
+    private val tFieldBaiduTranslateAppId = TextField()
+    private val tTranslateTextFlow = TextFlow().apply {
+        children += Text(I18N["settings.tool.fan_hua_ji.description.prefix"])
+        children += Hyperlink(I18N["settings.tool.fan_hua_ji.description.link_text"]).apply {
+            setOnAction {
+                val desktop = Desktop.getDesktop()
+                if (Desktop.isDesktopSupported() && desktop.isSupported(Desktop.Action.BROWSE)) {
+                    desktop.browse(URL(INFO["fanHuaJi.url"]).toURI())
+                }
+            }
+        }
+        children += Text(I18N["settings.tool.fan_hua_ji.description.suffix"])
+    }
+
 
     init {
         title = I18N["settings.title"]
@@ -181,20 +201,20 @@ class DialogSettings : AbstractPropertiesDialog() {
                     add(Label(I18N["mode.work.input"]), 0, 0)
                     add(mComboInput, 1, 0) {
                         prefWidth = 160.0
-                        items = FXCollections.observableList(ViewMode.values().toList())
+                        items = FXCollections.observableList(ViewMode.entries)
                         isWrapped = true
                     }
                     add(Label(I18N["mode.work.label"]), 0, 1)
                     add(mComboLabel, 1, 1) {
                         prefWidth = 160.0
-                        items = FXCollections.observableList(ViewMode.values().toList())
+                        items = FXCollections.observableList(ViewMode.entries)
                         isWrapped = true
                     }
                     add(HBox(), 0, 2)
                     add(Label(I18N["settings.mode.scale.label"]), 0, 3, 2, 1)
                     add(mComboScale, 0, 4, 2, 1) {
                         prefWidth = 224.0
-                        items = FXCollections.observableList(CLabelPane.NewPictureScale.values().toList())
+                        items = FXCollections.observableList(CLabelPane.NewPictureScale.entries)
                         isWrapped = true
                     }
                     add(HBox(), 0, 5)
@@ -357,6 +377,40 @@ class DialogSettings : AbstractPropertiesDialog() {
                     }
                 }
             }
+            add(I18N["settings.tool.title"]) {
+                withContent(GridPane()) {
+                    alignment = Pos.TOP_CENTER
+                    padding = Insets(16.0)
+                    vgap = 16.0
+                    hgap = 16.0
+
+                    //   0        1
+                    // 1 tComboTranslationAPI <>
+                    // 2 xCheckUseCustomBaiduKey
+                    // 3 Translate_keys.key
+                    // 4 Translate_keys.app_id
+                    // 4
+
+                    add(Label(I18N["settings.tool.translate.api"]), 0, 0)
+                    add(tComboTranslationAPI, 1, 0) {
+                        prefWidth = 160.0
+                        items = FXCollections.observableList(TranslationAPI.entries)
+                        selectionModel.select(Settings.selectedTranslationAPI)
+                    }
+                    add(tCheckUseCustomBaiduKey, 0, 1, 2, 1)
+                    add(Label(I18N["settings.tool.translate_keys.key"]), 0, 2)
+                    add(tFieldBaiduTranslateKey, 1, 2) {
+                        disableProperty().bind(!tCheckUseCustomBaiduKey.selectedProperty())
+
+                    }
+                    add(Label(I18N["settings.tool.translate_keys.app_id"]), 0, 3)
+                    add(tFieldBaiduTranslateAppId, 1, 3) {
+                        disableProperty().bind(!tCheckUseCustomBaiduKey.selectedProperty())
+                    }
+                    add(Separator(), 0, 5, 2, 1)
+                    add(tTranslateTextFlow,0,6,2,1)
+                }
+            }
             add(I18N["settings.other.title"]) {
                 withContent(GridPane()) {
                     alignment = Pos.TOP_CENTER
@@ -391,16 +445,7 @@ class DialogSettings : AbstractPropertiesDialog() {
                             showDelay = Duration(500.0)
                         }
                     }
-                    add(xCheckUseCustomBaiduKey, 0, 8, 2, 1)
-                    add(Label(I18N["settings.other.Translate_keys.key"]), 0, 9)
-                    add(xFieldBaiduTranslateKey, 1, 9) {
-                        disableProperty().bind(!xCheckUseCustomBaiduKey.selectedProperty())
 
-                    }
-                    add(Label(I18N["settings.other.Translate_keys.app_id"]), 0, 10)
-                    add(xFieldBaiduTranslateAppId, 1, 10) {
-                        disableProperty().bind(!xCheckUseCustomBaiduKey.selectedProperty())
-                    }
                 }
             }
         }
@@ -598,6 +643,12 @@ class DialogSettings : AbstractPropertiesDialog() {
         lCheckTextOpaque.isSelected = Settings.labelTextOpaque
         lCheckSelectedStroke.isSelected = Settings.labelSelectedStroke
 
+        // Tool
+        tComboTranslationAPI.select(Settings.selectedTranslationAPI)
+        tCheckUseCustomBaiduKey.isSelected = Settings.useCustomBaiduKey
+        tFieldBaiduTranslateKey.text = Settings.baiduTransLateKey
+        tFieldBaiduTranslateAppId.text = Settings.baiduTransLateAppId
+
         // Other
         xUseSWPrism.isSelected  = Settings.useSWPrism
         xCheckUpdate.isSelected = Settings.autoCheckUpdate
@@ -608,9 +659,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         xCheckUseTmp.isSelected = Settings.useExportNameTemplate
         xFieldTemplate.text = Settings.exportNameTemplate
 
-        xCheckUseCustomBaiduKey.isSelected = Settings.useCustomBaiduKey
-        xFieldBaiduTranslateKey.text = Settings.baiduTransLateKey
-        xFieldBaiduTranslateAppId.text = Settings.baiduTransLateAppId
+
     }
 
     // ----- Result convert ---- //
@@ -682,8 +731,8 @@ class DialogSettings : AbstractPropertiesDialog() {
     private fun convertMode(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
-        map[Settings.ViewModes] = listOf(mComboInput.index, mComboLabel.index).map(ViewMode.values()::get)
-        map[Settings.NewPictureScale] = mComboScale.index.let(CLabelPane.NewPictureScale.values()::get)
+        map[Settings.ViewModes] = listOf(mComboInput.index, mComboLabel.index).map(ViewMode.entries.toTypedArray()::get)
+        map[Settings.NewPictureScale] = mComboScale.index.let(CLabelPane.NewPictureScale.entries.toTypedArray()::get)
         map[Settings.UseWheelToScale] = mCheckWheel.isSelected
 
         return map
@@ -698,6 +747,15 @@ class DialogSettings : AbstractPropertiesDialog() {
 
         return map
     }
+    private fun convertTool(): Map<String, Any> {
+        val map = HashMap<String, Any>()
+
+        map[Settings.SelectedTranslationAPI] = tComboTranslationAPI.selectionModel.selectedItem.name
+        map[Settings.UseCustomBaiduKey] = tCheckUseCustomBaiduKey.isSelected
+        map[Settings.BaiduTransLateKey] = tFieldBaiduTranslateKey.text
+        map[Settings.BaiduTransLateAppId] = tFieldBaiduTranslateAppId.text
+        return map
+    }
     private fun convertOther(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
@@ -709,9 +767,6 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.UseMeoFileAsDefault] = xCheckUseMeo.isSelected
         map[Settings.UseExportNameTemplate] = xCheckUseTmp.isSelected
         map[Settings.ExportNameTemplate] = xFieldTemplate.text
-        map[Settings.UseCustomBaiduKey] = xCheckUseCustomBaiduKey.isSelected
-        map[Settings.BaiduTransLateKey] = xFieldBaiduTranslateKey.text
-        map[Settings.BaiduTransLateAppId] = xFieldBaiduTranslateAppId.text
 
         return map
     }
@@ -723,6 +778,7 @@ class DialogSettings : AbstractPropertiesDialog() {
             putAll(convertQuickInput())
             putAll(convertMode())
             putAll(convertLabel())
+            putAll(convertTool())
             putAll(convertOther())
         }
     }

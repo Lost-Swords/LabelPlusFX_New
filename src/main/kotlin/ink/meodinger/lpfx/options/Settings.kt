@@ -1,6 +1,7 @@
 package ink.meodinger.lpfx.options
 
 import ink.meodinger.lpfx.I18N
+import ink.meodinger.lpfx.TranslationAPI
 import ink.meodinger.lpfx.ViewMode
 import ink.meodinger.lpfx.component.CLabelPane
 import ink.meodinger.lpfx.get
@@ -54,9 +55,11 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     const val UseExportNameTemplate    = "UseExportNameTemplate"
     const val ExportNameTemplate       = "ExportNameTemplate"
     const val LogLevel                 = "LogLevel"
+
     const val UseCustomBaiduKey        = "UseCustomBaiduKey"
     const val BaiduTransLateKey        = "BaiduTransLateKey"
     const val BaiduTransLateAppId      = "BaiduTransLateAppId"
+    const val SelectedTranslationAPI   = "SelectedTranslationAPI"
 
     // ----- Default ----- //
 
@@ -108,6 +111,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         CProperty(UseCustomBaiduKey, false),
         CProperty(BaiduTransLateKey, "lkjooeJUgW0spOctSbZb"),
         CProperty(BaiduTransLateAppId, "20200730000529751"),
+        CProperty(SelectedTranslationAPI, TranslationAPI.FanHuaJi.ordinal)
     )
 
     private val defaultGroupNameListProperty: ListProperty<String> = SimpleListProperty()
@@ -208,6 +212,11 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     fun baiduTransLateAppIdProperty(): StringProperty = baiduTransLateAppIdProperty
     var baiduTransLateAppId: String by baiduTransLateAppIdProperty
 
+    private val selectedTranslationAPIProperty: ObjectProperty<TranslationAPI> = SimpleObjectProperty()
+    fun selectedTranslationAPIProperty(): ObjectProperty<TranslationAPI> = selectedTranslationAPIProperty
+    var selectedTranslationAPI: TranslationAPI by selectedTranslationAPIProperty
+
+
 
     init { useDefault() }
 
@@ -220,8 +229,8 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         isGroupCreateOnNewTransList = FXCollections.observableList(this[IsGroupCreateOnNewTrans].asBooleanList())
         ligatureRules               = FXCollections.observableList(this[LigatureRules].asPairList())
         quickInputTexts                 = FXCollections.observableList(this[QuickInputTexts].asStringList())
-        viewModes                   = FXCollections.observableList(this[ViewModes].asIntegerList().map(ViewMode.values()::get))
-        newPictureScalePicture      = CLabelPane.NewPictureScale.values()[this[NewPictureScale].asInteger()]
+        viewModes                   = FXCollections.observableList(this[ViewModes].asIntegerList().map(ViewMode.entries.toTypedArray()::get))
+        newPictureScalePicture      = CLabelPane.NewPictureScale.entries.toTypedArray()[this[NewPictureScale].asInteger()]
         useWheelToScale             = this[UseWheelToScale].asBoolean()
         labelRadius                 = this[LabelRadius].asDouble()
         labelColorOpacity           = this[LabelColorOpacity].asInteger(16) / 255.0
@@ -235,10 +244,12 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         useMeoFileAsDefault         = this[UseMeoFileAsDefault].asBoolean()
         useExportNameTemplate       = this[UseExportNameTemplate].asBoolean()
         exportNameTemplate          = this[ExportNameTemplate].asString()
-        logLevel                    = Logger.LogLevel.values()[this[LogLevel].asInteger()]
+        logLevel                    = Logger.LogLevel.entries.toTypedArray()[this[LogLevel].asInteger()]
         useCustomBaiduKey           = this[UseCustomBaiduKey].asBoolean()
         baiduTransLateKey           = this[BaiduTransLateKey].asString()
         baiduTransLateAppId         = this[BaiduTransLateAppId].asString()
+        selectedTranslationAPI      = TranslationAPI.fromString(this[SelectedTranslationAPI].asString())
+
     }
 
     @Throws(IOException::class)
@@ -267,6 +278,8 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         this[UseCustomBaiduKey]       .set(useCustomBaiduKey)
         this[BaiduTransLateKey]       .set(baiduTransLateKey)
         this[BaiduTransLateAppId]     .set(baiduTransLateAppId)
+        this[SelectedTranslationAPI]  .set(selectedTranslationAPI.name)
+
         save(this)
     }
 

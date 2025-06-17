@@ -81,7 +81,7 @@ class DialogLogs : AbstractPropertiesDialog() {
 
             add(Label(I18N["logs.label.level"]), 0, 0)
             add(comboLevel, 1, 0) {
-                items = FXCollections.observableList(LogLevel.values().toList())
+                items = FXCollections.observableList(LogLevel.entries)
             }
 
             val labelSent = Label()
@@ -154,7 +154,7 @@ class DialogLogs : AbstractPropertiesDialog() {
 
     override fun convertResult(): Map<String, Any> {
         return mapOf(
-            Settings.LogLevel to comboLevel.index.let(LogLevel.values()::get),
+            Settings.LogLevel to comboLevel.index.let(LogLevel.entries.toTypedArray()::get),
         )
     }
 }

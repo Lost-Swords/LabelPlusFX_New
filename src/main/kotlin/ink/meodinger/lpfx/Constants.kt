@@ -5,7 +5,6 @@ import ink.meodinger.lpfx.util.component.genTextFormatter
 
 import javafx.scene.control.TextFormatter
 import java.io.File
-import java.lang.ProcessHandle.Info
 
 
 /**
@@ -188,4 +187,29 @@ enum class FileType(val description: String, val extension: String) {
  */
 fun genGeneralFormatter(): TextFormatter<String> = genTextFormatter {
     it.text.trim().replace(Regex("[|, ]"), "_")
+}
+
+
+/**
+ * Translation API for cht2zh and zh2cht
+ */
+enum class TranslationAPI {
+    FanHuaJi,
+    BaiduTranslate;
+
+    companion object {
+        private val DEFAULT = FanHuaJi
+        fun fromString(name: String): TranslationAPI {
+            return try {
+                valueOf(name)
+            } catch (e: IllegalArgumentException) {
+                DEFAULT
+            }
+        }
+    }
+
+    override fun toString(): String = when (this) {
+        FanHuaJi -> I18N["settings.tool.translate.api.fan_hua_ji"]
+        BaiduTranslate -> I18N["settings.tool.translate.api.baidu"]
+    }
 }
