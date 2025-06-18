@@ -730,16 +730,17 @@ class Controller(private val state: State) {
 
         /**
          * Find next LabelItem as int index.
+         * @param  from  start index
+         * @param  forward true for next, false for previous
          * @return NOT_FOUND when have no next
          */
-        fun getNextLabelItemIndex(from: Int, direction: Int): Int {
-            require(direction != 0) {
-                "Direction must not be zero. Got: $direction"
-            }
+        fun getNextLabelItemIndex(from: Int, forward: Boolean = true): Int {
             // Make sure we have items to select
             cTreeView.getTreeItem(from).apply { this?.expand() }
 
+            val direction = if (forward) 1 else -1
             var index = from + direction
+
             while (true) {
                 val item = cTreeView.getTreeItem(index) ?: return NOT_FOUND
                 if (item is CTreeLabelItem) return index
@@ -751,16 +752,17 @@ class Controller(private val state: State) {
 
         /**
          * move CurrLabel to next/previous LabelItem
-         * @param direction 1 for next, -1 for previous
+         * @param  forward true for next, false for previous
+         * @param  isBreakPage true if break page
          * @return  true if succeeded, false if failed
          */
-        fun moveCurrLabelTo(direction: Int,isBreakPage: Boolean = false) {
-            var itemIndex = getNextLabelItemIndex(cTreeView.selectionModel.selectedIndex, direction)
+        fun moveCurrLabelTo(forward: Boolean = true,isBreakPage: Boolean = false) {
+            var itemIndex = getNextLabelItemIndex(cTreeView.selectionModel.selectedIndex, forward)
             if (itemIndex == NOT_FOUND) {
                 //  if no next/previous LabelItem, try to find next/previous LabelItem
                 if (isBreakPage) {
                     //  if selected first and try getting previous, return last
-                    if (direction > 0) {
+                    if (forward) {
                         cPicBox.next()
                         cTreeView.selectFirst(clear = true, scrollTo = false)
                         cLabelPane.moveToLabel(cTreeView.selectedLabel)
@@ -775,7 +777,7 @@ class Controller(private val state: State) {
                 } else {
                     // if selected first and try getting previous, return last;
                     // if selected last and try getting next, return first;
-                    itemIndex = getNextLabelItemIndex(if (direction == 1) 0 else cTreeView.expandedItemCount, direction)
+                    itemIndex = getNextLabelItemIndex(if (forward) 0 else cTreeView.expandedItemCount, forward)
                 }
             }
             if(itemIndex == NOT_FOUND) {
@@ -813,14 +815,14 @@ class Controller(private val state: State) {
             // Make sure we'll not get into endless LabelItem find loop
             if (state.transFile.getTransList(state.currentPicName).isEmpty()) return@handler
             // Direction
-            val itemShift: Int = when (it.code) {
-                KeyCode.UP -> -1
-                KeyCode.DOWN -> 1
+            val forward: Boolean = when (it.code) {
+                KeyCode.UP -> false
+                KeyCode.DOWN -> true
                 else -> return@handler
             }
             // Mark immediately when this event will be consumed
             it.consume() // stop further propagation
-            moveCurrLabelTo(itemShift)
+            moveCurrLabelTo(forward = forward)
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangeLabelHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangeLabelHandler)
@@ -834,10 +836,10 @@ class Controller(private val state: State) {
             // transform
             if (it.isShiftDown) {
                    // Go to previous label
-                    moveCurrLabelTo(direction = -1,  isBreakPage = true)
+                    moveCurrLabelTo(forward = false,  isBreakPage = true)
             } else {
                     // Go to next label
-                    moveCurrLabelTo(direction = 1,  isBreakPage = true)
+                    moveCurrLabelTo(forward = true,  isBreakPage = true)
             }
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, enterKeyTransformerHandler)
@@ -852,16 +854,14 @@ class Controller(private val state: State) {
             when (it.code) {
                 KeyCode.C -> {
                     // Copy the text of the selected label item
-                    @Suppress("UNCHECKED_CAST")
                     val treeItem = cTreeView.getTreeItem(cTreeView.selectionModel.selectedIndex) as CTreeLabelItem
                     cTreeView.copyLabelText(treeItem.transLabel.index)
                 }
                 KeyCode.V -> {
                     // Paste text to selected label items
-                    @Suppress("UNCHECKED_CAST")
                     val selectItems: Collection<CTreeLabelItem> =
                         cTreeView.selectionModel.selectedIndices.map { cTreeView.getTreeItem(it) }
-                            .filter { it is CTreeLabelItem } as List<CTreeLabelItem>
+                            .filterIsInstance<CTreeLabelItem>() 
 
                     cTreeView.pasteLabelsText(selectItems.map { it.transLabel.index }, state)
                 }

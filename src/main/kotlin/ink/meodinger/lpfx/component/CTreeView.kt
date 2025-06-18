@@ -196,11 +196,23 @@ class CTreeView: TreeView<String>() {
         labelItems.remove(labelItem)
     }
 
+    /**
+     * Select root item.
+     * @param clear Whether clear selection before select.
+     * @param scrollTo Whether scroll to selected item.
+     */
     fun selectRoot(clear: Boolean, scrollTo: Boolean) {
         if (clear) clearSelection()
         selectionModel.select(root)
         if (scrollTo) scrollTo(getRow(root))
     }
+    /**
+     * Select first label in the tree.
+     * If no label exists, select root.
+     * @param clear Whether clear selection before select.
+     * @param scrollTo Whether scroll to selected item.
+     * @return The index of first label.
+     */
     fun selectFirst(clear: Boolean = true, scrollTo: Boolean = true) : Int {
         if(labelItems.isEmpty()) {
             selectRoot(clear, scrollTo)
@@ -209,6 +221,14 @@ class CTreeView: TreeView<String>() {
         selectLabel(labelItems[0].transLabel.index, clear, scrollTo)
         return labelItems[0].transLabel.index
     }
+
+    /**
+     * Select last label in the tree.
+     * If no label exists, select root.
+     * @param clear Whether clear selection before select.
+     * @param scrollTo Whether scroll to selected item.
+     * @return The index of last label.
+     */
     fun selectLast(clear: Boolean = true, scrollTo: Boolean = true) : Int {
         if(labelItems.isEmpty()) {
             selectRoot(clear, scrollTo)
@@ -217,6 +237,13 @@ class CTreeView: TreeView<String>() {
         selectLabel(labelItems.last().transLabel.index, clear, scrollTo)
         return labelItems.last().transLabel.index
     }
+
+    /**
+     * Select group item.
+     * @param groupName The name of group.
+     * @param clear Whether clear selection before select.
+     * @param scrollTo Whether scroll to selected item.
+     */
     fun selectGroup(groupName: String, clear: Boolean, scrollTo: Boolean) {
         // In IndexMode this is not available
         if (viewMode == ViewMode.IndexMode) return
@@ -227,6 +254,13 @@ class CTreeView: TreeView<String>() {
         selectionModel.select(item)
         if (scrollTo) scrollTo(getRow(item))
     }
+
+    /**
+     * Select label item.
+     * @param labelIndex The index of label.
+     * @param clear Whether clear selection before select.
+     * @param scrollTo Whether scroll to selected item.
+     */
     fun selectLabel(labelIndex: Int, clear: Boolean, scrollTo: Boolean) {
         val item = labelItems.firstOrNull{ it.transLabel.index == labelIndex } ?:return
         if (clear) clearSelection()
@@ -234,6 +268,13 @@ class CTreeView: TreeView<String>() {
         selectionModel.select(item)
         if (scrollTo) scrollTo(getRow(item))
     }
+
+    /**
+     * Select label items.
+     * @param labelIndices The indices of labels.
+     * @param clear Whether clear selection before select.
+     * @param scrollTo Whether scroll to selected item.
+     */
     fun selectLabels(labelIndices: Collection<Int>, clear: Boolean, scrollTo: Boolean) {
         if (clear) clearSelection()
         val items = labelItems.filter { it.transLabel.index in labelIndices }
@@ -242,6 +283,10 @@ class CTreeView: TreeView<String>() {
         if (scrollTo) scrollTo(getRow(items.first()))
     }
 
+    /**
+     * Copy label text.
+     * @param labelIndex The index of label.
+     */
     fun copyLabelText(labelIndex: Int) {
         val item = labelItems.firstOrNull { it.transLabel.index == labelIndex } ?:return
         val clipboard = Clipboard.getSystemClipboard()
@@ -251,6 +296,11 @@ class CTreeView: TreeView<String>() {
         clipboard.setContent(clipboardContent)
     }
 
+    /**
+     * Paste labels text.
+     * @param labelIndexes The indices of labels.
+     * @param state The state of the program.
+     */
     fun pasteLabelsText(labelIndexes: Collection<Int>, state: State) {
         val indexes = labelItems.map { it.transLabel.index }.filter { labelIndexes.any { i -> i == it } }
         val clipboard = Clipboard.getSystemClipboard()
