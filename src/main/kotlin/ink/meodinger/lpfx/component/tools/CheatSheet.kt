@@ -59,11 +59,20 @@ class CheatSheet : Stage() {
             add(Label(I18N["cheat.drag_label.res"]), 1, 8)
             add(Label(I18N["cheat.double_label.dsc"]), 0, 9)
             add(Label(I18N["cheat.double_label.res"]), 1, 9)
-            add(Hyperlink(I18N["cheat.more_help"]), 0, 10, 2, 1) {
-                gridHAlign = HPos.CENTER
+            add(Separator(), 0, 10, 2, 1)
+            add(Hyperlink(I18N["cheat.more_help"]), 0, 11, 2, 1) {
+//                gridHAlign = HPos.CENTER
                 setOnAction {
                     if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                         Desktop.getDesktop().browse(URL(INFO["application.help"]).toURI())
+                    }
+                }
+            }
+            add(Hyperlink(I18N["cheat.guide"]), 1, 11, 2, 1) {
+//                gridHAlign = HPos.CENTER
+                setOnAction {
+                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                        Desktop.getDesktop().browse(URL(INFO["application.guide"]).toURI())
                     }
                 }
             }
