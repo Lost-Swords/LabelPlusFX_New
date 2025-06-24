@@ -71,7 +71,7 @@ class CFileChooser {
      * An export to `FileChooser::initialDirectoryProperty()`
      * @see javafx.stage.FileChooser.initialDirectory
      */
-    fun initialDirectoryProperty(): ObjectProperty<File?> = initialDirectoryProperty
+    private fun initialDirectoryProperty(): ObjectProperty<File?> = initialDirectoryProperty
     /**
      * @see initialDirectoryProperty
      */

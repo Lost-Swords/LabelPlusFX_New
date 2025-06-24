@@ -752,6 +752,7 @@ class View(private val state: State) : BorderPane() {
 
         chooserFile.title = I18N["chooser.export"]
         chooserFile.initialFilename = "$exportName.${type.extension}"
+        chooserFile.initialDirectory = state.getFileFolder()
         chooserFile.selectedExtensionFilter = if (type == FileType.MeoFile) filterMEO else filterLP
 
         val file = chooserFile.showSaveDialog(state.stage) ?: return
@@ -759,7 +760,7 @@ class View(private val state: State) : BorderPane() {
     }
     private fun exportTransPack() {
         chooserPack.initialFilename = "${state.getFileFolder().name}.$EXTENSION_PACK"
-
+        chooserFile.initialDirectory = state.getFileFolder()
         val file = chooserPack.showSaveDialog(state.stage) ?: return
         state.controller.pack(file)
     }
