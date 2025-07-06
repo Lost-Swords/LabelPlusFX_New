@@ -1,6 +1,9 @@
 package ink.meodinger.lpfx
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import ink.meodinger.lpfx.ImageSize.MAX_HEIGHT
+import ink.meodinger.lpfx.ImageSize.MAX_WIDTH
+import ink.meodinger.lpfx.ImageSize.isTooLarge
 import ink.meodinger.lpfx.action.ActionType
 import ink.meodinger.lpfx.action.ComplexAction
 import ink.meodinger.lpfx.action.LabelAction
@@ -95,6 +98,14 @@ class Controller(private val state: State) {
 
     // endregion
 
+
+    // region inputManagers
+//    private val shortcutManager = ShortcutManager(state)
+
+
+
+
+
     // region TimerManagers
 
     private val bakTimeFormatter = DateFormat.getTimeInstance(DateFormat.SHORT)
@@ -158,13 +169,16 @@ class Controller(private val state: State) {
                 // Opened and selected
                 val file = state.getPicFileNow()
                 if (file.exists()) {
-                    val imageByFX = Image(file.toURI().toURL().toString())
+                    var imageByFX = Image(file.toURI().toURL().toString())
 
-//                    //if the image is too large,limit the size of image
-//                    if(imageByFX.width > 5000 || imageByFX.height > 5000) {
-//                        Logger.info("limit the size of image because `$file` is too large  ", "Controller")
-//                        imageByFX = Image(file.toURI().toURL().toString(),5000.0,5000.0,true,true)
-//                    }
+                    //if the image is too large,limit the size of image
+                    if(Settings.currentPrismMode == PrismMode.HW_CHANGE_SIZE) {
+                        if(isTooLarge(imageByFX)) {
+                            Logger.info("limit the size of image because `$file` is too large  ", "Controller")
+                            imageByFX = Image(file.toURI().toURL().toString(), MAX_WIDTH, MAX_HEIGHT,true,true)
+                        }
+                    }
+
 
                     if (!imageByFX.isError) {
                         imageByFX
@@ -495,7 +509,7 @@ class Controller(private val state: State) {
             // The restore procedure will be registered as a shutdown-hook
             // when Config::usingSWPrism is true, here is next time LPFX starts.
             if (Config.isWin && !Config.usingSWPrism) {
-                if (it != null && (it.width >= 4096 || it.height >= 4096)) {
+                if (it != null && isTooLarge(it)) {
                     val result = showConfirmWithoutCancel(state.stage, I18N["graphic_switch.message"])
                     if (result.isPresent && result.get() == ButtonType.YES) {
                         state.application.addShutdownHook("UseSWPrism", ::useSoftwarePrism)
@@ -561,16 +575,16 @@ class Controller(private val state: State) {
         Logger.info("Listened for isChanged", "Controller")
 
         // Setting.isUseSWPrism
-        Settings.useSWPrismProperty().addListener { _, oldValue, newValue ->
-            Logger.info("test useSWprism", "Controller")
+        Settings.currentPrismModeProperty().addListener { _, oldValue, newValue ->
+            Logger.info("prism mode changed", "Controller")
             if(Config.isMac) return@addListener
-            if (!oldValue && newValue && !Config.usingSWPrism) {
+            if (newValue == PrismMode.SW) {
                 state.application.addShutdownHook("UseSWPrism", ::useSoftwarePrism)
                 val result = showConfirmWithoutCancel(state.stage, I18N["graphic_switch.switch_message"])
                 if (result.isPresent && result.get() == ButtonType.YES) {
                     state.application.stop()
                 }
-            } else if (oldValue && !newValue && Config.usingSWPrism) {
+            } else if (oldValue == PrismMode.SW) {
                 state.application.addShutdownHook("UseHWPrism", ::useHardwarePrism)
                 val result = showConfirmWithoutCancel(state.stage, I18N["graphic_switch.switch_message"])
                 if (result.isPresent && result.get() == ButtonType.YES) {
@@ -861,7 +875,7 @@ class Controller(private val state: State) {
                     // Paste text to selected label items
                     val selectItems: Collection<CTreeLabelItem> =
                         cTreeView.selectionModel.selectedIndices.map { cTreeView.getTreeItem(it) }
-                            .filterIsInstance<CTreeLabelItem>() 
+                            .filterIsInstance<CTreeLabelItem>()
 
                     cTreeView.pasteLabelsText(selectItems.map { it.transLabel.index }, state)
                 }
@@ -1300,7 +1314,7 @@ class Controller(private val state: State) {
             val proxy = ProxySelector.getDefault().select(URI(api))[0].also {
                 if (it.type() != Proxy.Type.DIRECT) Logger.info("Using proxy $it", "Controller")
             }
-            val connection = URL(api).openConnection(proxy).apply { connect() } as HttpsURLConnection
+            val connection = URI(api).toURL().openConnection(proxy).apply { connect() } as HttpsURLConnection
             if (connection.responseCode != 200) throw ConnectException("Response code ${connection.responseCode}")
 
             return ObjectMapper().readTree(connection.inputStream).let {

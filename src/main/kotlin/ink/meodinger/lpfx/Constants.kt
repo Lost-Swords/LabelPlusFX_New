@@ -4,6 +4,7 @@ import ink.meodinger.lpfx.util.Version
 import ink.meodinger.lpfx.util.component.genTextFormatter
 
 import javafx.scene.control.TextFormatter
+import javafx.scene.image.Image
 import java.io.File
 
 
@@ -213,3 +214,38 @@ enum class TranslationAPI {
         BaiduTranslate -> I18N["settings.tool.translate.api.baidu"]
     }
 }
+
+
+/**
+ * Picture Prism Mode
+ * @param description Display name for PrismMode
+ */
+enum class PrismMode(val description: String) {
+
+    /**
+     * Hardware Accelerated
+     */
+    HW(I18N["prism_mode.HW"]),
+    /**
+     * Software Accelerated
+     */
+    SW(I18N["prism_mode.SW"]),
+    /**
+     * Hardware Accelerated, but change size
+     */
+    HW_CHANGE_SIZE(I18N["prism_mode.HW_change_size"]);
+
+    override fun toString(): String = description
+
+}
+
+
+object ImageSize {
+    const val MAX_WIDTH: Double = 4096.0
+    const val MAX_HEIGHT: Double = 4096.0
+
+    fun isTooLarge(image: Image): Boolean {
+        return image.width > MAX_WIDTH || image.height > MAX_HEIGHT
+    }
+}
+

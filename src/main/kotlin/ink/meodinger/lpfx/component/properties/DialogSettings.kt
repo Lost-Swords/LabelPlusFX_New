@@ -33,7 +33,7 @@ import javafx.scene.text.TextFlow
 import javafx.util.Duration
 import javafx.util.StringConverter
 import java.awt.Desktop
-import java.net.URL
+import java.net.URI
 import kotlin.math.ceil
 
 
@@ -99,7 +99,7 @@ class DialogSettings : AbstractPropertiesDialog() {
     private val lCheckTextOpaque = CheckBox(I18N["settings.label.text_opaque"])
     private val lCheckSelectedStroke = CheckBox(I18N["settings.label.selected_stroke"])
 
-    private val xUseSWPrism = CheckBox(I18N["settings.other.use_sw_prism"])
+    private val xPrismMode = CComboBox<PrismMode>()
     private val xCheckUpdate = CheckBox(I18N["settings.other.auto_check_upd"])
     private val xCheckAutoOp = CheckBox(I18N["settings.other.auto_open_last"])
     private val xCheckInstTr = CheckBox(I18N["settings.other.inst_trans"])
@@ -119,7 +119,7 @@ class DialogSettings : AbstractPropertiesDialog() {
             setOnAction {
                 val desktop = Desktop.getDesktop()
                 if (Desktop.isDesktopSupported() && desktop.isSupported(Desktop.Action.BROWSE)) {
-                    desktop.browse(URL(INFO["fanHuaJi.url"]).toURI())
+                    desktop.browse(URI(INFO["fanHuaJi.url"]))
                 }
             }
         }
@@ -419,7 +419,6 @@ class DialogSettings : AbstractPropertiesDialog() {
                     hgap = 16.0
 
                     //   0        1
-                    // 0 0 xUseSWPrism
                     // 1 1 UpdateCheck
                     // 2 2 OpenLastFile
                     // 3 3 InstantTranslate
@@ -427,24 +426,32 @@ class DialogSettings : AbstractPropertiesDialog() {
                     // 5 5 UseMeoFileAsDefault
                     // 6 6 UseExportTemplate
                     // 7   |  template text  |
-                    // 8 xCheckUseCustomBaiduKey
-                    // 9 Translate_keys.key
-                    // 10 Translate_keys.app_id
 
-                    add(xUseSWPrism, 0, 0, 2, 1)
-                    add(xCheckUpdate, 0, 1, 2, 1)
-                    add(xCheckAutoOp, 0, 2, 2, 1)
-                    add(xCheckInstTr, 0, 3, 2, 1)
-                    add(xCheckFormat, 0, 4, 2, 1)
-                    add(xCheckUseMeo, 0, 5, 2, 1)
-                    add(xCheckUseTmp, 0, 6, 2, 1)
-                    add(xFieldTemplate, 1, 7) {
+
+                    add(xCheckUpdate, 0, 0, 2, 1)
+                    add(xCheckAutoOp, 0, 1, 2, 1)
+                    add(xCheckInstTr, 0, 2, 2, 1)
+                    add(xCheckFormat, 0, 3, 2, 1)
+                    add(xCheckUseMeo, 0, 4, 2, 1)
+                    add(xCheckUseTmp, 0, 5, 2, 1)
+                    add(xFieldTemplate, 0, 6,2, 1) {
                         disableProperty().bind(!xCheckUseTmp.selectedProperty())
                         textFormatter = genTextFormatter<String> { it.text.replace(Regex("[:*?<>|/\"\\\\]"), "") }
                         tooltip = Tooltip(I18N["settings.other.template.hint"]).apply {
                             showDelay = Duration(500.0)
                         }
                     }
+                    add(Label(I18N["settings.other.pic_prism_mode"]), 0, 7)
+                    add(xPrismMode, 0, 8,2, 1) {
+                        prefWidth = 280.0
+                        items = FXCollections.observableList(PrismMode.entries)
+                        isWrapped = true
+                        tooltip = Tooltip(I18N["settings.other.pic_prism_mode.description"]).apply {
+                            showDelay = Duration(500.0)
+                        }
+                    }
+
+//                    add(xUseSWPrism, 0, 7, 2, 1)
 
                 }
             }
@@ -650,7 +657,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         tFieldBaiduTranslateAppId.text = Settings.baiduTransLateAppId
 
         // Other
-        xUseSWPrism.isSelected  = Settings.useSWPrism
+
         xCheckUpdate.isSelected = Settings.autoCheckUpdate
         xCheckAutoOp.isSelected = Settings.autoOpenLastFile
         xCheckInstTr.isSelected = Settings.instantTranslate
@@ -658,6 +665,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         xCheckUseMeo.isSelected = Settings.useMeoFileAsDefault
         xCheckUseTmp.isSelected = Settings.useExportNameTemplate
         xFieldTemplate.text = Settings.exportNameTemplate
+        xPrismMode.select(Settings.currentPrismMode)
 
 
     }
@@ -759,7 +767,6 @@ class DialogSettings : AbstractPropertiesDialog() {
     private fun convertOther(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
-        map[Settings.UseSWPrism] = xUseSWPrism.isSelected
         map[Settings.AutoCheckUpdate] = xCheckUpdate.isSelected
         map[Settings.AutoOpenLastFile] = xCheckAutoOp.isSelected
         map[Settings.InstantTranslate] = xCheckInstTr.isSelected
@@ -767,6 +774,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.UseMeoFileAsDefault] = xCheckUseMeo.isSelected
         map[Settings.UseExportNameTemplate] = xCheckUseTmp.isSelected
         map[Settings.ExportNameTemplate] = xFieldTemplate.text
+        map[Settings.CurrentPrismMode] = xPrismMode.index.let(PrismMode.entries.toTypedArray()::get)
 
         return map
     }

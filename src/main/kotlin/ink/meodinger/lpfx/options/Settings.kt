@@ -1,10 +1,7 @@
 package ink.meodinger.lpfx.options
 
-import ink.meodinger.lpfx.I18N
-import ink.meodinger.lpfx.TranslationAPI
-import ink.meodinger.lpfx.ViewMode
+import ink.meodinger.lpfx.*
 import ink.meodinger.lpfx.component.CLabelPane
-import ink.meodinger.lpfx.get
 import ink.meodinger.lpfx.util.property.getValue
 import ink.meodinger.lpfx.util.property.setValue
 
@@ -46,7 +43,6 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     const val LabelColorOpacity        = "LabelColorOpacity"
     const val LabelTextOpaque          = "LabelTextOpaque"
     const val LabelSelectedStroke      = "LabelSelectedStroke"
-    const val UseSWPrism               = "UseSWPrism"
     const val AutoCheckUpdate          = "AutoCheckUpdate"
     const val AutoOpenLastFile         = "AutoOpenLastFile"
     const val InstantTranslate         = "InstantTranslate"
@@ -56,6 +52,10 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     const val ExportNameTemplate       = "ExportNameTemplate"
     const val LogLevel                 = "LogLevel"
 
+    // ----- 图片渲染相关 ----- //
+    const val CurrentPrismMode         = "CurrentPrismMode"
+
+    // ----- Translation API ----- //
     const val UseCustomBaiduKey        = "UseCustomBaiduKey"
     const val BaiduTransLateKey        = "BaiduTransLateKey"
     const val BaiduTransLateAppId      = "BaiduTransLateAppId"
@@ -99,7 +99,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         CProperty(LabelColorOpacity, "80"),
         CProperty(LabelTextOpaque, false),
         CProperty(LabelSelectedStroke, false),
-        CProperty(UseSWPrism, false),
+        CProperty(CurrentPrismMode, PrismMode.HW.ordinal),
         CProperty(AutoCheckUpdate, true),
         CProperty(AutoOpenLastFile, false),
         CProperty(InstantTranslate, false),
@@ -164,9 +164,9 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     fun labelSelectedStrokeProperty(): BooleanProperty = labelSelectedStrokeProperty
     var labelSelectedStroke: Boolean by labelSelectedStrokeProperty
 
-    private val useSWPrismProperty: BooleanProperty = SimpleBooleanProperty()
-    fun useSWPrismProperty(): BooleanProperty = useSWPrismProperty
-    var useSWPrism: Boolean by useSWPrismProperty
+    private val currentPrismModeProperty: ObjectProperty<PrismMode> = SimpleObjectProperty()
+    fun currentPrismModeProperty(): ObjectProperty<PrismMode> = currentPrismModeProperty
+    var currentPrismMode: PrismMode by currentPrismModeProperty
 
     private val autoCheckUpdateProperty: BooleanProperty = SimpleBooleanProperty()
     fun autoCheckUpdateProperty(): BooleanProperty = autoCheckUpdateProperty
@@ -228,7 +228,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         defaultGroupColorHexList    = FXCollections.observableList(this[DefaultGroupColorHexList].asStringList())
         isGroupCreateOnNewTransList = FXCollections.observableList(this[IsGroupCreateOnNewTrans].asBooleanList())
         ligatureRules               = FXCollections.observableList(this[LigatureRules].asPairList())
-        quickInputTexts                 = FXCollections.observableList(this[QuickInputTexts].asStringList())
+        quickInputTexts             = FXCollections.observableList(this[QuickInputTexts].asStringList())
         viewModes                   = FXCollections.observableList(this[ViewModes].asIntegerList().map(ViewMode.entries.toTypedArray()::get))
         newPictureScalePicture      = CLabelPane.NewPictureScale.entries.toTypedArray()[this[NewPictureScale].asInteger()]
         useWheelToScale             = this[UseWheelToScale].asBoolean()
@@ -236,7 +236,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         labelColorOpacity           = this[LabelColorOpacity].asInteger(16) / 255.0
         labelTextOpaque             = this[LabelTextOpaque].asBoolean()
         labelSelectedStroke         = this[LabelSelectedStroke].asBoolean()
-        useSWPrism                  = this[UseSWPrism].asBoolean()
+        currentPrismMode            = PrismMode.entries.toTypedArray().getOrNull(this[CurrentPrismMode].asInteger()) ?: PrismMode.entries.first()
         autoCheckUpdate             = this[AutoCheckUpdate].asBoolean()
         autoOpenLastFile            = this[AutoOpenLastFile].asBoolean()
         instantTranslate            = this[InstantTranslate].asBoolean()
@@ -266,7 +266,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         this[LabelColorOpacity]       .set((labelColorOpacity * 255).roundToInt().toString(16).padStart(2, '0'))
         this[LabelTextOpaque]         .set(labelTextOpaque)
         this[LabelSelectedStroke]     .set(labelSelectedStroke)
-        this[UseSWPrism]              .set(useSWPrism)
+        this[CurrentPrismMode]        .set(currentPrismMode.ordinal)
         this[AutoCheckUpdate]         .set(autoCheckUpdate)
         this[AutoOpenLastFile]        .set(autoOpenLastFile)
         this[InstantTranslate]        .set(instantTranslate)

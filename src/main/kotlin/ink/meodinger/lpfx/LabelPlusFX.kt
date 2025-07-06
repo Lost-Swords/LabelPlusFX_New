@@ -3,7 +3,6 @@ package ink.meodinger.lpfx
 
 
 
-import ink.meodinger.lpfx.component.dialog.showConfirm
 import ink.meodinger.lpfx.component.dialog.showException
 import ink.meodinger.lpfx.component.dialog.showInfo
 import ink.meodinger.lpfx.component.properties.AbstractPropertiesDialog
@@ -24,7 +23,6 @@ import javafx.stage.Stage
 import java.awt.SystemTray
 import java.awt.TrayIcon
 import java.io.File
-import java.io.PrintStream
 import java.awt.MenuItem as AwtMenuItem
 import java.awt.PopupMenu as AwtPopupMenu
 
@@ -233,10 +231,14 @@ class LabelPlusFX: HookedApplication() {
             if (file != null) Platform.runLater { state.controller.open(file, file.parentFile) }
         }
         // Notify user about graphics switch
-        if (Config.isWin && Config.usingSWPrism && !Settings.useSWPrism) {
-           showInfo(state.stage,String.format(I18N["graphic_switch.open_message"], I18N["graphic_switch.SW"]))
-        }else if (Config.isWin && !Config.usingSWPrism && Settings.useSWPrism) {
-            showInfo(state.stage,String.format(I18N["graphic_switch.open_message"], I18N["graphic_switch.HW"]))
+        if (Config.isWin) {
+            val currentMode = Settings.currentPrismMode
+            val isUsingSWPrism = Config.usingSWPrism
+            if (isUsingSWPrism && currentMode != PrismMode.SW) {
+                showInfo(state.stage, String.format(I18N["graphic_switch.open_message"], I18N["graphic_switch.SW"]))
+            } else if (!isUsingSWPrism && currentMode == PrismMode.SW) {
+                showInfo(state.stage, String.format(I18N["graphic_switch.open_message"], I18N["graphic_switch.HW"]))
+            }
         }
         // endregion
 
@@ -250,10 +252,14 @@ class LabelPlusFX: HookedApplication() {
     override fun stop() {
         Logger.info("App stopping...", "Application")
         // Register restore hook
-        if (Config.isWin && Config.usingSWPrism && !Settings.useSWPrism) {
-            state.application.addShutdownHook("RestorePrism", ::useHardwarePrism)
-        }else if (Config.isWin && !Config.usingSWPrism && Settings.useSWPrism) {
-            state.application.addShutdownHook("RestorePrism", ::useSoftwarePrism)
+        if (Config.isWin) {
+            val currentMode = Settings.currentPrismMode
+            val isUsingSWPrism = Config.usingSWPrism
+            if (isUsingSWPrism && currentMode != PrismMode.SW) {
+                state.application.addShutdownHook("RestorePrism", ::useHardwarePrism)
+            } else if (!isUsingSWPrism && currentMode == PrismMode.SW) {
+                state.application.addShutdownHook("RestorePrism", ::useSoftwarePrism)
+            }
         }
 
         runHooks {

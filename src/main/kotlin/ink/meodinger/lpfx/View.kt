@@ -785,7 +785,7 @@ class View(private val state: State) : BorderPane() {
             Settings.LabelColorOpacity        -> Settings.labelColorOpacity           = value as Double
             Settings.LabelTextOpaque          -> Settings.labelTextOpaque             = value as Boolean
             Settings.LabelSelectedStroke      -> Settings.labelSelectedStroke         = value as Boolean
-            Settings.UseSWPrism               -> Settings.useSWPrism                   = value as Boolean
+            Settings.CurrentPrismMode          -> Settings.currentPrismMode           = value as PrismMode
             Settings.AutoCheckUpdate          -> Settings.autoCheckUpdate             = value as Boolean
             Settings.AutoOpenLastFile         -> Settings.autoOpenLastFile            = value as Boolean
             Settings.InstantTranslate         -> Settings.instantTranslate            = value as Boolean
