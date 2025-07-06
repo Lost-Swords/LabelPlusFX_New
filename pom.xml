@@ -304,7 +304,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.5.1</version>
                 <executions>
                     <!-- Run the Application (mvn exec:java@run) -->
                     <execution>
@@ -318,6 +318,35 @@
                                 <argument>--disable-jni</argument>
                                 <argument>--no-check-update</argument>
                             </arguments>
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>prism.verbose</key>
+                                    <value>true</value>
+                                </systemProperty>
+                            </systemProperties>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>run-sw</id>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>lpfx/ink.meodinger.lpfx.LauncherKt</mainClass>
+                            <arguments>
+                                <argument>--disable-jni</argument>
+                                <argument>--no-check-update</argument>
+                            </arguments>
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>prism.verbose</key>
+                                    <value>true</value>
+                                </systemProperty>
+                                <systemProperty>
+                                    <key>prism.order</key>
+                                    <value>sw</value>
+                                </systemProperty>
+                            </systemProperties>
                         </configuration>
                     </execution>
                     <!-- Run the dic (mvn exec:java@run-bat) -->
