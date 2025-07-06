@@ -121,6 +121,8 @@ class LabelAction(
                 state.currentLabelIndex = NOT_FOUND
             } else {
                 state.currentLabelIndex--
+                // 刷新标签选择，修复定位错误的问题。
+                state.view.cTreeView.selectLabel(state.currentLabelIndex,clear = false,scrollTo = false)
             }
         }
 
