@@ -4,6 +4,7 @@ import ink.meodinger.lpfx.*
 import ink.meodinger.lpfx.component.common.CTextFlow
 import ink.meodinger.lpfx.component.dialog.showException
 import ink.meodinger.lpfx.ime.*
+import ink.meodinger.lpfx.io.translateJP
 import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.type.LPFXTask
 import ink.meodinger.lpfx.util.component.*
@@ -11,10 +12,6 @@ import ink.meodinger.lpfx.util.event.isDoubleClick
 import ink.meodinger.lpfx.util.property.*
 import ink.meodinger.lpfx.util.string.emptyString
 import ink.meodinger.lpfx.util.string.remove
-import ink.meodinger.lpfx.io.translateJP
-
-import org.jsoup.Jsoup
-import org.jsoup.nodes.TextNode
 import javafx.application.Platform
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
@@ -30,7 +27,9 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.*
 import javafx.scene.paint.Color
 import javafx.stage.Stage
-import java.net.URL
+import org.jsoup.Jsoup
+import org.jsoup.nodes.TextNode
+import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import javax.net.ssl.HttpsURLConnection
@@ -51,7 +50,7 @@ class OnlineDict : Stage() {
         // Maybe: Take back Neko-Dict
         // private const val NEKO_SITE = "https://nekodict.com"
         // private const val NEKO_API  = "https://nekodict.com/words?q="
-        private const val WEBLIO_API  = "https://www.weblio.jp/content/"
+        private const val WEBLIO_API = "https://www.weblio.jp/content/"
         private const val FONT_SIZE = 16.0
     }
 
@@ -73,14 +72,16 @@ class OnlineDict : Stage() {
             top(HBox()) {
                 alignment = Pos.CENTER
                 backgroundProperty().bind(transStateProperty.transform {
-                    Background(BackgroundFill(
-                        when (it!!) {
-                            TransState.WORD -> Color.LIGHTGREEN
-                            TransState.SENTENCE -> Color.LIGHTBLUE
-                        },
-                        CornerRadii(0.0),
-                        Insets(0.0)
-                    ))
+                    Background(
+                        BackgroundFill(
+                            when (it!!) {
+                                TransState.WORD -> Color.LIGHTGREEN
+                                TransState.SENTENCE -> Color.LIGHTBLUE
+                            },
+                            CornerRadii(0.0),
+                            Insets(0.0)
+                        )
+                    )
                 })
                 add(Label()) {
                     minWidth = 75.0
@@ -107,7 +108,8 @@ class OnlineDict : Stage() {
                         // Mark immediately when this event will be consumed
                         it.consume() // disable further propagation
 
-                        transState = TransState.entries.toTypedArray()[(transState.ordinal + 1) % TransState.entries.size]
+                        transState =
+                            TransState.entries.toTypedArray()[(transState.ordinal + 1) % TransState.entries.size]
                     }
 
                     if (Config.enableIMEAssistance) {
@@ -116,7 +118,8 @@ class OnlineDict : Stage() {
                             if (it) {
                                 oriLang = getCurrentLanguage()
                                 // Focus gain will take place after the rendering, so it's safe to set by sync.
-                                AvailableLanguages.firstOrNull { lang -> lang.startsWith(JA) }?.apply(::setCurrentLanguage)
+                                AvailableLanguages.firstOrNull { lang -> lang.startsWith(JA) }
+                                    ?.apply(::setCurrentLanguage)
                             } else {
                                 // If set immediately after lose focus will cause focus on other stages fail.
                                 // Use runLater to set language after the rendering.
@@ -125,7 +128,11 @@ class OnlineDict : Stage() {
                         })
                         addEventHandler(MouseEvent.MOUSE_CLICKED) {
                             if (it.isDoubleClick && getCurrentLanguage().startsWith(JA)) {
-                                setImeConversionMode(getCurrentWindow(), ImeSentenceMode.AUTOMATIC, ImeConversionMode.JA_HIRAGANA)
+                                setImeConversionMode(
+                                    getCurrentWindow(),
+                                    ImeSentenceMode.AUTOMATIC,
+                                    ImeConversionMode.JA_HIRAGANA
+                                )
                             }
                         }
                     }
@@ -149,7 +156,7 @@ class OnlineDict : Stage() {
         // URL-encode the word to make sure we search the correct thing
         val weblioURL = WEBLIO_API + URLEncoder.encode(word, StandardCharsets.UTF_8)
         Logger.debug("Dictionary: Fetching URL $weblioURL", "Dictionary")
-        val weblioConnection = URL(weblioURL).openConnection().apply { connect() } as HttpsURLConnection
+        val weblioConnection = URI(weblioURL).toURL().openConnection().apply { connect() } as HttpsURLConnection
         if (weblioConnection.responseCode != 200) {
             Logger.debug(weblioConnection.errorStream.reader(StandardCharsets.UTF_8).readText(), "Dictionary")
             outputFlow.setText(String.format(I18N["dict.search_error.i"], weblioConnection.responseCode))
@@ -210,6 +217,7 @@ class OnlineDict : Stage() {
             outputFlow.appendText("\u3000$definition\n\n")
         }
     }
+
     private fun searchWeblio(word: String) {
         LPFXTask.createTask<Unit> { searchWeblioSync(word) }.apply {
             setOnSucceeded {
@@ -228,6 +236,7 @@ class OnlineDict : Stage() {
     private fun translateSync(text: String) {
         outputFlow.setText(translateJP(text))
     }
+
     private fun translate(text: String) {
         LPFXTask.createTask<Unit> { translateSync(text) }.apply {
             setOnSucceeded {

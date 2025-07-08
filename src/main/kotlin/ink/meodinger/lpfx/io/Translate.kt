@@ -79,7 +79,7 @@ fun convertByFanHuaJi(text: String, converter: String): String {
         )
     }&ignoreTextStyles=${TranslationConstants.DELIMITER}&converter=$converter"
     return try {
-        val connection = URL(url).openConnection().apply { connect() }
+        val connection = URI(url).toURL().openConnection().apply { connect() }
         val result = ObjectMapper().readTree(connection.getInputStream())
         Logger.info("TranslateResult:${result}", "Translate")
         result.get("msg")?.asText()?.takeIf { it.isNotBlank() } ?: result.get("data").get("text").asText()
@@ -102,7 +102,7 @@ fun convertByFanHuaJi(text: String, converter: String): String {
 @Throws(IOException::class)
 fun translateByBaidu(text: String, ori: String, dst: String): String {
     return try {
-        val connection = URL(query(text, ori, dst)).openConnection().apply { connect() }
+        val connection = URI(query(text, ori, dst)).toURL().openConnection().apply { connect() }
         val result = ObjectMapper().readTree(connection.getInputStream())
         result.get("error_code")?.asText() ?: result.get("trans_result").joinToString("\n") { it.get("dst").asText() }
     } catch (e: NoRouteToHostException) {

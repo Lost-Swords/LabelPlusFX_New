@@ -15,7 +15,7 @@ import javafx.scene.control.Separator
 import javafx.scene.layout.GridPane
 import javafx.stage.Stage
 import java.awt.Desktop
-import java.net.URL
+import java.net.URI
 
 /**
  * Author: Meodinger
@@ -64,7 +64,7 @@ class CheatSheet : Stage() {
 //                gridHAlign = HPos.CENTER
                 setOnAction {
                     if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                        Desktop.getDesktop().browse(URL(INFO["application.help"]).toURI())
+                        Desktop.getDesktop().browse(URI(INFO["application.help"]))
                     }
                 }
             }
@@ -72,7 +72,7 @@ class CheatSheet : Stage() {
 //                gridHAlign = HPos.CENTER
                 setOnAction {
                     if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                        Desktop.getDesktop().browse(URL(INFO["application.guide"]).toURI())
+                        Desktop.getDesktop().browse(URI(INFO["application.guide"]))
                     }
                 }
             }

@@ -96,11 +96,16 @@ class DialogLogs : AbstractPropertiesDialog() {
                 selectionModel.selectionMode = SelectionMode.SINGLE
                 selectionModel.selectedItemProperty().addListener(onChange { labelSent.text = "" })
                 setRowFactory { TableRow<LogFile>().apply { setOnMouseClicked { e ->
-                    if (e.isDoubleClick) Runtime.getRuntime().exec(
-                        if (Config.isWin) "notepad ${item.file.absolutePath}"
-                        else if (Config.isMac) "open -t ${item.file.absolutePath}"
-                        else "vi ${item.file.absolutePath}"
-                    )
+                    if (e.isDoubleClick) {
+                        val file = item.file
+                        if (Config.isWin) {
+                            ProcessBuilder("notepad.exe", file.absolutePath).start()
+                        } else if (Config.isMac) {
+                            ProcessBuilder("open", "-t", file.absolutePath).start()
+                        } else {
+                            ProcessBuilder("vi", file.absolutePath).start()
+                        }
+                    }
                 } } }
             }
             add(labelSent, 0, 5, 2 , 1) {
