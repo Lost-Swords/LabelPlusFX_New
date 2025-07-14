@@ -280,7 +280,7 @@ class CTreeView: TreeView<String>() {
         val items = labelItems.filter { it.transLabel.index in labelIndices }
 
         items.forEach(selectionModel::select)
-        if (scrollTo) scrollTo(getRow(items.first()))
+        if (scrollTo && items.isNotEmpty()) scrollTo(getRow(items.first()))
     }
 
     /**

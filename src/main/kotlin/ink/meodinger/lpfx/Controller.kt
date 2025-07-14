@@ -1006,6 +1006,7 @@ class Controller(private val state: State) {
 
         // Load File
         val transFile: TransFile
+
         try {
             transFile = load(file)
             transFile.projectFolder = projectFolder
@@ -1014,6 +1015,11 @@ class Controller(private val state: State) {
             Logger.exception(e)
             showError(state.stage, I18N["error.open_failed"])
             showException(state.stage, e, file)
+            return
+        } catch (e: IllegalArgumentException) {
+            Logger.error("Open failed", "Controller")
+            Logger.exception(e)
+            showError(state.stage, I18N["error.open_failed.type"])
             return
         }
         Logger.info("Loaded TransFile", "Controller")

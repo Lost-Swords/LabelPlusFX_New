@@ -91,7 +91,7 @@
 
 Label Plus FX的功能设计基于 [LabelPlus](https://noodlefighter.com/label_plus/)
 
-更多示例，请参考用户手册和Wiki [User Manual](https://www.kdocs.cn/l/seRSJCKVOn0Y) 和 [Wiki](https://github.com/Meodinger/LabelPlusFX/wiki)
+_更多帮助，请查阅[官方指南](https://labelplusfx-guide.yeding.top/),以及 [用户手册](https://www.kdocs.cn/l/seRSJCKVOn0Y) 和 [Wiki](https://github.com/Meodinger/LabelPlusFX/wiki)_
 
 
 <!-- CONTRIBUTING -->
@@ -123,10 +123,8 @@ Meodinger Wang - [@Meodinger_Wang](https://twitter.com/Meodinger_Wang) - meoding
 
 <!-- SPONSOR -->
 
-## 赞助
+## 感谢
 
-<a href="https://afdian.net/@Meodinger">
-  <img src="https://s2.loli.net/2022/04/01/p4kequKy9g7EMZb.jpg" alt="Aifadian" width="375" />
-</a>
+仅以此仓库及代码，献给[提灯喵汉化组](https://yuriful.top/)，献给lpfx伟大的创造者喵喵[@Meodinger_Wang](https://twitter.com/Meodinger_Wang)
 
 [product-screenshot]: https://s2.loli.net/2022/02/04/2H7bguJ9rcyBjUO.png

@@ -42,7 +42,9 @@ import javafx.scene.shape.Circle
 import javafx.stage.FileChooser
 import javafx.util.Callback
 import javafx.util.Duration
+import java.awt.Desktop
 import java.io.File
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
@@ -501,6 +503,30 @@ class View(private val state: State) : BorderPane() {
         }
         bottom(statsBar) {
             val generalPadding = Insets(4.0, 8.0, 4.0, 8.0)
+            add(Hyperlink(I18N["cheat.guide"])) {
+                prefWidth = 80.0
+                style = "-fx-text-fill: black; -fx-underline: true;"
+                setOnAction {
+                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                        Desktop.getDesktop().browse(URI(INFO["application.guide"]))
+                    }
+                }
+            }
+            add(Separator()) {
+                orientation = Orientation.VERTICAL
+            }
+            add(Hyperlink(I18N["cheat.short_cut"])) {
+                prefWidth = 80.0
+                style = "-fx-text-fill: black; -fx-underline: true;"
+                setOnAction {
+                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                        Desktop.getDesktop().browse(URI(INFO["application.guide.shortcut"]))
+                    }
+                }
+            }
+            add(Separator()) {
+                orientation = Orientation.VERTICAL
+            }
             add(HBox()) {
                 hgrow = Priority.ALWAYS
             }

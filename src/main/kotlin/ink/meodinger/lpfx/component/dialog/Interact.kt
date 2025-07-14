@@ -145,5 +145,8 @@ fun <T> showChoiceList(owner: Window?, unselected: List<T>, selected: List<T>, c
             else -> throw IllegalStateException("Should not reach here")
         }
     }
+    // Set default button
+    (dialog.dialogPane.lookupButton(ButtonType.APPLY) as? Button)?.isDefaultButton = true
+
     return dialog.showAndWait()
 }

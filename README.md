@@ -93,7 +93,7 @@ To get a local copy up and running follow these simple steps.
 
 Label Plus FX's function design based on [LabelPlus](https://noodlefighter.com/label_plus/)
 
-_For more examples, please refer to the [User Manual](https://www.kdocs.cn/l/seRSJCKVOn0Y) and [Wiki](https://github.com/Meodinger/LabelPlusFX/wiki)_
+_For more help, please refer to the Official Guide, User Manual, and Wiki._
 
 
 <!-- CONTRIBUTING -->
@@ -128,10 +128,8 @@ Ding Ye - kanaumachi@gmail.com
 
 <!-- SPONSOR -->
 
-## Sponsor
+## Thanks
 
-<a href="https://afdian.net/@Meodinger">
-  <img src="https://s2.loli.net/2022/04/01/p4kequKy9g7EMZb.jpg" alt="Aifadian" width="375" />
-</a>
+This repository and its code are dedicated to [Tideng Cat](https://yuriful.top/) and to the great creator of LabelPlusFX,喵喵[@Meodinger_Wang](https://twitter.com/Meodinger_Wang).
 
 [product-screenshot]: https://s2.loli.net/2022/02/04/2H7bguJ9rcyBjUO.png

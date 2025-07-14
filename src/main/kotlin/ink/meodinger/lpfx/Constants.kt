@@ -178,7 +178,7 @@ enum class FileType(val description: String, val extension: String) {
             EXTENSION_FILE_MEO -> MeoFile
             EXTENSION_FILE_LP -> LPFile
             EXTENSION_BAK -> MeoFile
-            else -> MeoFile
+            else -> throw IllegalArgumentException("Unknown file type: ${file.extension.lowercase()}")
         }
     }
 }
