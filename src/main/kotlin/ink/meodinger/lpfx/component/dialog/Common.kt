@@ -229,10 +229,26 @@ fun showException(owner: Window?, e: Throwable, file: File? = null): Optional<Bu
     dialog.dialogPane.prefWidth = 600.0
     dialog.dialogPane.prefHeight = 400.0
     dialog.dialogPane.buttonTypes.addAll(sendBtnType, ButtonType.CANCEL)
+
+    val detailField = TextArea().apply {
+        promptText = I18N["report.issue.prompt"]
+        vgrow = Priority.ALWAYS
+    }
+
+    val contactField = TextField().apply {
+        promptText = I18N["report.contact.prompt"]
+    }
+
+
+
     dialog.dialogPane.withContent(VBox()) {
         spacing = 8.0
         add(Label(shortenWideText(e.message ?: e.javaClass.name, 400.0)))
         add(Separator())
+        add(Label(I18N["report.issue.detail"]))
+        add(detailField)
+        add(Label(I18N["report.contact.title"]))
+        add(contactField)
         add(Label("The exception stacktrace is:"))
         add(TextArea(e.stackTraceToString())) {
             isEditable = false
@@ -253,11 +269,108 @@ fun showException(owner: Window?, e: Throwable, file: File? = null): Optional<Bu
         val button = it.source as Button
 
         button.text = I18N["common.sending"]
-        sendMail("LPFX work-time exception report", Logger.log, file).apply {
+
+        val detailText = detailField.text.takeIf { it.isNotBlank() } ?: "No details provided"
+        val contactText = contactField.text.takeIf { it.isNotBlank() } ?: "No contact provided"
+
+        // Build the email content string with exception details and contact information
+        val emailContent = buildString {
+            appendLine("LPFX Work-time Exception Report")
+            appendLine()
+            appendLine("Exception Details:")
+            detailText.lines().forEach { line ->
+                appendLine("  $line")
+            }
+            appendLine()
+            appendLine("Contact Information:")
+            contactText.lines().forEach { line ->
+                appendLine("  $line")
+            }
+        }
+
+        sendMail(emailContent, Logger.log, file).apply {
             setOnSucceeded { button.text = I18N["common.sent"] }
             setOnFailed { button.text = I18N["common.failed"] }
         }.startInNewThread()
     }
+
+    return dialog.showAndWait()
+}
+
+fun showReport(owner: Window?): Optional<ButtonType> {
+    val sendBtnType = ButtonType(I18N["common.send"], ButtonBar.ButtonData.OK_DONE)
+    val dialog = Dialog<ButtonType>() withOwner owner
+    dialog.title = I18N["report.issue.title"]
+
+    dialog.isResizable = true
+    dialog.dialogPane.prefWidth = 600.0
+    dialog.dialogPane.prefHeight = 400.0
+    dialog.dialogPane.buttonTypes.addAll(sendBtnType, ButtonType.CANCEL)
+
+
+    val detailField = TextArea().apply {
+        promptText = I18N["report.issue.prompt"]
+        vgrow = Priority.ALWAYS
+    }
+
+    val contactField = TextField().apply {
+        promptText = I18N["report.contact.prompt"]
+    }
+
+    dialog.dialogPane.withContent(VBox()) {
+        spacing = 8.0
+        add(Label(I18N["report.issue.detail"]))
+        add(detailField)
+        add(Label(I18N["report.contact.title"]))
+        add(contactField)
+    }
+
+
+    for (buttonType in dialog.dialogPane.buttonTypes) {
+        val button = dialog.dialogPane.lookupButton(buttonType) as Button
+        button.isDefaultButton = buttonType != sendBtnType
+    }
+
+    val applyBtn = dialog.dialogPane.lookupButton(sendBtnType) as Button
+    applyBtn.addEventFilter(ActionEvent.ACTION) {
+        // Mark immediately when this event will be consumed
+        it.consume() // disable further propagation
+
+        val button = it.source as Button
+
+        button.text = I18N["common.sending"]
+
+        val detailText = detailField.text.takeIf { it.isNotBlank() } ?: "No details provided"
+        val contactText = contactField.text.takeIf { it.isNotBlank() } ?: "No contact provided"
+
+        // Build the email content string with exception details and contact information
+        val emailContent = buildString {
+            appendLine("Issue Details:")
+            detailText.lines().forEach { line ->
+                appendLine("  $line")
+            }
+            appendLine()
+            appendLine("Contact Information:")
+            contactText.lines().forEach { line ->
+                appendLine("  $line")
+            }
+        }
+
+        sendMail(emailContent, Logger.log).apply {
+            setOnSucceeded {
+                showInfo(owner, I18N["common.sent"])
+                button.text = I18N["common.send"]
+            }
+            setOnFailed {
+                showInfo(owner, I18N["common.failed"])
+                button.text = I18N["common.send"]
+            }
+            setOnCancelled {
+                button.text = I18N["common.send"]
+            }
+        }.startInNewThread()
+    }
+
 
     return dialog.showAndWait()
 }

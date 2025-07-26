@@ -332,6 +332,9 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.cheat"]) {
                     does { cheatSheet() }
                 }
+                item(I18N["m.report"]) {
+                    does { reportIssue() }
+                }
                 separator()
                 item(I18N["m.crash"]) {
                     does { crash() }
@@ -860,6 +863,9 @@ class View(private val state: State) : BorderPane() {
     private fun cheatSheet() {
         state.application.cheatSheet.show()
         state.application.cheatSheet.toFront()
+    }
+    private fun reportIssue(){
+        showReport(state.stage)
     }
     private fun crash() {
         throw RuntimeException("Crash")
