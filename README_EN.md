@@ -67,7 +67,7 @@ To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
 
- * [Liberica JDK 17 (Full)](https://bell-sw.com/pages/downloads/#/java-17-lts%20/%20current) : For main application;
+ * [Liberica JDK 21 (Full)](https://bell-sw.com/pages/downloads/#jdk-21-lts) : For main application;
 
  * [Optional] [Visual Studio 2019](https://visualstudio.microsoft.com/zh-hans/downloads/) : For Windows IME JNI Interface;
 

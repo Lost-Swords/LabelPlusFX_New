@@ -65,7 +65,7 @@
 
 ### 环境
 
- * [Liberica JDK 17 (完整版本)](https://bell-sw.com/pages/downloads/#/java-17-lts%20/%20current) : 用于主应用程序；
+ * [Liberica JDK 21 (完整版本)](https://bell-sw.com/pages/downloads/#jdk-21-lts) : 用于主应用程序；
 
  * [可选] [Visual Studio 2019](https://visualstudio.microsoft.com/zh-hans/downloads/) : 用于Windows IME JNI接口；
 
