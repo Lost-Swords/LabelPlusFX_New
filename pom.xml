@@ -119,6 +119,7 @@
                 <excludes>
                     <exclude>**/*.zip</exclude>
                     <exclude>**/*.bin</exclude>
+                    <exclude>**/*.psd</exclude>
                 </excludes>
             </resource>
             <resource>
