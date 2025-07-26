@@ -9,7 +9,7 @@
 
 
 <!-- PROJECT LOGO -->
-[简体中文](/README_ZH.md) | English
+简体中文 | [English](/README_EN)
 <br />
 <p align="center">
   <a href="https://github.com/Lost-Swords/LabelPlusFX_New">
@@ -17,119 +17,114 @@
   </a>
   <h3 align="center">Label Plus FX</h3>
   <p align="center">
-    A cross-platform LabelPlus
+    一个跨平台的Label Plus
     <br />
     <br />
-    <a href="https://www.kdocs.cn/l/cpRyDN2Perkb">View Manual</a>
+    <a href="https://www.kdocs.cn/l/cpRyDN2Perkb">用户手册</a>
     ·
-    <a href="https://github.com/Lost-Swords/LabelPlusFX_New">Report Bug</a>
+    <a href="https://github.com/Lost-Swords/LabelPlusFX_New/issues">反馈问题</a>
     ·
-    <a href="https://github.com/Lost-Swords/LabelPlusFX_New">Request Feature</a>
+    <a href="https://github.com/Lost-Swords/LabelPlusFX_New/issues">提交建议</a>
   </p>
 </p>
 
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
-  <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
+  <summary><h2 style="display: inline-block">目录</h2></summary>
   <ol>
     <li>
-      <a href="#about-the-project">About The Project</a>
+      <a href="#about-the-project">关于本项目</a>
     </li>
     <li>
-      <a href="#getting-started">Getting Started</a>
+      <a href="#getting-started">开始</a>
       <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
+        <li><a href="#prerequisites">环境</a></li>
+        <li><a href="#installation">启动步骤</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
+    <li><a href="#usage">说明</a></li>
+    <li><a href="#license">许可协议</a></li>
+    <li><a href="#contact">联系方式</a></li>
   </ol>
 </details>
 
 
 <!-- ABOUT THE PROJECT -->
-## About The Project
+## 关于本项目
 
 [![Product Screen Shot][product-screenshot]]()
 
-This project is inspired by [LabelPlus](https://noodlefighter.com/label_plus/).
-Because there is only a C# version, I wrote a javafx version for mac/linux user.
+本项目受到 [LabelPlus](https://noodlefighter.com/label_plus/)的启发。
 
 
 <!-- GETTING STARTED -->
-## Getting Started
+## 开始
 
-To get a local copy up and running follow these simple steps.
+复制本项目并启动需要以下几个简单的步骤
+
+### 环境
+
+ * [Liberica JDK 17 (完整版本)](https://bell-sw.com/pages/downloads/#/java-17-lts%20/%20current) : 用于主应用程序；
+
+ * [可选] [Visual Studio 2019](https://visualstudio.microsoft.com/zh-hans/downloads/) : 用于Windows IME JNI接口；
 
 
-### Prerequisites
+### 启动步骤
 
- * [Liberica JDK 17 (Full)](https://bell-sw.com/pages/downloads/#/java-17-lts%20/%20current) : For main application;
-
- * [Optional] [Visual Studio 2019](https://visualstudio.microsoft.com/zh-hans/downloads/) : For Windows IME JNI Interface;
-
-
-### Installation
-
-1. Clone the repo
+1.克隆仓库
    ```sh
    git clone https://github.com/Meodinger/LabelPlusFX.git
    ```
-2. Run maven build `package`
+2. 运行Maven命令 `package`
 
-3. Build with script, both `link.bat` and `build.bat` is OK
+3. 运行脚本,  `link.bat`  `build.bat` 都可以
 
-4. For Windows User, build solution `IMEWrapper` and copy the `IMEInterface.dll` and `IMEWrapper.dll` to the same folder with `LabelPlusFX.exe` if used `jpackage` or `runtime\java.exe` if used `jlink`.
+4. 对于Windows用户， 构建封装器库 `IMEWrapper` 然后复制 `IMEInterface.dll` 和 `IMEWrapper.dll` 到 `LabelPlusFX.exe` （使用`jpackage`）或 `runtime\java.exe`（使用`jlink`） 所在的文件夹下.
 
-> If you don't want to use the Windows IME JNI Interface, try `run.bat --disable-jni` or `LabelPlusFX.exe --disable-jni`
+> 如果不想使用Windows IME JNI接口, 可以使用 `run.bat --disable-jni` 或`LabelPlusFX.exe --disable-jni`方式启动
 
-> If you want to run LPFX in IDE, execute maven goal `exec:java@run` to start the application
+> 在IDE中运行LPFX, 可以执行 `exec:java@run` 命令
 
 <!-- USAGE EXAMPLES -->
-## Usage
+## 说明
 
-Label Plus FX's function design based on [LabelPlus](https://noodlefighter.com/label_plus/)
+Label Plus FX的功能设计基于 [LabelPlus](https://noodlefighter.com/label_plus/)
 
-_For more help, please refer to the Official Guide, User Manual, and Wiki._
+_更多帮助，请查阅[官方指南](https://labelplusfx-guide.yeding.top/),以及 [用户手册](https://www.kdocs.cn/l/seRSJCKVOn0Y) 和 [Wiki](https://github.com/Meodinger/LabelPlusFX/wiki)_
 
 
 <!-- CONTRIBUTING -->
-## Contributing
+## 贡献
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+开源社区因贡献而变得如此美好，充满学习、启发和创造。非常感谢您所做的**任何贡献**
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
+1. Fork项目
+2. 创建功能分支  (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m '添加了一些很棒的改进'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 发起拉取请求
 
 
 <!-- LICENSE -->
-## License
+## 许可协议
 
-Distributed under the AGPLv3 License. See `LICENSE` for more information.
+根据AGPLv3许可证分发。有关更多信息，请参见`LICENSE`页面。
 
 
 <!-- CONTACT -->
-## Contact
-
-### original
+## 联系方式
+### 原版开发者
 Meodinger Wang - [@Meodinger_Wang](https://twitter.com/Meodinger_Wang) - meodinger@qq.com
 
-Project Link: [https://github.com/Meodinger/LabelPlusFX](https://github.com/Meodinger/LabelPlusFX)
-
-### current
-Ding Ye - kanaumachi@gmail.com
+项目链接: [https://github.com/Meodinger/LabelPlusFX](https://github.com/Meodinger/LabelPlusFX)
+### 此版本开发者
+叶町 - kanaumachi@gmail.com
 
 <!-- SPONSOR -->
 
-## Thanks
+## 感谢
 
-This repository and its code are dedicated to [Tideng Cat](https://yuriful.top/) and to the great creator of LabelPlusFX,喵喵[@Meodinger_Wang](https://twitter.com/Meodinger_Wang).
+仅以此仓库及代码，献给[提灯喵汉化组](https://yuriful.top/)，献给lpfx伟大的创造者喵喵[@Meodinger_Wang](https://twitter.com/Meodinger_Wang)
 
 [product-screenshot]: https://s2.loli.net/2022/02/04/2H7bguJ9rcyBjUO.png
