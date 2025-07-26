@@ -76,7 +76,7 @@ To get a local copy up and running follow these simple steps.
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/Meodinger/LabelPlusFX.git
+   git clone https://github.com/Lost-Swords/LabelPlusFX_New.git
    ```
 2. Run maven build `package`
 

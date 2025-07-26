@@ -74,7 +74,7 @@
 
 1.克隆仓库
    ```sh
-   git clone https://github.com/Meodinger/LabelPlusFX.git
+   git clone https://github.com/Lost-Swords/LabelPlusFX_New.git
    ```
 2. 运行Maven命令 `package`
 
