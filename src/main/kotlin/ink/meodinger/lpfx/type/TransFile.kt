@@ -196,6 +196,9 @@ class TransFile @JsonCreator constructor(
     fun getTransGroup(groupName: String): TransGroup {
         return groupListObservable.first { it.name == groupName }
     }
+    fun getTransGroup(groupIndex: Int): TransGroup {
+        return groupListObservable.first { it.index == groupIndex }
+    }
     fun getTransList(picName: String): List<TransLabel> {
         return transMapObservable[picName]!!
     }
