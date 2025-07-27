@@ -34,6 +34,8 @@ fun sendMailSync(text: String, vararg files: File?) {
     Logger.info("Ready to send the mail to $targetUser","MailSend")
     val props = Properties()
     props.setProperty("mail.transport.protocol", "smtp")
+    props.setProperty("mail.smtp.port", "465")
+    props.setProperty("mail.smtp.ssl.enable", "true")
     props.setProperty("mail.smtp.auth", "true")
     props.setProperty("mail.smtp.host", "smtp.163.com")
 
@@ -49,8 +51,15 @@ fun sendMailSync(text: String, vararg files: File?) {
 
     message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(targetUser))
 
-    Transport.send(message, REPORT_USER, REPORT_AUTH)
-    Logger.info("Sended the mail to $targetUser","MailSend")
+    try {
+        Transport.send(message, REPORT_USER, REPORT_AUTH)
+    }catch (e: Exception) {
+        Logger.error("Failed to send the mail to $targetUser","MailSend")
+        Logger.exception(e)
+        throw e
+    }
+
+    Logger.info("Sent the mail to $targetUser","MailSend")
 }
 
 /**

@@ -29,9 +29,9 @@ import java.util.*
  * Have fun with my code!
  */
 
-private val infoImage    = IMAGE_INFO.resizeByRadius(GENERAL_ICON_RADIUS)
+private val infoImage = IMAGE_INFO.resizeByRadius(GENERAL_ICON_RADIUS)
 private val warningImage = IMAGE_WARNING.resizeByRadius(GENERAL_ICON_RADIUS)
-private val errorImage   = IMAGE_ERROR.resizeByRadius(GENERAL_ICON_RADIUS)
+private val errorImage = IMAGE_ERROR.resizeByRadius(GENERAL_ICON_RADIUS)
 private val confirmImage = IMAGE_CONFIRM.resizeByRadius(GENERAL_ICON_RADIUS)
 
 /**
@@ -82,9 +82,9 @@ fun showDialog(
 
     dialog.initOwner(owner)
     dialog.graphic = when (type) {
-        DialogType.INFO    -> ImageView(infoImage)
+        DialogType.INFO -> ImageView(infoImage)
         DialogType.WARNING -> ImageView(warningImage)
-        DialogType.ERROR   -> ImageView(errorImage)
+        DialogType.ERROR -> ImageView(errorImage)
         DialogType.CONFIRM -> ImageView(confirmImage)
     }
 
@@ -114,6 +114,7 @@ fun showDialog(
 fun showInfo(owner: Window?, content: String): Optional<ButtonType> {
     return showInfo(owner, null, content, I18N["common.info"])
 }
+
 /**
  * Show information
  * @param title Dialog title
@@ -134,6 +135,7 @@ fun showInfo(owner: Window?, header: String?, content: String, title: String): O
 fun showWarning(owner: Window?, content: String): Optional<ButtonType> {
     return showWarning(owner, null, content, I18N["common.warning"])
 }
+
 /**
  * Show warning
  * @param title Dialog title
@@ -154,6 +156,7 @@ fun showWarning(owner: Window?, header: String?, content: String, title: String)
 fun showError(owner: Window?, content: String): Optional<ButtonType> {
     return showError(owner, null, content, I18N["common.error"])
 }
+
 /**
  * Show error
  * @param title Dialog title
@@ -184,6 +187,7 @@ fun showConfirm(owner: Window?, content: String): Optional<ButtonType> {
 fun showConfirmWithoutCancel(owner: Window?, content: String): Optional<ButtonType> {
     return showConfirmWithoutCancel(owner, null, content, I18N["common.confirm"])
 }
+
 /**
  * Show message for confirm
  * @param title Dialog title
@@ -193,7 +197,16 @@ fun showConfirmWithoutCancel(owner: Window?, content: String): Optional<ButtonTy
  * @return ButtonType? YES | NO | CANCEL
  */
 fun showConfirm(owner: Window?, header: String?, content: String, title: String): Optional<ButtonType> {
-    return showDialog(owner, DialogType.CONFIRM, title, header, content, ButtonType.YES, ButtonType.NO, ButtonType.CANCEL)
+    return showDialog(
+        owner,
+        DialogType.CONFIRM,
+        title,
+        header,
+        content,
+        ButtonType.YES,
+        ButtonType.NO,
+        ButtonType.CANCEL
+    )
 }
 
 
@@ -220,7 +233,7 @@ fun showConfirmWithoutCancel(owner: Window?, header: String?, content: String, t
  * @return ButtonType? Cancel
  */
 fun showException(owner: Window?, e: Throwable, file: File? = null): Optional<ButtonType> {
-    val sendBtnType = ButtonType(I18N["common.report"], ButtonBar.ButtonData.OK_DONE)
+    val sendBtnType = ButtonType(I18N["report.issue.title"], ButtonBar.ButtonData.OK_DONE)
     val dialog = Dialog<ButtonType>() withOwner owner
 
     dialog.title = I18N["common.error"]
@@ -229,26 +242,10 @@ fun showException(owner: Window?, e: Throwable, file: File? = null): Optional<Bu
     dialog.dialogPane.prefWidth = 600.0
     dialog.dialogPane.prefHeight = 400.0
     dialog.dialogPane.buttonTypes.addAll(sendBtnType, ButtonType.CANCEL)
-
-    val detailField = TextArea().apply {
-        promptText = I18N["report.issue.prompt"]
-        vgrow = Priority.ALWAYS
-    }
-
-    val contactField = TextField().apply {
-        promptText = I18N["report.contact.prompt"]
-    }
-
-
-
     dialog.dialogPane.withContent(VBox()) {
         spacing = 8.0
         add(Label(shortenWideText(e.message ?: e.javaClass.name, 400.0)))
         add(Separator())
-        add(Label(I18N["report.issue.detail"]))
-        add(detailField)
-        add(Label(I18N["report.contact.title"]))
-        add(contactField)
         add(Label("The exception stacktrace is:"))
         add(TextArea(e.stackTraceToString())) {
             isEditable = false
@@ -263,41 +260,22 @@ fun showException(owner: Window?, e: Throwable, file: File? = null): Optional<Bu
 
     val applyBtn = dialog.dialogPane.lookupButton(sendBtnType) as Button
     applyBtn.addEventFilter(ActionEvent.ACTION) {
-        // Mark immediately when this event will be consumed
-        it.consume() // disable further propagation
-
-        val button = it.source as Button
-
-        button.text = I18N["common.sending"]
-
-        val detailText = detailField.text.takeIf { it.isNotBlank() } ?: "No details provided"
-        val contactText = contactField.text.takeIf { it.isNotBlank() } ?: "No contact provided"
-
-        // Build the email content string with exception details and contact information
-        val emailContent = buildString {
-            appendLine("LPFX Work-time Exception Report")
-            appendLine()
-            appendLine("Exception Details:")
-            detailText.lines().forEach { line ->
-                appendLine("  $line")
-            }
-            appendLine()
-            appendLine("Contact Information:")
-            contactText.lines().forEach { line ->
-                appendLine("  $line")
-            }
-        }
-
-        sendMail(emailContent, Logger.log, file).apply {
-            setOnSucceeded { button.text = I18N["common.sent"] }
-            setOnFailed { button.text = I18N["common.failed"] }
-        }.startInNewThread()
+        // 显示问题报告对话框
+        dialog.close()
+        showReport(owner, file)
     }
 
     return dialog.showAndWait()
 }
 
-fun showReport(owner: Window?): Optional<ButtonType> {
+/**
+ * 显示问题报告对话框
+ *
+ * @param owner 父窗口
+ * @param transFile 可选的翻译文件对象，将作为附件发送
+ * @return 返回用户点击的按钮类型
+ */
+fun showReport(owner: Window?, transFile: File? = null): Optional<ButtonType> {
     val sendBtnType = ButtonType(I18N["common.send"], ButtonBar.ButtonData.OK_DONE)
     val dialog = Dialog<ButtonType>() withOwner owner
     dialog.title = I18N["report.issue.title"]
@@ -317,15 +295,28 @@ fun showReport(owner: Window?): Optional<ButtonType> {
         promptText = I18N["report.contact.prompt"]
     }
 
+    val checkLog = CheckBox(I18N["report.attachment.log"]).apply {
+        isSelected = true
+    }
+    val checkTransFile = CheckBox(I18N["report.attachment.file"]).apply {
+        // If transFile is null, disable checkTransFile
+        isSelected = transFile != null
+        isDisable = !isSelected
+    }
+
+    // 设置对话框内容
     dialog.dialogPane.withContent(VBox()) {
         spacing = 8.0
         add(Label(I18N["report.issue.detail"]))
         add(detailField)
         add(Label(I18N["report.contact.title"]))
         add(contactField)
+        add(checkLog)
+        add(checkTransFile)
     }
 
 
+    // 设置按钮的默认状态
     for (buttonType in dialog.dialogPane.buttonTypes) {
         val button = dialog.dialogPane.lookupButton(buttonType) as Button
         button.isDefaultButton = buttonType != sendBtnType
@@ -343,7 +334,7 @@ fun showReport(owner: Window?): Optional<ButtonType> {
         val detailText = detailField.text.takeIf { it.isNotBlank() } ?: "No details provided"
         val contactText = contactField.text.takeIf { it.isNotBlank() } ?: "No contact provided"
 
-        // Build the email content string with exception details and contact information
+        // 构建邮件内容，包含问题详情和联系方式
         val emailContent = buildString {
             appendLine("Issue Details:")
             detailText.lines().forEach { line ->
@@ -356,21 +347,14 @@ fun showReport(owner: Window?): Optional<ButtonType> {
             }
         }
 
-        sendMail(emailContent, Logger.log).apply {
-            setOnSucceeded {
-                showInfo(owner, I18N["common.sent"])
-                button.text = I18N["common.send"]
-            }
-            setOnFailed {
-                showInfo(owner, I18N["common.failed"])
-                button.text = I18N["common.send"]
-            }
-            setOnCancelled {
-                button.text = I18N["common.send"]
-            }
+        // 发送邮件报告
+        sendMail(emailContent,if (checkLog.isSelected) Logger.log else null, if (checkTransFile.isSelected) transFile else null).apply {
+            setOnSucceeded { button.text = I18N["common.sent"] }
+            setOnFailed { button.text = I18N["common.failed"] }
         }.startInNewThread()
     }
 
 
     return dialog.showAndWait()
 }
+
