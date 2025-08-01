@@ -116,19 +116,15 @@ Contributions are what make the open source community such an amazing place to l
 
 ## License
 
-Distributed under the AGPLv3 License. See `LICENSE` for more information.
-
-<!-- CONTACT -->
-
-## Contact
-
-### original
+This project is based on the original LabelPlusFX and continues to be distributed under the AGPLv3 license. See `LICENSE` for more information.
 
 Meodinger Wang - [@Meodinger_Wang](https://twitter.com/Meodinger_Wang) - meodinger@qq.com
 
 Project Link: [https://github.com/Meodinger/LabelPlusFX](https://github.com/Meodinger/LabelPlusFX)
 
-### current
+<!-- CONTACT -->
+
+## Contact
 
 Ding Ye - kanaumachi@gmail.com
 

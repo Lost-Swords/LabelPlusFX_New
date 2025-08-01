@@ -111,11 +111,7 @@ _更多帮助，请查阅[官方指南](https://labelplusfx-guide.yeding.top/),�
 
 ## 许可协议
 
-根据AGPLv3许可证分发。有关更多信息，请参见`LICENSE`页面。
-
-<!-- CONTACT -->
-
-## 联系方式
+本项目基于原版[LabelPlusFX](https://github.com/Meodinger/LabelPlusFX)修改，并继续根据AGPLv3许可证分发。有关更多信息，请参见`LICENSE`页面。
 
 ### 原版开发者
 
@@ -123,7 +119,10 @@ Meodinger Wang - [@Meodinger_Wang](https://twitter.com/Meodinger_Wang) - meoding
 
 项目链接: [https://github.com/Meodinger/LabelPlusFX](https://github.com/Meodinger/LabelPlusFX)
 
-### 此版本开发者
+
+<!-- CONTACT -->
+
+## 联系方式
 
 叶町 - kanaumachi@gmail.com
 
