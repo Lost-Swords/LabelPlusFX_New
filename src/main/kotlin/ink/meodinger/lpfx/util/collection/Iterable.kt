@@ -32,3 +32,32 @@ fun <E> List<E>.prevIndex(index: Int): Int {
 fun <E> List<E>.nextIndex(index: Int): Int {
     return if (index >= this.size - 1) 0 else index + 1
 }
+
+
+/**
+ * 获取指定内容的前一个内容
+ * @param item 当前内容
+ * @return 前一个内容，如果当前内容不存在则返回null
+ */
+fun <E> List<E>.prevItem(item: E): E? {
+    val index = this.indexOf(item)
+    return if (index != -1) {
+        this[this.prevIndex(index)]
+    } else {
+        null
+    }
+}
+
+/**
+ * 获取指定内容的后一个内容
+ * @param item 当前内容
+ * @return 后一个内容，如果当前内容不存在则返回null
+ */
+fun <E> List<E>.nextItem(item: E): E? {
+    val index = this.indexOf(item)
+    return if (index != -1) {
+        this[this.nextIndex(index)]
+    } else {
+        null
+    }
+}

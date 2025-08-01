@@ -8,8 +8,11 @@ import ink.meodinger.lpfx.action.FunctionAction
 import ink.meodinger.lpfx.action.LabelAction
 import ink.meodinger.lpfx.component.CTreeLabelItem
 import ink.meodinger.lpfx.options.Logger
+import ink.meodinger.lpfx.type.TransLabel
 import ink.meodinger.lpfx.util.collection.nextIndex
+import ink.meodinger.lpfx.util.collection.nextItem
 import ink.meodinger.lpfx.util.collection.prevIndex
+import ink.meodinger.lpfx.util.collection.prevItem
 import ink.meodinger.lpfx.util.component.expand
 import ink.meodinger.lpfx.util.component.s
 import javafx.event.EventHandler
@@ -228,7 +231,7 @@ class ShortcutManager(private val state: State) {
     // 注册 Alt+左右方向键移动标签分组
     private fun registerLabelGroupMove() {
         val labelGroupChangeHandler = EventHandler<KeyEvent> handler@{
-            if (!(it.isAltDown || (Config.isMac && it.isControlDown)) && it.code.isArrowKey) return@handler
+            if (!(it.isAltDown  && it.code.isArrowKey)) return@handler
             // 确保选中的是标签项
 
 
@@ -267,35 +270,35 @@ class ShortcutManager(private val state: State) {
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, labelGroupChangeHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, labelGroupChangeHandler)
+        cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, labelGroupChangeHandler)
         Logger.info("Transformed Alt + Left/Right", "Controller")
     }
 
 
     // 注册 Alt+上下方向键移动标签序号
     private fun registerLabelIndexMove() {
-        val labelGroupChangeHandler = EventHandler<KeyEvent> handler@{
-            if (!(it.isAltDown || (Config.isMac && it.isControlDown)) && it.code.isArrowKey) return@handler
+        val labelIndexChangeHandler = EventHandler<KeyEvent> handler@{
+            if (!(it.isAltDown)  && it.code.isArrowKey) return@handler
             // 确保选中的是标签项
 
 
-            val selectedItem = cTreeView.selectionModel.selectedItem as CTreeLabelItem
-            val itemIndex = selectedItem.transLabel.index
+            val selectedItem = cTreeView.selectionModel.selectedItem as? CTreeLabelItem ?: return@handler
+            val transLabel = selectedItem.transLabel
+            val labels = state.transFile.getTransList(state.currentPicName).map(TransLabel::index)
 
 
-
-            // 根据左右键判断新的分组
+            // 根据上下键判断新的序号
             val newIndex = when (it.code) {
-                KeyCode.UP -> getNextLabelItemIndex(itemIndex, forward = false)
-                KeyCode.DOWN -> getNextLabelItemIndex(itemIndex, forward = true)
+                KeyCode.UP -> labels.prevItem(transLabel.index)
+                KeyCode.DOWN -> labels.nextItem(transLabel.index)
                 else -> return@handler
             }
-
-            if (newIndex == NOT_FOUND) return@handler
+            if (newIndex == NOT_FOUND || newIndex == null) return@handler
             // 创建动作
             val action = LabelAction(
                 ActionType.CHANGE, state,
                 state.currentPicName,
-                state.transFile.getTransLabel(state.currentPicName, itemIndex),
+                selectedItem.transLabel,
                 newLabelIndex = newIndex
             )
             val moveAction = FunctionAction(
@@ -303,12 +306,15 @@ class ShortcutManager(private val state: State) {
                 { action.revert(); state.controller.requestUpdateTree() }
             )
             state.doAction(moveAction)
+            it.consume() // Consume used event
             cLabelPane.moveToLabel(newIndex)
             cTreeView.selectLabel(newIndex, clear = true, scrollTo = true)
-            it.consume() // Consume used event
+
+
         }
-        cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, labelGroupChangeHandler)
-        cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, labelGroupChangeHandler)
+        cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, labelIndexChangeHandler)
+        cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, labelIndexChangeHandler)
+        cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, labelIndexChangeHandler)
         Logger.info("Transformed Alt + Up/Down for Index Move", "Controller")
     }
 
@@ -334,6 +340,7 @@ class ShortcutManager(private val state: State) {
             index += direction
         }
     }
+
 
     /**
      * move CurrLabel to next/previous LabelItem
