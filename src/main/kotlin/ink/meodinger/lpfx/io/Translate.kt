@@ -31,7 +31,7 @@ private const val FANHUAJIROOT = "https://api.zhconvert.org/convert"
 
 
 object TranslationConstants {
-    const val DELIMITER = "$|$"
+    const val DELIMITER = "-DELIMITER-"
 }
 
 private val utf8Charset = Charset.forName("UTF-8")
@@ -79,6 +79,7 @@ fun convertByFanHuaJi(text: String, converter: String): String {
         )
     }&ignoreTextStyles=${TranslationConstants.DELIMITER}&converter=$converter"
     return try {
+        Logger.info("TranslateURL:$url", "Translate")
         val connection = URI(url).toURL().openConnection().apply { connect() }
         val result = ObjectMapper().readTree(connection.getInputStream())
         Logger.info("TranslateResult:${result}", "Translate")

@@ -881,6 +881,7 @@ class View(private val state: State) : BorderPane() {
             override fun call() {
                 val actions = ArrayList<LabelAction>()
 
+                Logger.info("Converting...", "cht2zh")
                 val picNames = state.transFile.sortedPicNames
                 val picCount = state.transFile.picCount
                 for ((picIndex, picName) in picNames.withIndex()) {
