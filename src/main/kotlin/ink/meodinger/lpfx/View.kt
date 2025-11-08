@@ -826,6 +826,7 @@ class View(private val state: State) : BorderPane() {
             Settings.BaiduTransLateKey        -> Settings.baiduTransLateKey           = value as String
             Settings.BaiduTransLateAppId      -> Settings.baiduTransLateAppId         = value as String
             Settings.SelectedTranslationAPI   -> Settings.selectedTranslationAPI      = TranslationAPI.fromString(value as String)
+            Preference.CurrentLanguage        -> Preference.currentLanguage = value as String
             else -> doNothing()
         }
     }

@@ -42,7 +42,7 @@ class LabelPlusFX: HookedApplication() {
         private const val PARAM_UNNAMED_NO_CHECK_UPDATE = "--no-check-update"
     }
 
-    private val state: State = State()
+    private lateinit var state: State
     private val icon: TrayIcon by lazy {
         TrayIcon(SwingFXUtils.fromFXImage(ICON, null)).apply {
             fun restore() {
@@ -140,14 +140,14 @@ class LabelPlusFX: HookedApplication() {
      */
     override fun init() {
         // Let FX Thread keep running when Stage closed by BOSS Key
-        Platform.setImplicitExit(false)
 
-        state.application = this
+        Platform.setImplicitExit(false)
 
         // Start Logger Timer
         Logger.tic()
-        Logger.info("App initializing...", "Application")
         Options.load()
+        state = State().apply { application = this@LabelPlusFX }
+        Logger.info("App initializing...", "Application")
         Logger.info("App initialized", "Application")
     }
 

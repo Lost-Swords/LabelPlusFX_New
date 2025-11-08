@@ -6,6 +6,7 @@ import ink.meodinger.lpfx.component.CLabelPane
 import ink.meodinger.lpfx.component.common.CColorPicker
 import ink.meodinger.lpfx.component.common.CComboBox
 import ink.meodinger.lpfx.component.common.CInputLabel
+import ink.meodinger.lpfx.options.Preference
 import ink.meodinger.lpfx.options.Settings
 import ink.meodinger.lpfx.type.TransFile
 import ink.meodinger.lpfx.util.color.isColorHex
@@ -126,6 +127,10 @@ class DialogSettings : AbstractPropertiesDialog() {
         children += Text(I18N["settings.tool.fan_hua_ji.description.suffix"])
     }
 
+    // OTHER
+    private val languageCombo = CComboBox<String>()
+    private val languageLabel = Label(I18N["settings.other.language"])
+
 
     init {
         title = I18N["settings.title"]
@@ -172,7 +177,8 @@ class DialogSettings : AbstractPropertiesDialog() {
                     stackPane.prefWidthProperty().bind(scrollPane.widthProperty() - 16.0)
 
                     center(scrollPane) {
-                        style = "-fx-background-color:transparent;" }
+                        style = "-fx-background-color:transparent;"
+                    }
                     bottom(HBox()) {
                         alignment = Pos.CENTER_RIGHT
                         padding = Insets(16.0, 8.0, 8.0, 16.0)
@@ -240,18 +246,22 @@ class DialogSettings : AbstractPropertiesDialog() {
                     add(lLabelPane, 0, 0, 1, 6) {
                         val lLabelPaneBorderWidth = 2.0
 
-                        border = Border(BorderStroke(
-                            Color.DARKGRAY,
-                            BorderStrokeStyle.SOLID,
-                            CornerRadii(0.0),
-                            BorderWidths(lLabelPaneBorderWidth)
-                        ))
-                        background = Background(BackgroundImage(
-                            SAMPLE_IMAGE,
-                            BackgroundRepeat.NO_REPEAT, BackgroundRepeat.NO_REPEAT,
-                            BackgroundPosition.CENTER,
-                            BackgroundSize.DEFAULT
-                        ))
+                        border = Border(
+                            BorderStroke(
+                                Color.DARKGRAY,
+                                BorderStrokeStyle.SOLID,
+                                CornerRadii(0.0),
+                                BorderWidths(lLabelPaneBorderWidth)
+                            )
+                        )
+                        background = Background(
+                            BackgroundImage(
+                                SAMPLE_IMAGE,
+                                BackgroundRepeat.NO_REPEAT, BackgroundRepeat.NO_REPEAT,
+                                BackgroundPosition.CENTER,
+                                BackgroundSize.DEFAULT
+                            )
+                        )
 
                         setPrefSize(320.0, 320.0)
                         add(lCLabel) {
@@ -344,7 +354,9 @@ class DialogSettings : AbstractPropertiesDialog() {
                         isShowTickMarks = true
                         isShowTickLabels = true
                         labelFormatter = object : StringConverter<Double>() {
-                            override fun toString(double: Double): String = ceil(double * 255.0).toInt().toString(16).padStart(2, '0')
+                            override fun toString(double: Double): String =
+                                ceil(double * 255.0).toInt().toString(16).padStart(2, '0')
+
                             override fun fromString(string: String): Double = string.toInt(16).toDouble() / 255.0
                         }
                         valueProperty().addListener(onNew<Number, Double> {
@@ -408,7 +420,7 @@ class DialogSettings : AbstractPropertiesDialog() {
                         disableProperty().bind(!tCheckUseCustomBaiduKey.selectedProperty())
                     }
                     add(Separator(), 0, 5, 2, 1)
-                    add(tTranslateTextFlow,0,6,2,1)
+                    add(tTranslateTextFlow, 0, 6, 2, 1)
                 }
             }
             add(I18N["settings.other.title"]) {
@@ -434,7 +446,7 @@ class DialogSettings : AbstractPropertiesDialog() {
                     add(xCheckFormat, 0, 3, 2, 1)
                     add(xCheckUseMeo, 0, 4, 2, 1)
                     add(xCheckUseTmp, 0, 5, 2, 1)
-                    add(xFieldTemplate, 0, 6,2, 1) {
+                    add(xFieldTemplate, 0, 6, 2, 1) {
                         disableProperty().bind(!xCheckUseTmp.selectedProperty())
                         textFormatter = genTextFormatter<String> { it.text.replace(Regex("[:*?<>|/\"\\\\]"), "") }
                         tooltip = Tooltip(I18N["settings.other.template.hint"]).apply {
@@ -442,13 +454,17 @@ class DialogSettings : AbstractPropertiesDialog() {
                         }
                     }
                     add(Label(I18N["settings.other.pic_prism_mode"]), 0, 7)
-                    add(xPrismMode, 0, 8,2, 1) {
+                    add(xPrismMode, 0, 8, 2, 1) {
                         prefWidth = 280.0
                         items = FXCollections.observableList(PrismMode.entries)
                         isWrapped = true
                         tooltip = Tooltip(I18N["settings.other.pic_prism_mode.description"]).apply {
                             showDelay = Duration(500.0)
                         }
+                    }
+                    add(languageLabel, 0, 9)
+                    add(languageCombo, 1, 9,).apply {
+                        prefWidth = 160.0
                     }
 
 //                    add(xUseSWPrism, 0, 7, 2, 1)
@@ -474,6 +490,7 @@ class DialogSettings : AbstractPropertiesDialog() {
             for (i in nameList.indices) createGroupRow(createList[i], nameList[i], colorList[i])
         }
     }
+
     private fun createGroupRow(createOnNew: Boolean = false, name: String = "", color: String = "") {
         val newRowIndex = if (gGridPane.rowCount == 0) 1 else gGridPane.rowCount
 
@@ -503,6 +520,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         gGridPane.add(checkBox, 2, newRowIndex)
         gGridPane.add(button, 3, newRowIndex)
     }
+
     private fun removeGroupRow(index: Int) {
         val toRemoveSet = HashSet<Node>()
         for (node in gGridPane.children) {
@@ -530,6 +548,7 @@ class DialogSettings : AbstractPropertiesDialog() {
             for ((from, to) in ruleList) createLigatureRow(from, to)
         }
     }
+
     private fun createLigatureRow(from: String = "", to: String = "") {
         val newRowIndex = if (rGridPane.rowCount == 0) 1 else rGridPane.rowCount
 
@@ -558,6 +577,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         rGridPane.add(toField, 1, newRowIndex)
         rGridPane.add(button, 2, newRowIndex)
     }
+
     private fun removeLigatureRow(index: Int) {
         val toRemoveSet = HashSet<Node>()
         for (node in rGridPane.children) {
@@ -585,9 +605,10 @@ class DialogSettings : AbstractPropertiesDialog() {
         if (quickInputTextsList.isEmpty()) {
             qGridPane.add(qLabelHint, 0, 0)
         } else {
-            for ( text in quickInputTextsList) createQuickInputRow(text)
+            for (text in quickInputTextsList) createQuickInputRow(text)
         }
     }
+
     private fun createQuickInputRow(text: String = "") {
         val newRowIndex = if (qGridPane.rowCount == 0) 1 else qGridPane.rowCount
         if (qGridPane.children.size == 1 || qGridPane.rowCount == 0) { // Only hint || nothing
@@ -602,6 +623,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         qGridPane.add(textField, 0, newRowIndex)
         qGridPane.add(button, 1, newRowIndex)
     }
+
     private fun removeQuickInputRow(index: Int) {
         val toRemoveSet = HashSet<Node>()
         for (node in qGridPane.children) {
@@ -666,6 +688,18 @@ class DialogSettings : AbstractPropertiesDialog() {
         xCheckUseTmp.isSelected = Settings.useExportNameTemplate
         xFieldTemplate.text = Settings.exportNameTemplate
         xPrismMode.select(Settings.currentPrismMode)
+        languageCombo.items = FXCollections.observableArrayList(
+            "English",
+            "简体中文",
+            "繁體中文"
+        )
+        languageCombo.selectionModel.select(
+            when (Preference.currentLanguage) {
+                "zh_CN" -> 1
+                "zh_TW" -> 2
+                else -> 0
+            }
+        )
 
 
     }
@@ -696,6 +730,7 @@ class DialogSettings : AbstractPropertiesDialog() {
 
         return map
     }
+
     private fun convertLigatureRule(): Map<String, Any> {
         val size = rGridPane.rowCount - rRowShift
         if (size < 0) return emptyMap()
@@ -720,6 +755,7 @@ class DialogSettings : AbstractPropertiesDialog() {
 
         return map
     }
+
     private fun convertQuickInput(): Map<String, Any> {
         val map = HashMap<String, Any>()
         val size = qGridPane.rowCount - qRowShift
@@ -736,6 +772,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.QuickInputTexts] = textList
         return map
     }
+
     private fun convertMode(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
@@ -745,16 +782,18 @@ class DialogSettings : AbstractPropertiesDialog() {
 
         return map
     }
+
     private fun convertLabel(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
         map[Settings.LabelRadius] = lSliderRadius.value
         map[Settings.LabelColorOpacity] = lSliderAlpha.value
         map[Settings.LabelTextOpaque] = lCheckTextOpaque.isSelected
-        map[Settings.LabelSelectedStroke ] = lCheckSelectedStroke.isSelected
+        map[Settings.LabelSelectedStroke] = lCheckSelectedStroke.isSelected
 
         return map
     }
+
     private fun convertTool(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
@@ -764,6 +803,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.BaiduTransLateAppId] = tFieldBaiduTranslateAppId.text
         return map
     }
+
     private fun convertOther(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
@@ -775,7 +815,12 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.UseExportNameTemplate] = xCheckUseTmp.isSelected
         map[Settings.ExportNameTemplate] = xFieldTemplate.text
         map[Settings.CurrentPrismMode] = xPrismMode.index.let(PrismMode.entries.toTypedArray()::get)
-
+        val selectedLanguage = when (languageCombo.selectionModel.selectedIndex) {
+            1 -> "zh_CN"
+            2 -> "zh_TW"
+            else -> "en"
+        }
+        map[Preference.CurrentLanguage] = selectedLanguage
         return map
     }
 

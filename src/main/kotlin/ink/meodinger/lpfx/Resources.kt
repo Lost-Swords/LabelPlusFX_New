@@ -1,5 +1,6 @@
 package ink.meodinger.lpfx
 
+import ink.meodinger.lpfx.options.Preference
 import javafx.embed.swing.SwingFXUtils
 import javafx.scene.image.Image
 import java.io.File
@@ -109,10 +110,13 @@ val TEMPLATE_ZH: ByteArray by lazy { loadAsBytes("/file/script/ps_script_res/zh.
 /**
  * Language
  */
-val lang: Locale = when (Locale.getDefault().country) {
-    "CN"             -> Locale.SIMPLIFIED_CHINESE  // zh_CN
-    "HK", "MO", "TW" -> Locale.TRADITIONAL_CHINESE // zh_TW
-    else -> Locale.ENGLISH
+val lang: Locale by lazy {
+    val language = Preference.currentLanguage
+    when (language) {
+        "zh_CN" -> Locale.SIMPLIFIED_CHINESE
+        "zh_TW" -> Locale.TRADITIONAL_CHINESE
+        else -> Locale.ENGLISH
+    }
 }
 
 /**
@@ -122,7 +126,9 @@ val INFO = ResourceBundle.getBundle("ink.meodinger.lpfx.LabelPlusFX")!!
 /**
  * I18N for LPFX
  */
-val I18N = ResourceBundle.getBundle("ink.meodinger.lpfx.Lang", lang)!!
+val I18N: ResourceBundle by lazy {
+    ResourceBundle.getBundle("ink.meodinger.lpfx.Lang", lang)
+}
 
 /**
  * Provide map-like getter

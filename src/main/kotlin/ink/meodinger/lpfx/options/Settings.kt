@@ -111,7 +111,8 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         CProperty(UseCustomBaiduKey, false),
         CProperty(BaiduTransLateKey, "lkjooeJUgW0spOctSbZb"),
         CProperty(BaiduTransLateAppId, "20200730000529751"),
-        CProperty(SelectedTranslationAPI, TranslationAPI.FanHuaJi.ordinal)
+        CProperty(SelectedTranslationAPI, TranslationAPI.FanHuaJi.ordinal),
+
     )
 
     private val defaultGroupNameListProperty: ListProperty<String> = SimpleListProperty()
@@ -218,6 +219,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
 
 
 
+
     init { useDefault() }
 
     @Throws(IOException::class, NumberFormatException::class)
@@ -249,7 +251,6 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         baiduTransLateKey           = this[BaiduTransLateKey].asString()
         baiduTransLateAppId         = this[BaiduTransLateAppId].asString()
         selectedTranslationAPI      = TranslationAPI.fromString(this[SelectedTranslationAPI].asString())
-
     }
 
     @Throws(IOException::class)

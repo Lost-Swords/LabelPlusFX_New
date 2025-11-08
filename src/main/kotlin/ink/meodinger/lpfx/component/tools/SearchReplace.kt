@@ -182,7 +182,9 @@ class SearchReplace(private val state: State) : Stage() {
                 while (index != NOT_FOUND) {
                     count++
                     text = text.replaceRange(index, index + searchText.length, replaceText)
-                    index = text.indexOf(searchText, index, ignoreCase)
+                    // 从替换后的位置继续搜索，避免无限循环
+                    index = text.indexOf(searchText, index + replaceText.length, ignoreCase)
+
                 }
                 actions.add(LabelAction(ActionType.CHANGE, state, picName, label, newText = text))
             }

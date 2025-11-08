@@ -233,6 +233,7 @@ class ShortcutManager(private val state: State) {
         val labelGroupChangeHandler = EventHandler<KeyEvent> handler@{
             if (!(it.isAltDown  && it.code.isArrowKey)) return@handler
             // 确保选中的是标签项
+            if (cTreeView.selectionModel.selectedItem !is CTreeLabelItem) return@handler
 
 
             val selectedItem = cTreeView.selectionModel.selectedItem as CTreeLabelItem
