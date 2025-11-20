@@ -6,12 +6,14 @@ import ink.meodinger.lpfx.component.CLabelPane
 import ink.meodinger.lpfx.component.common.CColorPicker
 import ink.meodinger.lpfx.component.common.CComboBox
 import ink.meodinger.lpfx.component.common.CInputLabel
+import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.options.Preference
 import ink.meodinger.lpfx.options.Settings
 import ink.meodinger.lpfx.type.TransFile
 import ink.meodinger.lpfx.util.color.isColorHex
 import ink.meodinger.lpfx.util.color.toHexRGB
 import ink.meodinger.lpfx.util.component.*
+import ink.meodinger.lpfx.util.doNothing
 import ink.meodinger.lpfx.util.property.minus
 import ink.meodinger.lpfx.util.property.onChange
 import ink.meodinger.lpfx.util.property.onNew
@@ -825,7 +827,7 @@ class DialogSettings : AbstractPropertiesDialog() {
     }
 
     override fun convertResult(): Map<String, Any> {
-        return HashMap<String, Any>().apply {
+        val map =  HashMap<String, Any>().apply {
             putAll(convertGroup())
             putAll(convertLigatureRule())
             putAll(convertQuickInput())
@@ -834,6 +836,40 @@ class DialogSettings : AbstractPropertiesDialog() {
             putAll(convertTool())
             putAll(convertOther())
         }
+
+        Logger.info("Generated common settings", "MenuBar")
+        Logger.debug("got $map", "MenuBar")
+
+        @Suppress("UNCHECKED_CAST")
+        for ((key, value) in map) when (key) {
+            Settings.DefaultGroupNameList     -> Settings.defaultGroupNameList        .setAll(value as List<String>)
+            Settings.DefaultGroupColorHexList -> Settings.defaultGroupColorHexList    .setAll(value as List<String>)
+            Settings.IsGroupCreateOnNewTrans  -> Settings.isGroupCreateOnNewTransList .setAll(value as List<Boolean>)
+            Settings.LigatureRules            -> Settings.ligatureRules               .setAll(value as List<Pair<String, String>>)
+            Settings.QuickInputTexts          -> Settings.quickInputTexts             .setAll(value as List<String>)
+            Settings.ViewModes                -> Settings.viewModes                   .setAll(value as List<ViewMode>)
+            Settings.NewPictureScale          -> Settings.newPictureScalePicture      = value as CLabelPane.NewPictureScale
+            Settings.UseWheelToScale          -> Settings.useWheelToScale             = value as Boolean
+            Settings.LabelRadius              -> Settings.labelRadius                 = value as Double
+            Settings.LabelColorOpacity        -> Settings.labelColorOpacity           = value as Double
+            Settings.LabelTextOpaque          -> Settings.labelTextOpaque             = value as Boolean
+            Settings.LabelSelectedStroke      -> Settings.labelSelectedStroke         = value as Boolean
+            Settings.CurrentPrismMode         -> Settings.currentPrismMode            = value as PrismMode
+            Settings.AutoCheckUpdate          -> Settings.autoCheckUpdate             = value as Boolean
+            Settings.AutoOpenLastFile         -> Settings.autoOpenLastFile            = value as Boolean
+            Settings.InstantTranslate         -> Settings.instantTranslate            = value as Boolean
+            Settings.CheckFormatWhenSave      -> Settings.checkFormatWhenSave         = value as Boolean
+            Settings.UseMeoFileAsDefault      -> Settings.useMeoFileAsDefault         = value as Boolean
+            Settings.UseExportNameTemplate    -> Settings.useExportNameTemplate       = value as Boolean
+            Settings.ExportNameTemplate       -> Settings.exportNameTemplate          = value as String
+            Settings.UseCustomBaiduKey        -> Settings.useCustomBaiduKey           = value as Boolean
+            Settings.BaiduTransLateKey        -> Settings.baiduTransLateKey           = value as String
+            Settings.BaiduTransLateAppId      -> Settings.baiduTransLateAppId         = value as String
+            Settings.SelectedTranslationAPI   -> Settings.selectedTranslationAPI      = TranslationAPI.fromString(value as String)
+            Preference.CurrentLanguage        -> Preference.currentLanguage = value as String
+            else -> doNothing()
+        }
+        return map
     }
 
 }

@@ -795,40 +795,7 @@ class View(private val state: State) : BorderPane() {
     }
 
     private fun settings() {
-        val map = state.application.dialogSettings.generateProperties()
-
-        Logger.info("Generated common settings", "MenuBar")
-        Logger.debug("got $map", "MenuBar")
-
-        @Suppress("UNCHECKED_CAST")
-        for ((key, value) in map) when (key) {
-            Settings.DefaultGroupNameList     -> Settings.defaultGroupNameList        .setAll(value as List<String>)
-            Settings.DefaultGroupColorHexList -> Settings.defaultGroupColorHexList    .setAll(value as List<String>)
-            Settings.IsGroupCreateOnNewTrans  -> Settings.isGroupCreateOnNewTransList .setAll(value as List<Boolean>)
-            Settings.LigatureRules            -> Settings.ligatureRules               .setAll(value as List<Pair<String, String>>)
-            Settings.QuickInputTexts          -> Settings.quickInputTexts             .setAll(value as List<String>)
-            Settings.ViewModes                -> Settings.viewModes                   .setAll(value as List<ViewMode>)
-            Settings.NewPictureScale          -> Settings.newPictureScalePicture      = value as CLabelPane.NewPictureScale
-            Settings.UseWheelToScale          -> Settings.useWheelToScale             = value as Boolean
-            Settings.LabelRadius              -> Settings.labelRadius                 = value as Double
-            Settings.LabelColorOpacity        -> Settings.labelColorOpacity           = value as Double
-            Settings.LabelTextOpaque          -> Settings.labelTextOpaque             = value as Boolean
-            Settings.LabelSelectedStroke      -> Settings.labelSelectedStroke         = value as Boolean
-            Settings.CurrentPrismMode          -> Settings.currentPrismMode           = value as PrismMode
-            Settings.AutoCheckUpdate          -> Settings.autoCheckUpdate             = value as Boolean
-            Settings.AutoOpenLastFile         -> Settings.autoOpenLastFile            = value as Boolean
-            Settings.InstantTranslate         -> Settings.instantTranslate            = value as Boolean
-            Settings.CheckFormatWhenSave      -> Settings.checkFormatWhenSave         = value as Boolean
-            Settings.UseMeoFileAsDefault      -> Settings.useMeoFileAsDefault         = value as Boolean
-            Settings.UseExportNameTemplate    -> Settings.useExportNameTemplate       = value as Boolean
-            Settings.ExportNameTemplate       -> Settings.exportNameTemplate          = value as String
-            Settings.UseCustomBaiduKey        -> Settings.useCustomBaiduKey           = value as Boolean
-            Settings.BaiduTransLateKey        -> Settings.baiduTransLateKey           = value as String
-            Settings.BaiduTransLateAppId      -> Settings.baiduTransLateAppId         = value as String
-            Settings.SelectedTranslationAPI   -> Settings.selectedTranslationAPI      = TranslationAPI.fromString(value as String)
-            Preference.CurrentLanguage        -> Preference.currentLanguage = value as String
-            else -> doNothing()
-        }
+        state.application.dialogSettings.generateProperties()
     }
     private fun logs() {
         val map = state.application.dialogLogs.generateProperties()
