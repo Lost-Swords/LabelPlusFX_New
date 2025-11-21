@@ -57,6 +57,29 @@ class DialogSettings : AbstractPropertiesDialog() {
         private const val qRowShift = 1
         private const val rIsFrom = "C_Is_From"
         private const val rRuleIndex = "C_Rule_Index"
+
+        /**
+         * Supported languages enumeration
+         */
+        private enum class SupportedLanguage(val code: String, val displayName: String) {
+            ENGLISH("en", "English"),
+            SIMPLIFIED_CHINESE("zh_CN", "简体中文"),
+            TRADITIONAL_CHINESE("zh_TW", "繁體中文");
+        }
+
+        /**
+         * 根据语言代码获取在languageCombo中的索引位置
+         */
+        private fun getLanguageIndex(languageCode: String): Int {
+            return SupportedLanguage.entries.indexOfFirst { it.code == languageCode }.takeIf { it >= 0 } ?: 0
+        }
+
+        /**
+         * 根据languageCombo中的索引位置获取语言代码
+         */
+        private fun getLanguageCode(index: Int): String {
+            return SupportedLanguage.entries.getOrNull(index)?.code ?: SupportedLanguage.ENGLISH.code
+        }
     }
 
     private val gGridPane = GridPane().apply {
@@ -690,18 +713,12 @@ class DialogSettings : AbstractPropertiesDialog() {
         xCheckUseTmp.isSelected = Settings.useExportNameTemplate
         xFieldTemplate.text = Settings.exportNameTemplate
         xPrismMode.select(Settings.currentPrismMode)
+        // Populate language combo box with display names from the enum
         languageCombo.items = FXCollections.observableArrayList(
-            "English",
-            "简体中文",
-            "繁體中文"
+            SupportedLanguage.entries.map { it.displayName }
         )
-        languageCombo.selectionModel.select(
-            when (Preference.currentLanguage) {
-                "zh_CN" -> 1
-                "zh_TW" -> 2
-                else -> 0
-            }
-        )
+        // Select the current language based on Preference
+        languageCombo.selectionModel.select(getLanguageIndex(Preference.currentLanguage))
 
 
     }
@@ -817,11 +834,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.UseExportNameTemplate] = xCheckUseTmp.isSelected
         map[Settings.ExportNameTemplate] = xFieldTemplate.text
         map[Settings.CurrentPrismMode] = xPrismMode.index.let(PrismMode.entries.toTypedArray()::get)
-        val selectedLanguage = when (languageCombo.selectionModel.selectedIndex) {
-            1 -> "zh_CN"
-            2 -> "zh_TW"
-            else -> "en"
-        }
+        val selectedLanguage = getLanguageCode(languageCombo.selectionModel.selectedIndex)
         map[Preference.CurrentLanguage] = selectedLanguage
         return map
     }
@@ -836,9 +849,14 @@ class DialogSettings : AbstractPropertiesDialog() {
             putAll(convertTool())
             putAll(convertOther())
         }
+        // 直接在返回前保存一次设置
+        saveSettings(map)
+        return map
+    }
 
-        Logger.info("Generated common settings", "MenuBar")
-        Logger.debug("got $map", "MenuBar")
+    private fun saveSettings(map: Map<String,Any> ){
+        Logger.info("Generated common settings", "DialogSetting")
+        Logger.debug("got $map", "DialogSetting")
 
         @Suppress("UNCHECKED_CAST")
         for ((key, value) in map) when (key) {
@@ -866,10 +884,9 @@ class DialogSettings : AbstractPropertiesDialog() {
             Settings.BaiduTransLateKey        -> Settings.baiduTransLateKey           = value as String
             Settings.BaiduTransLateAppId      -> Settings.baiduTransLateAppId         = value as String
             Settings.SelectedTranslationAPI   -> Settings.selectedTranslationAPI      = TranslationAPI.fromString(value as String)
-            Preference.CurrentLanguage        -> Preference.currentLanguage = value as String
+            Preference.CurrentLanguage        -> Preference.currentLanguage           = value as String
             else -> doNothing()
         }
-        return map
     }
 
 }
