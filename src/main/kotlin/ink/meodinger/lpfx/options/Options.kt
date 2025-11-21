@@ -88,10 +88,11 @@ object Options {
 
     @Throws(IOException::class)
     private fun loadProperties(instance: AbstractProperties) {
-        // Unknown properties will be defaults, so we just need to
-        // make sure the file we will load exists.
+
+        // Create a new properties file if it does not exist
         if (Files.notExists(instance.path)) {
             val file = Files.createFile(instance.path).toFile()
+            // transfer old properties file to new
             findOldProperties(instance.path)?.let { transfer(it,file) }
             Logger.info("Loaded ${instance.name} in old version to use for the new version ", "Options")
         }

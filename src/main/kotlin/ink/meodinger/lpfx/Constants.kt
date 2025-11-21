@@ -199,12 +199,11 @@ enum class TranslationAPI {
     BaiduTranslate;
 
     companion object {
-        private val DEFAULT = FanHuaJi
         fun fromString(name: String): TranslationAPI {
             return try {
                 valueOf(name)
             } catch (e: IllegalArgumentException) {
-                DEFAULT
+                FanHuaJi
             }
         }
     }
