@@ -35,10 +35,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (Liberica Full)
+      - name: Set up JDK 21 (Liberica Full)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'liberica'
           java-package: jdk-full
 
@@ -76,10 +76,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (Liberica Full)
+      - name: Set up JDK 21 (Liberica Full)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'liberica'
           java-package: jdk-full
 
@@ -115,10 +115,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (Liberica Full)
+      - name: Set up JDK 21 (Liberica Full)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'liberica'
           java-package: jdk-full
 
