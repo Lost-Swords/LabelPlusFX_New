@@ -103,7 +103,7 @@ class DialogLogs : AbstractPropertiesDialog() {
                         } else if (Config.isMac) {
                             ProcessBuilder("open", "-t", file.absolutePath).start()
                         } else {
-                            ProcessBuilder("vi", file.absolutePath).start()
+                            ProcessBuilder("xdg-open", file.absolutePath).start()
                         }
                     }
                 } } }
