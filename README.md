@@ -81,7 +81,7 @@ git clone https://github.com/Lost-Swords/LabelPlusFX_New.git
 
 2. 运行Maven命令 `package`
 
-3. 运行脚本,`build.bat` (Windows)或者`build.sh` (Mac)
+3. 运行脚本`build.bat` (Windows)、`build-macos.sh` (Mac)，或者`build-linux.sh` (Linux)
 
 4. 启动 `LabelPlusFX\LabelPlusFX.exe` 
 

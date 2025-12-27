@@ -82,7 +82,7 @@ To get a local copy up and running follow these simple steps.
 
 2. Run maven build `package`
 
-3. Build with script `build.bat` (Windows) or`build.sh` (Mac)
+3. Build with script `build.bat` (Windows), `build-macos.sh` (Mac) or `build-linux.sh` (Linux)
 
 4. Run `LabelPlusFX\LabelPlusFX.exe` 
 
