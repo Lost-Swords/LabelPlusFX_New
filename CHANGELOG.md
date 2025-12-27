@@ -9,6 +9,7 @@
 - 添加校阅功能（单独开一个beta分支进行）
 - 自定义快捷键
 - 添加日汉词典（如moJi）
+- [label边界与尺寸处理](https://github.com/Lost-Swords/LabelPlusFX_New/issues/12)
 
 ## [2.3.9] - 2025-11-08
 
