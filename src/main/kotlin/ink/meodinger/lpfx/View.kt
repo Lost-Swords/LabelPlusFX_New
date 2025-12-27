@@ -42,9 +42,7 @@ import javafx.scene.shape.Circle
 import javafx.stage.FileChooser
 import javafx.util.Callback
 import javafx.util.Duration
-import java.awt.Desktop
 import java.io.File
-import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
@@ -510,9 +508,7 @@ class View(private val state: State) : BorderPane() {
                 prefWidth = 80.0
                 style = "-fx-text-fill: black; -fx-underline: true;"
                 setOnAction {
-                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                        Desktop.getDesktop().browse(URI(INFO["application.guide"]))
-                    }
+                    state.application.hostServices.showDocument(INFO["application.guide"])
                 }
             }
             add(Separator()) {
@@ -522,9 +518,7 @@ class View(private val state: State) : BorderPane() {
                 prefWidth = 80.0
                 style = "-fx-text-fill: black; -fx-underline: true;"
                 setOnAction {
-                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                        Desktop.getDesktop().browse(URI(INFO["application.guide.shortcut"]))
-                    }
+                    state.application.hostServices.showDocument(INFO["application.guide.shortcut"])
                 }
             }
             add(Separator()) {
