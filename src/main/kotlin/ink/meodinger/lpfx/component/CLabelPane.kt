@@ -2,6 +2,7 @@ package ink.meodinger.lpfx.component
 
 import ink.meodinger.lpfx.*
 import ink.meodinger.lpfx.Config.MonoFont
+import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.type.TransLabel
 import ink.meodinger.lpfx.util.collection.autoRangeTo
 import ink.meodinger.lpfx.util.color.toHexRGB
@@ -848,12 +849,46 @@ class CLabelPane(
      */
     fun showLabelText(labelIndex: Int, x: Double, y: Double) {
         val label = labelNodes.first { it.index == labelIndex }
-
         val screenBounds = root.localToScreen(root.boundsInLocal)
-        label.tooltip.show(root,
-            screenBounds.minX + x * scale + 8,
-            screenBounds.minY + y * scale + 8,
-        )
+        val screenWidth = javafx.stage.Screen.getPrimary().visualBounds.width
+        val screenHeight = javafx.stage.Screen.getPrimary().visualBounds.height
+        // 获取tooltip的预估尺寸
+        val tooltipWidth = 200.0  // 预估值
+        val tooltipHeight = 50.0  // 预估值
+
+
+        // 计算基础坐标
+        val baseX = screenBounds.minX + x * scale
+        val baseY = screenBounds.minY + y * scale
+
+
+        Logger.info("Text position: $baseX, $baseY , $tooltipWidth, $tooltipHeight, $screenWidth, $screenHeight", "LabelPane")
+
+
+        val finalX = when {
+            baseX + tooltipWidth + 10 > screenWidth -> {
+                // 如果右边超出屏幕，则从左边显示
+                baseX - tooltipWidth - 10
+            }
+            else -> {
+                // 默认右侧偏移
+                baseX + 10
+            }
+        }
+
+        val finalY = when {
+            baseY + tooltipHeight + 10 > screenHeight -> {
+                Logger.info("Text out of screen, show from top", "LabelPane")
+                // 如果底部超出屏幕，则从上方显示
+                baseY - tooltipHeight - 10
+            }
+            else -> {
+                // 默认下方偏移
+                baseY + 10
+            }
+        }
+
+        label.tooltip.show(root, finalX, finalY)
     }
 
     /**
