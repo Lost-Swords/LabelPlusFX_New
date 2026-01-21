@@ -852,38 +852,42 @@ class CLabelPane(
         val screenBounds = root.localToScreen(root.boundsInLocal)
         val screenWidth = javafx.stage.Screen.getPrimary().visualBounds.width
         val screenHeight = javafx.stage.Screen.getPrimary().visualBounds.height
-        // 获取tooltip的预估尺寸
-        val tooltipWidth = 200.0  // 预估值
-        val tooltipHeight = 50.0  // 预估值
 
+        // 通过文本内容估算tooltip尺寸
+        val text = label.tooltip.text
+        val font = label.tooltip.font ?: TEXT_FONT
+
+        // 使用Text.getBoundsInLocal()来获取文本尺寸
+        val textNode = Text(text)
+        textNode.font = font
+        val textBounds = textNode.boundsInLocal
+
+        // 估算Tooltip的整体尺寸（包括背景、边框、内边距）
+        val estimatedPadding = 8.0
+        val estimatedBorder = 2.0
+        val estimatedTooltipWidth = textBounds.width + estimatedPadding * 2 + estimatedBorder * 2
+        val estimatedTooltipHeight = textBounds.height + estimatedPadding * 2 + estimatedBorder * 2
 
         // 计算基础坐标
         val baseX = screenBounds.minX + x * scale
         val baseY = screenBounds.minY + y * scale
 
-
-        Logger.info("Text position: $baseX, $baseY , $tooltipWidth, $tooltipHeight, $screenWidth, $screenHeight", "LabelPane")
-
+//        Logger.info("Text position: $baseX, $baseY , Estimated width: $estimatedTooltipWidth, height: $estimatedTooltipHeight", "LabelPane")
 
         val finalX = when {
-            baseX + tooltipWidth + 10 > screenWidth -> {
-                // 如果右边超出屏幕，则从左边显示
-                baseX - tooltipWidth - 10
+            baseX + estimatedTooltipWidth + 10 > screenWidth -> {
+                baseX - estimatedTooltipWidth - 20
             }
             else -> {
-                // 默认右侧偏移
                 baseX + 10
             }
         }
 
         val finalY = when {
-            baseY + tooltipHeight + 10 > screenHeight -> {
-                Logger.info("Text out of screen, show from top", "LabelPane")
-                // 如果底部超出屏幕，则从上方显示
-                baseY - tooltipHeight - 10
+            baseY + estimatedTooltipHeight + 10 > screenHeight -> {
+                baseY - estimatedTooltipHeight - 20
             }
             else -> {
-                // 默认下方偏移
                 baseY + 10
             }
         }
