@@ -108,7 +108,7 @@ jobs:
           path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
 
   build-macos-intel:
-    runs-on: macos-12
+    runs-on: macos-13
     name: Build macOS Package (Intel Compatible)
     needs: [ extract-version ]
 
