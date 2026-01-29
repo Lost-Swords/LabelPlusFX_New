@@ -50,7 +50,6 @@ jpackage \
   --type app-image \
   --name "$APP_NAME" \
   --app-version "$VERSION" \
-  --target-arch "$ARCH" \
   --icon "$ICON_PATH" \
   --dest "$SCRIPT_DIR" \
   --module-path "$MODULE_PATH" \
