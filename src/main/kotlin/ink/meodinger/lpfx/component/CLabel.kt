@@ -39,7 +39,7 @@ class CLabel(
         /**
          * The minimal pick radius for CLabel
          */
-        const val MIN_PICK_RADIUS: Double = 16.0
+        const val MIN_PICK_RADIUS: Double = 2.0
     }
 
     // region Properties

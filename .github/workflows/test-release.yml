@@ -107,6 +107,46 @@ jobs:
           name: LabelPlusFX-${{ env.VERSION }}-Mac
           path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
 
+  build-macos-intel:
+    runs-on: macos-12
+    name: Build macOS Package (Intel Compatible)
+    needs: [ extract-version ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Liberica Full, x64)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'liberica'
+          java-package: jdk-full
+          architecture: x64
+
+      - name: Set VERSION environment variable
+        run: |
+          echo "VERSION=${{ needs.extract-version.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: 3.8.6
+
+      - name: Build project with Maven
+        run: mvn clean package
+
+      - name: Run macOS Intel build script
+        run: |
+          cd script/jpackage
+          chmod +x build-macos-intel.sh
+          ./build-macos-intel.sh ${{ env.VERSION }}
+
+      - name: Archive macOS Intel ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: LabelPlusFX-${{ env.VERSION }}-Mac-Intel
+          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac-Intel.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -147,7 +187,7 @@ jobs:
           path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Linux.tar.gz
 
   create-release:
-    needs: [extract-version, build-windows, build-macos, build-linux]
+    needs: [ extract-version, build-windows, build-macos, build-macos-intel, build-linux ]
     runs-on: ubuntu-latest
     name: Create Draft GitHub Release
     permissions:
@@ -187,4 +227,6 @@ jobs:
           files: |
             release/LabelPlusFX-${{ needs.extract-version.outputs.version }}-Win64.zip
             release/LabelPlusFX-${{ needs.extract-version.outputs.version }}-Mac.zip
+            release/LabelPlusFX-${{ needs.extract-version.outputs.version }}-Mac-Intel.zip
             release/LabelPlusFX-${{ needs.extract-version.outputs.version }}-Linux.tar.gz
+          
