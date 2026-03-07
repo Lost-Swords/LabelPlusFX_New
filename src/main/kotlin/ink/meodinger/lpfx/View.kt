@@ -36,9 +36,7 @@ import javafx.geometry.Insets
 import javafx.geometry.Orientation
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
-import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyCodeCombination
-import javafx.scene.input.KeyCombination
+import javafx.scene.input.*
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
@@ -72,6 +70,9 @@ class View(private val state: State) : BorderPane() {
         private const val SCALE_MIN: Double = 0.1
         private const val SCALE_MAX: Double = 4.0
         private const val SCALE_INIT: Double = 0.8
+
+        // Drag and Drop
+        private val LABEL_DRAG_FORMAT = DataFormat("application/x-lpfx-label-index")
     }
 
     // region Components
@@ -466,6 +467,75 @@ class View(private val state: State) : BorderPane() {
                                         if (newV is CTreeLabelItem) newV.transLabel.markedProperty()
                                             .addListener(markListener)
                                     }
+
+                                    // region Drag and Drop for label reorder
+
+                                    setOnDragDetected { event ->
+                                        val labelItem = treeItem as? CTreeLabelItem ?: return@setOnDragDetected
+                                        val dragboard = startDragAndDrop(TransferMode.MOVE)
+                                        val content = ClipboardContent()
+                                        content[LABEL_DRAG_FORMAT] = labelItem.transLabel.index
+                                        dragboard.setContent(content)
+                                        dragboard.dragView = snapshot(null, null)
+                                        event.consume()
+                                    }
+
+                                    setOnDragOver { event ->
+                                        if (event.gestureSource !== this
+                                            && event.dragboard.hasContent(LABEL_DRAG_FORMAT)
+                                            && treeItem is CTreeLabelItem
+                                        ) {
+                                            event.acceptTransferModes(TransferMode.MOVE)
+                                        }
+                                        event.consume()
+                                    }
+
+                                    setOnDragEntered { event ->
+                                        if (event.gestureSource !== this
+                                            && event.dragboard.hasContent(LABEL_DRAG_FORMAT)
+                                            && treeItem is CTreeLabelItem
+                                        ) {
+                                            opacity = 0.7
+                                        }
+                                    }
+
+                                    setOnDragExited { _ ->
+                                        opacity = 1.0
+                                    }
+
+                                    setOnDragDropped { event ->
+                                        val dragboard = event.dragboard
+                                        var success = false
+                                        if (dragboard.hasContent(LABEL_DRAG_FORMAT) && treeItem is CTreeLabelItem) {
+                                            val fromIndex = dragboard.getContent(LABEL_DRAG_FORMAT) as Int
+                                            val toIndex = (treeItem as CTreeLabelItem).transLabel.index
+                                            if (fromIndex != toIndex && state.isOpened) {
+                                                val transLabel = state.transFile.getTransLabel(state.currentPicName, fromIndex)
+                                                val action = LabelAction(
+                                                    ActionType.CHANGE, state,
+                                                    state.currentPicName,
+                                                    transLabel,
+                                                    newLabelIndex = toIndex
+                                                )
+                                                val moveAction = FunctionAction(
+                                                    { action.commit(); state.controller.requestUpdateTree() },
+                                                    { action.revert(); state.controller.requestUpdateTree() }
+                                                )
+                                                state.doAction(moveAction)
+                                                cTreeView.selectLabel(toIndex, clear = true, scrollTo = true)
+                                                cLabelPane.moveToLabel(toIndex)
+                                                success = true
+                                            }
+                                        }
+                                        event.isDropCompleted = success
+                                        event.consume()
+                                    }
+
+                                    setOnDragDone { event ->
+                                        event.consume()
+                                    }
+
+                                    // endregion
                                 }
 
                                 override fun updateItem(item: String?, empty: Boolean) {

@@ -141,12 +141,26 @@ class CTreeView: TreeView<String>() {
     }
 
     private fun update() {
+        // Save expanded state of group items before clearing
+        val expandedGroups = groupItems
+            .filter { it.isExpanded }
+            .map { it.transGroup.name }
+            .toSet()
+
         root.children.clear()
         groupItems.clear()
         labelItems.clear()
 
         for ((groupId, transGroup) in groups.withIndex()) createGroupItem(transGroup, groupId)
         for (transLabel in labels) createLabelItem(transLabel)
+
+        // Restore expanded state
+        for (groupItem in groupItems) {
+            if (groupItem.transGroup.name in expandedGroups) {
+                groupItem.isExpanded = true
+            }
+        }
+
         selectLabel(selectedLabel, clear = true, scrollTo = true)
     }
     private fun createGroupItem(transGroup: TransGroup, groupId: Int) {
