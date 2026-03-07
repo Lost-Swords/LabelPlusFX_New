@@ -2,12 +2,14 @@ package ink.meodinger.lpfx.options
 
 import ink.meodinger.lpfx.*
 import ink.meodinger.lpfx.component.CLabelPane
+import ink.meodinger.lpfx.input.ShortcutRegistry
 import ink.meodinger.lpfx.util.property.getValue
 import ink.meodinger.lpfx.util.property.setValue
 
 import javafx.beans.property.*
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
+import javafx.collections.ObservableMap
 import java.io.IOException
 import kotlin.math.roundToInt
 
@@ -60,6 +62,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     const val BaiduTransLateKey        = "BaiduTransLateKey"
     const val BaiduTransLateAppId      = "BaiduTransLateAppId"
     const val SelectedTranslationAPI   = "SelectedTranslationAPI"
+    const val Shortcuts                = "Shortcuts"
 
     // ----- Default ----- //
 
@@ -112,6 +115,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         CProperty(BaiduTransLateKey, "lkjooeJUgW0spOctSbZb"),
         CProperty(BaiduTransLateAppId, "20200730000529751"),
         CProperty(SelectedTranslationAPI, TranslationAPI.FanHuaJi.ordinal),
+        CProperty(Shortcuts, ShortcutRegistry.defaultShortcutStrings()),
 
     )
 
@@ -217,6 +221,10 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     fun selectedTranslationAPIProperty(): ObjectProperty<TranslationAPI> = selectedTranslationAPIProperty
     var selectedTranslationAPI: TranslationAPI by selectedTranslationAPIProperty
 
+    private val shortcutsProperty: MapProperty<String, String> = SimpleMapProperty(FXCollections.observableHashMap())
+    fun shortcutsProperty(): MapProperty<String, String> = shortcutsProperty
+    var shortcuts: ObservableMap<String, String> by shortcutsProperty
+
 
 
 
@@ -251,6 +259,11 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         baiduTransLateKey           = this[BaiduTransLateKey].asString()
         baiduTransLateAppId         = this[BaiduTransLateAppId].asString()
         selectedTranslationAPI      = TranslationAPI.fromString(this[SelectedTranslationAPI].asString())
+        shortcuts                   = FXCollections.observableMap(
+            ShortcutRegistry.normalizeShortcutMap(
+                ShortcutRegistry.parseShortcutMap(this[Shortcuts].asStringList())
+            )
+        )
     }
 
     @Throws(IOException::class)
@@ -280,6 +293,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         this[BaiduTransLateKey]       .set(baiduTransLateKey)
         this[BaiduTransLateAppId]     .set(baiduTransLateAppId)
         this[SelectedTranslationAPI]  .set(selectedTranslationAPI.name)
+        this[Shortcuts]               .set(ShortcutRegistry.toStorageList(shortcuts))
 
         save(this)
     }

@@ -10,7 +10,9 @@ import ink.meodinger.lpfx.action.LabelAction
 import ink.meodinger.lpfx.component.CLabelPane
 import ink.meodinger.lpfx.component.common.CFileChooser
 import ink.meodinger.lpfx.component.dialog.*
+import ink.meodinger.lpfx.input.ShortcutAction
 import ink.meodinger.lpfx.input.ShortcutManager
+import ink.meodinger.lpfx.input.ShortcutRegistry
 import ink.meodinger.lpfx.io.export
 import ink.meodinger.lpfx.io.load
 import ink.meodinger.lpfx.io.pack
@@ -40,6 +42,7 @@ import javafx.collections.SetChangeListener
 import javafx.embed.swing.SwingFXUtils
 import javafx.geometry.Insets
 import javafx.scene.Cursor
+import javafx.scene.Node
 import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
@@ -336,7 +339,10 @@ class Controller(private val state: State) {
         }
         cLabelPane.setOnLabelCreate handler@{
             // support add/delete label by ctrl+mouse in InputMode
-            if (state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) return@handler
+            if (state.workMode == WorkMode.InputMode) {
+                val sourceEvent = it.sourceEvent
+                if (!ShortcutRegistry.matchesMouse(sourceEvent, Settings.shortcuts, ShortcutAction.LABEL_ADD)) return@handler
+            }
             if (state.currentGroupId == NOT_FOUND) return@handler
 
             // Use next as new label index if current found
@@ -359,8 +365,10 @@ class Controller(private val state: State) {
         }
         cLabelPane.setOnLabelRemove handler@{
             // support add/delete label by ctrl+mouse in InputMode
-            if (state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) return@handler
-
+            if (state.workMode == WorkMode.InputMode) {
+                val sourceEvent = it.sourceEvent
+                if (!ShortcutRegistry.matchesMouse(sourceEvent, Settings.shortcuts, ShortcutAction.LABEL_REMOVE)) return@handler
+            }
 
             state.doAction(
                 LabelAction(
@@ -705,15 +713,19 @@ class Controller(private val state: State) {
 
         // Transform number key press to CTreeView select
         val numberBuilder = StringBuilder()
-        view.addEventHandler(KeyEvent.KEY_PRESSED) handler@{
-            if (!it.code.isDigitKey) {
+        view.addEventHandler(KeyEvent.KEY_PRESSED) handler@{ event ->
+            if (!ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.GROUP_SELECT_DIGITS)) {
+                numberBuilder.clear()
+                return@handler
+            }
+            if (!isFocusInLabelPane()) {
                 numberBuilder.clear()
                 return@handler
             }
             // Mark immediately when this event will be consumed
-            it.consume() // stop further propagation
+            event.consume() // stop further propagation
 
-            val number = it.text.toInt()
+            val number = event.text.toInt()
             if (numberBuilder.isEmpty()) {
                 // Not parsing
                 if (number == 0) {
@@ -748,69 +760,6 @@ class Controller(private val state: State) {
                 }
             }
         }
-        Logger.info("Transformed num-key pressed", "Controller")
-//
-//        /**
-//         * Find next LabelItem as int index.
-//         * @param  from  start index
-//         * @param  forward true for next, false for previous
-//         * @return NOT_FOUND when have no next
-//         */
-//        fun getNextLabelItemIndex(from: Int, forward: Boolean = true): Int {
-//            // Make sure we have items to select
-//            cTreeView.getTreeItem(from).apply { this?.expand() }
-//
-//            val direction = if (forward) 1 else -1
-//            var index = from + direction
-//
-//            while (true) {
-//                val item = cTreeView.getTreeItem(index) ?: return NOT_FOUND
-//                if (item is CTreeLabelItem) return index
-//
-//                item.expand()
-//                index += direction
-//            }
-//        }
-//
-//        /**
-//         * move CurrLabel to next/previous LabelItem
-//         * @param  forward true for next, false for previous
-//         * @param  isBreakPage true if break page
-//         * @return  true if succeeded, false if failed
-//         */
-//        fun moveCurrLabelTo(forward: Boolean = true,isBreakPage: Boolean = false) {
-//            var itemIndex = getNextLabelItemIndex(cTreeView.selectionModel.selectedIndex, forward)
-//            if (itemIndex == NOT_FOUND) {
-//                //  if no next/previous LabelItem, try to find next/previous LabelItem
-//                if (isBreakPage) {
-//                    //  if selected first and try getting previous, return last
-//                    if (forward) {
-//                        cPicBox.next()
-//                        cTreeView.selectFirst(clear = true, scrollTo = false)
-//                        cLabelPane.moveToLabel(cTreeView.selectedLabel)
-//                        return
-//                    } else {
-//                        //  if selected last and try getting next, return first
-//                        cPicBox.back()
-//                        cTreeView.selectLast(clear = true, scrollTo = false)
-//                        cLabelPane.moveToLabel(cTreeView.selectedLabel)
-//                       return
-//                    }
-//                } else {
-//                    // if selected first and try getting previous, return last;
-//                    // if selected last and try getting next, return first;
-//                    itemIndex = getNextLabelItemIndex(if (forward) 0 else cTreeView.expandedItemCount, forward)
-//                }
-//            }
-//            if(itemIndex == NOT_FOUND) {
-//                return
-//            }
-//            Logger.info("moveCurrLabelTo$itemIndex","moveCurrLabelTo")
-//            val item = cTreeView.getTreeItem(itemIndex) as CTreeLabelItem
-//            cLabelPane.moveToLabel(item.transLabel.index)
-//            cTreeView.selectLabel(item.transLabel.index, clear = true, scrollTo = true)
-//        }
-
 
         // Transform Ctrl + Left/Right KeyEvent to CPicBox button click
 //        val arrowKeyChangePicHandler = EventHandler<KeyEvent> handler@{
@@ -897,6 +846,16 @@ class Controller(private val state: State) {
 //
 
 
+    }
+
+    private fun isFocusInLabelPane(): Boolean {
+        val focusOwner = view.scene?.focusOwner ?: return false
+        var node: Node? = focusOwner
+        while (node != null) {
+            if (node == cLabelPane) return true
+            node = node.parent
+        }
+        return false
     }
 
     // Controller Methods
