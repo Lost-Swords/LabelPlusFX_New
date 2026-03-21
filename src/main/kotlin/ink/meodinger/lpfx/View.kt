@@ -469,9 +469,9 @@ class View(private val state: State) : BorderPane() {
                                     }
 
                                     // region Drag and Drop for label reorder & group switch
-                                    // 拖拽排序功能：支持在树状图中通过拖拽来改变标签的序号(index)。
-                                    // - 拖拽到标签项：改变标签序号顺序
-                                    // - 拖拽到分组项：将标签移动到目标分组
+                                    // 拖拽排序功能：支持在树状图中通过拖拽来改变标签的序号(index)或分组(groupId)。
+                                    // - 拖拽到同组标签项：组内排序，改变序号
+                                    // - 拖拽到异组标签项或分组项：只切换分组，不改变序号
 
                                     // 拖拽开始：记录被拖拽标签的序号，生成拖拽快照
                                     setOnDragDetected { event ->
@@ -516,37 +516,54 @@ class View(private val state: State) : BorderPane() {
                                         var success = false
                                         if (dragboard.hasContent(LABEL_DRAG_FORMAT) && state.isOpened) {
                                             val fromIndex = dragboard.getContent(LABEL_DRAG_FORMAT) as Int
+                                            val fromLabel = state.transFile.getTransLabel(state.currentPicName, fromIndex)
                                             when (treeItem) {
-                                                // 拖拽到标签项：改变标签序号（index）
                                                 is CTreeLabelItem -> {
-                                                    val toIndex = (treeItem as CTreeLabelItem).transLabel.index
-                                                    if (fromIndex != toIndex) {
-                                                        val transLabel = state.transFile.getTransLabel(state.currentPicName, fromIndex)
+                                                    val targetLabel = (treeItem as CTreeLabelItem).transLabel
+                                                    if (fromLabel.groupId == targetLabel.groupId) {
+                                                        // 同组：组内排序，改变序号
+                                                        val toIndex = targetLabel.index
+                                                        if (fromIndex != toIndex) {
+                                                            val action = LabelAction(
+                                                                ActionType.CHANGE, state,
+                                                                state.currentPicName,
+                                                                fromLabel,
+                                                                newLabelIndex = toIndex
+                                                            )
+                                                            val moveAction = FunctionAction(
+                                                                { action.commit(); state.controller.requestUpdateTree() },
+                                                                { action.revert(); state.controller.requestUpdateTree() }
+                                                            )
+                                                            state.doAction(moveAction)
+                                                            cTreeView.selectLabel(toIndex, clear = true, scrollTo = true)
+                                                            cLabelPane.moveToLabel(toIndex)
+                                                            success = true
+                                                        }
+                                                    } else {
+                                                        // 异组：只切换分组，不改变序号
                                                         val action = LabelAction(
                                                             ActionType.CHANGE, state,
                                                             state.currentPicName,
-                                                            transLabel,
-                                                            newLabelIndex = toIndex
+                                                            fromLabel,
+                                                            newGroupId = targetLabel.groupId
                                                         )
                                                         val moveAction = FunctionAction(
                                                             { action.commit(); state.controller.requestUpdateTree() },
                                                             { action.revert(); state.controller.requestUpdateTree() }
                                                         )
                                                         state.doAction(moveAction)
-                                                        cTreeView.selectLabel(toIndex, clear = true, scrollTo = true)
-                                                        cLabelPane.moveToLabel(toIndex)
+                                                        cTreeView.selectLabel(fromIndex, clear = true, scrollTo = true)
                                                         success = true
                                                     }
                                                 }
                                                 // 拖拽到分组项：切换标签所属分组（groupId）
                                                 is CTreeGroupItem -> {
                                                     val targetGroup = (treeItem as CTreeGroupItem).transGroup
-                                                    val transLabel = state.transFile.getTransLabel(state.currentPicName, fromIndex)
-                                                    if (transLabel.groupId != targetGroup.index) {
+                                                    if (fromLabel.groupId != targetGroup.index) {
                                                         val action = LabelAction(
                                                             ActionType.CHANGE, state,
                                                             state.currentPicName,
-                                                            transLabel,
+                                                            fromLabel,
                                                             newGroupId = targetGroup.index
                                                         )
                                                         val moveAction = FunctionAction(
