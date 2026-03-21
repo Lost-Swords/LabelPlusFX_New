@@ -14,12 +14,13 @@ import ink.meodinger.lpfx.util.property.*
 import ink.meodinger.lpfx.util.string.emptyString
 
 import javafx.beans.property.*
+import javafx.beans.value.ChangeListener
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.scene.control.*
-import javafx.scene.input.Clipboard
-import javafx.scene.input.ClipboardContent
+import javafx.scene.input.*
+import javafx.scene.paint.Color
 
 
 
@@ -352,5 +353,180 @@ class CTreeView: TreeView<String>() {
     fun requestUpdate() {
         update()
     }
+
+    // region Drag and Drop
+
+    companion object {
+        /** Drag data format: single label index as Int */
+        private val LABEL_DRAG_FORMAT: DataFormat =
+            DataFormat.lookupMimeType("application/x-lpfx-label-drag") ?: DataFormat("application/x-lpfx-label-drag")
+    }
+
+    /**
+     * Install cell factory with drag-and-drop support.
+     * Must be called after the CTreeView is constructed and state is available.
+     *
+     * Drag-and-drop rules:
+     * - Drag to a label in the **same group**: reorder (change index)
+     * - Drag to a label in a **different group**: switch group only (keep index)
+     * - Drag to a **group item**: switch group only (keep index)
+     *
+     * @param state application state
+     * @param labelPane the CLabelPane, used for moveToLabel after reorder
+     */
+    fun installCellFactory(state: State, labelPane: CLabelPane) {
+        setCellFactory {
+            object : TreeCell<String>() {
+
+                private val markListener: ChangeListener<Boolean> = onNew {
+                    textFill = if (it) Color.RED else Color.BLACK
+                }
+
+                init {
+                    treeItemProperty().addListener { _, oldV, newV ->
+                        if (oldV is CTreeLabelItem) oldV.transLabel.markedProperty().removeListener(markListener)
+                        if (newV is CTreeLabelItem) newV.transLabel.markedProperty().addListener(markListener)
+                    }
+
+                    // region Drag and Drop for label reorder & group switch
+                    // - 拖拽到同组标签项：组内排序，改变序号
+                    // - 拖拽到异组标签项或分组项：只切换分组，不改变序号
+
+                    setOnDragDetected { event ->
+                        val labelItem = treeItem as? CTreeLabelItem ?: return@setOnDragDetected
+                        val dragboard = startDragAndDrop(TransferMode.MOVE)
+                        val content = ClipboardContent()
+                        content[LABEL_DRAG_FORMAT] = labelItem.transLabel.index
+                        dragboard.setContent(content)
+                        dragboard.dragView = snapshot(null, null)
+                        event.consume()
+                    }
+
+                    setOnDragOver { event ->
+                        if (event.gestureSource !== this
+                            && event.dragboard.hasContent(LABEL_DRAG_FORMAT)
+                            && (treeItem is CTreeLabelItem || treeItem is CTreeGroupItem)
+                        ) {
+                            event.acceptTransferModes(TransferMode.MOVE)
+                        }
+                        event.consume()
+                    }
+
+                    setOnDragEntered { event ->
+                        if (event.gestureSource !== this
+                            && event.dragboard.hasContent(LABEL_DRAG_FORMAT)
+                            && (treeItem is CTreeLabelItem || treeItem is CTreeGroupItem)
+                        ) {
+                            opacity = 0.7
+                        }
+                    }
+
+                    setOnDragExited { _ ->
+                        opacity = 1.0
+                    }
+
+                    setOnDragDropped { event ->
+                        val dragboard = event.dragboard
+                        var success = false
+                        if (dragboard.hasContent(LABEL_DRAG_FORMAT) && state.isOpened) {
+                            val fromIndex = dragboard.getContent(LABEL_DRAG_FORMAT) as Int
+                            val fromLabel = state.transFile.getTransLabel(state.currentPicName, fromIndex)
+                            when (treeItem) {
+                                is CTreeLabelItem -> {
+                                    val targetLabel = (treeItem as CTreeLabelItem).transLabel
+                                    val toIndex = targetLabel.index
+                                    // IndexMode：一律改序号；GroupMode：同组改序号，异组切分组
+                                    val shouldReorder = viewMode == ViewMode.IndexMode
+                                            || fromLabel.groupId == targetLabel.groupId
+                                    if (shouldReorder) {
+                                        // 改变序号
+                                        if (fromIndex != toIndex) {
+                                            val action = LabelAction(
+                                                ActionType.CHANGE, state,
+                                                state.currentPicName,
+                                                fromLabel,
+                                                newLabelIndex = toIndex
+                                            )
+                                            val moveAction = FunctionAction(
+                                                { action.commit(); state.controller.requestUpdateTree() },
+                                                { action.revert(); state.controller.requestUpdateTree() }
+                                            )
+                                            state.doAction(moveAction)
+                                            selectLabel(toIndex, clear = true, scrollTo = true)
+                                            labelPane.moveToLabel(toIndex)
+                                            success = true
+                                        }
+                                    } else {
+                                        // GroupMode 异组：只切换分组，不改变序号
+                                        val action = LabelAction(
+                                            ActionType.CHANGE, state,
+                                            state.currentPicName,
+                                            fromLabel,
+                                            newGroupId = targetLabel.groupId
+                                        )
+                                        val moveAction = FunctionAction(
+                                            { action.commit(); state.controller.requestUpdateTree() },
+                                            { action.revert(); state.controller.requestUpdateTree() }
+                                        )
+                                        state.doAction(moveAction)
+                                        selectLabel(fromIndex, clear = true, scrollTo = true)
+                                        success = true
+                                    }
+                                }
+                                // 拖拽到分组项：只在 GroupMode 下有效
+                                is CTreeGroupItem -> {
+                                    if (viewMode == ViewMode.GroupMode) {
+                                        val targetGroup = (treeItem as CTreeGroupItem).transGroup
+                                        if (fromLabel.groupId != targetGroup.index) {
+                                            val action = LabelAction(
+                                                ActionType.CHANGE, state,
+                                                state.currentPicName,
+                                                fromLabel,
+                                                newGroupId = targetGroup.index
+                                            )
+                                            val moveAction = FunctionAction(
+                                                { action.commit(); state.controller.requestUpdateTree() },
+                                                { action.revert(); state.controller.requestUpdateTree() }
+                                            )
+                                            state.doAction(moveAction)
+                                            selectLabel(fromIndex, clear = true, scrollTo = true)
+                                            success = true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        event.isDropCompleted = success
+                        event.consume()
+                    }
+
+                    setOnDragDone { event ->
+                        event.consume()
+                    }
+
+                    // endregion
+                }
+
+                override fun updateItem(item: String?, empty: Boolean) {
+                    super.updateItem(item, empty)
+                    textFill = Color.BLACK
+
+                    val actualItem = treeItem
+                    if (item != null && !empty) {
+                        text = item
+                        graphic = actualItem.graphic
+                        if (actualItem is CTreeLabelItem && actualItem.transLabel.isMarked) {
+                            textFill = Color.RED
+                        }
+                    } else {
+                        text = emptyString()
+                        graphic = null
+                    }
+                }
+            }
+        }
+    }
+
+    // endregion
 
 }
