@@ -21,6 +21,7 @@ import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.layout.HBox
 import javafx.scene.paint.Color
+import javafx.util.Callback
 
 
 /**
@@ -51,9 +52,14 @@ class CTreeMenu(
         dialogPane.buttonTypes.addAll(ButtonType.FINISH, ButtonType.CANCEL)
         dialogPane.withContent(HBox(rAddGroupField, rAddGroupPicker)) { alignment = Pos.CENTER }
 
-        setResultConverter converter@{
-            return@converter when (it) {
-                ButtonType.FINISH -> TransGroup(rAddGroupField.text, rAddGroupPicker.value.toHexRGB())
+        resultConverter = Callback {
+            when (it) {
+                ButtonType.FINISH ->
+                    TransGroup(
+                        rAddGroupField.text,
+                        rAddGroupPicker.value.toHexRGB()
+                    )
+
                 else -> null
             }
         }
@@ -259,11 +265,13 @@ class CTreeMenu(
             var groupCount = 0
             var labelCount = 0
 
-            for (item in selectedItems) {
-                if (item.parent == null) rootCount += 1
-                else if (item is CTreeLabelItem) labelCount += 1
-                else if (item is CTreeGroupItem) groupCount += 1
-                else doNothing()
+            selectedItems.forEach { item ->
+                when {
+                    item == null -> {}
+                    item.parent == null -> rootCount++
+                    item is CTreeLabelItem -> labelCount++
+                    item is CTreeGroupItem -> groupCount++
+                }
             }
 
             if (rootCount == 1 && groupCount == 0 && labelCount == 0) {
