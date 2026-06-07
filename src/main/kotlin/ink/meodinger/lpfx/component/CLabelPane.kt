@@ -11,6 +11,7 @@ import ink.meodinger.lpfx.util.doNothing
 import ink.meodinger.lpfx.util.property.*
 import ink.meodinger.lpfx.util.string.shortenLongText
 import ink.meodinger.lpfx.util.string.shortenWideText
+import javafx.beans.binding.Bindings
 
 import javafx.beans.property.*
 import javafx.collections.*
@@ -420,8 +421,9 @@ class CLabelPane(
                 graphicsContext2D.font = TEXT_FONT
                 graphicsContext2D.textBaseline = VPos.TOP
 
-                widthProperty().bind(imageWidthBinding)
-                heightProperty().bind(imageHeightBinding)
+                //限制Canvas的最大显示尺寸
+                widthProperty().bind(Bindings.min(imageWidthBinding, 4096.0))
+                heightProperty().bind(Bindings.min(imageHeightBinding, 4096.0))
             }
         }
 
