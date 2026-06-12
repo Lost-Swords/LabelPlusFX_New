@@ -305,10 +305,13 @@ class View(private val state: State) : BorderPane() {
                     disableProperty().bind(!state.openedProperty())
                     accelerator = KeyCodeCombination(KeyCode.E, KeyCombination.SHORTCUT_DOWN)
                 }
+                item(I18N["m.lp_current_page"]) {
+                    does { state.controller.exportCurrentPageAsLP() }
+                    disableProperty().bind(!state.openedProperty())
+                }
                 item(I18N["m.meo"]) {
                     does { exportTransFile(FileType.MeoFile) }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.E, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
                 }
                 separator()
                 item(I18N["m.pack"]) {
