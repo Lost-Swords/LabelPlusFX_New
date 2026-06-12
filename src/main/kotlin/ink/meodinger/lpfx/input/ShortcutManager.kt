@@ -35,6 +35,7 @@ class ShortcutManager(private val state: State) {
         registerLabelNavigation()
         registerEnterTransform()
         registerCopyPaste()
+        registerCurrentPageExport()
         registerLabelGroupMove()
         registerLabelIndexMove()
     }
@@ -223,6 +224,18 @@ class ShortcutManager(private val state: State) {
         }
         cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, copyLabelHandler)
         Logger.info("Registered label copy/paste shortcut", "ShortcutManager")
+    }
+
+    // 注册导出当前页为 LP 文件快捷键
+    private fun registerCurrentPageExport() {
+        view.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+            if (!ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.EXPORT_CURRENT_PAGE_LP)) return@addEventFilter
+            if (!state.isOpened) return@addEventFilter
+
+            event.consume()
+            state.controller.exportCurrentPageAsLP()
+        }
+        Logger.info("Registered current page LP export shortcut", "ShortcutManager")
     }
 
     // 注册移动标签至前一个/后一个分组的快捷键

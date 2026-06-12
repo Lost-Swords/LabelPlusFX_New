@@ -1111,6 +1111,36 @@ class Controller(private val state: State) {
     }
 
     /**
+     * Export current picture only as LP file.
+     */
+    fun exportCurrentPageAsLP() {
+        if (!state.isOpened) return
+
+        val picName = state.currentPicName
+        val picFile = state.getPicFileNow()
+        val file = picFile.parentFile.resolve("${picFile.nameWithoutExtension}.$EXTENSION_FILE_LP")
+        val transFile = TransFile(
+            version = state.transFile.version,
+            comment = state.transFile.comment,
+            groupList = state.transFile.groupList.map { TransGroup(it.name, it.colorHex) },
+            transMap = linkedMapOf(picName to state.transFile.getTransList(picName).map {
+                TransLabel(it.index, it.groupId, it.x, it.y, it.text)
+            })
+        )
+
+        Logger.info("Exporting current page `$picName` to ${file.path}", "Controller")
+
+        try {
+            export(file, transFile)
+        } catch (e: IOException) {
+            Logger.error("Export current page failed", "Controller")
+            Logger.exception(e)
+            showError(state.stage, I18N["error.export_failed"])
+            showException(state.stage, e)
+        }
+    }
+
+    /**
      * Generate a zip file with translation file and picture files
      * Translation file save type is based on the extension of the file.
      * @param file Which file will the zip file write to

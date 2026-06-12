@@ -31,6 +31,7 @@ object ShortcutAction {
     const val TRAN_FONT_SIZE_SCROLL = "trans_font_size_scroll"
     const val LABEL_ADD = "label_add"
     const val LABEL_REMOVE = "label_remove"
+    const val EXPORT_CURRENT_PAGE_LP = "export_current_page_lp"
 }
 
 enum class ShortcutScope {
@@ -281,6 +282,13 @@ object ShortcutRegistry {
             "shortcut.action.mode_toggle",
             setOf(ShortcutScope.GLOBAL),
             KeyGesture(KeyCode.TAB, ModifierSpec()),
+            groupKey = "settings.shortcut.group.general",
+        ),
+        ShortcutDefinition(
+            ShortcutAction.EXPORT_CURRENT_PAGE_LP,
+            "shortcut.action.export_current_page_lp",
+            setOf(ShortcutScope.GLOBAL),
+            KeyGesture(KeyCode.E, ModifierSpec(shortcut = true, shift = true)),
             groupKey = "settings.shortcut.group.general",
         ),
         ShortcutDefinition(
