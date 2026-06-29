@@ -17,8 +17,7 @@
 ### Added
 - 支持快捷键自定义（请在设置里自行配置）
 - 支持在树状图内拖拽Label调整序号和分组
-- [新增Linux版本支持](https://github.com/Lost-Swords/LabelPlusFX_New/pull/13)(satgo1546
-  c)
+- [新增Linux版本支持](https://github.com/Lost-Swords/LabelPlusFX_New/pull/13)(satgo1546c)
 - [增加导出当前页的功能](https://github.com/Lost-Swords/LabelPlusFX_New/pull/14)(夜夜)
 
 ### Fixed
