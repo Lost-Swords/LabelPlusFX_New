@@ -19,11 +19,14 @@
 ### Added
 - 支持快捷键自定义（请在设置里自行配置）
 - 支持在树状图内拖拽Label调整序号和分组
-- 新增Linux版本支持
+- [新增Linux版本支持](https://github.com/Lost-Swords/LabelPlusFX_New/pull/13)(satgo1546
+  c)
+- [增加导出当前页的功能](https://github.com/Lost-Swords/LabelPlusFX_New/pull/14)(夜夜)
 
 ### Fixed
 - 修复标签文本提示框在靠近屏幕边缘时会频闪的问题
 - 修复标号模式下删除多个标签时会报错的问题
+- [修复中文输入法组合状态下 [ ] 方向键被错误插入文本区域的问题](https://github.com/Lost-Swords/LabelPlusFX_New/pull/16)(夜夜)
 
 
 ## [2.3.9] - 2025-11-08
