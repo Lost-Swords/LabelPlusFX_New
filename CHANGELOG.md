@@ -8,10 +8,8 @@
 - 保存specify（Next）
 - 添加校阅功能（单独开一个beta分支进行）
 - 添加日汉词典（如moJi）
-- [label边界与尺寸处理](https://github.com/Lost-Swords/LabelPlusFX_New/issues/12)
-- 修复移动标签序号时，文本会变化的问题
 
-## [2.3.10] - 2025-5-31
+## [2.4.0] - 2026-6-29
 
 ### Changed
 - 支持分块渲染超大图片
