@@ -1,5 +1,6 @@
 package ink.meodinger.lpfx.component.common
 
+import ink.meodinger.lpfx.Config
 import ink.meodinger.lpfx.util.property.getValue
 import ink.meodinger.lpfx.util.property.setValue
 
@@ -8,6 +9,9 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextFormatter
+import javafx.scene.input.InputMethodEvent
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
 
 
 /**
@@ -71,12 +75,29 @@ class CLigatureArea: TextArea() {
      */
     val isBound: Boolean by boundTextPropertyProperty.isNotNull
 
+    // ----- IME 组合输入状态（macOS 修复用） ----- //
+
+    /**
+     * IME 是否正在组合输入（例：macOS 中文拼音输入）。
+     * 通过 [InputMethodEvent] 追踪，组合期间拦截方括号和方向键。
+     */
+    private var imeComposing: Boolean = false
+
     // ----- Ligature ----- //
 
     private var ligaturing: Boolean = false
     private var ligatureStart: Int = 0
     private var ligatureString: String = ""
     private val defaultTextFormatter = TextFormatter<String> { change ->
+        // macOS IME 修复：组合输入期间，若文本变更中携带全角方括号，
+        // 直接拒掉。这是最终防线——不依赖 KEY_PRESSED 是否被消费。
+        if (Config.isMac && imeComposing && change.isAdded) {
+            if (change.text.contains("【") || change.text.contains("】")) {
+                change.text = ""
+                return@TextFormatter change
+            }
+        }
+
         if (change.isAdded) {
             if (change.text == ligatureMark) {
                 ligatureStart(caretPosition)
@@ -130,8 +151,39 @@ class CLigatureArea: TextArea() {
     }
 
     init {
-        // Make text-formatter immutable
+        // 将 TextFormatter 设为不可变
         textFormatterProperty().bind(ReadOnlyObjectWrapper(defaultTextFormatter))
+
+        // ==================== macOS IME 组合输入修复 ====================
+        //
+        // 问题：macOS 中文输入法在拼音组合状态下，[、]、方向键应被 IME
+        // 用于候选词翻页/选词，但 JavaFX 在 macOS 上未能正确拦截这些按键，
+        // 导致全角方括号【】被错误插入到文本区域，光标也会随方向键移动。
+        //
+        // 修复策略（双层防线，仅 macOS）：
+        //   1. InputMethodEvent 追踪 IME 组合状态
+        //   2. KEY_PRESSED 过滤器拦截方括号和方向键
+        //   3. TextFormatter 拒收全角方括号文本变更（最终防线）
+        if (Config.isMac) {
+
+            addEventHandler(InputMethodEvent.INPUT_METHOD_TEXT_CHANGED) { event ->
+                imeComposing = event.composed.isNotEmpty()
+            }
+
+            addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+                if (imeComposing) {
+                    when (event.code) {
+                        KeyCode.OPEN_BRACKET,
+                        KeyCode.CLOSE_BRACKET,
+                        KeyCode.UP,
+                        KeyCode.DOWN,
+                        KeyCode.LEFT,
+                        KeyCode.RIGHT -> event.consume()
+                        else -> { /* 其他按键放行 */ }
+                    }
+                }
+            }
+        }
     }
 
     /**
