@@ -1,6 +1,8 @@
 package ink.meodinger.lpfx.util
 
-import ink.meodinger.lpfx.options.Logger
+import ink.meodinger.lpfx.Config.isLinux
+import ink.meodinger.lpfx.Config.isMac
+import ink.meodinger.lpfx.Config.isWin
 import javafx.application.Application
 import java.util.regex.Pattern
 import kotlin.reflect.KProperty
@@ -18,7 +20,7 @@ import kotlin.reflect.KProperty
  * @param b Vice version number
  * @param c Fix version number
  */
-data class Version(val a: Int, val b: Int, val c: Int): Comparable<Version> {
+data class Version(val a: Int, val b: Int, val c: Int) : Comparable<Version> {
 
     companion object {
         /**
@@ -27,7 +29,7 @@ data class Version(val a: Int, val b: Int, val c: Int): Comparable<Version> {
         val V0: Version = Version(0, 0, 0)
 
         private val pattern = Pattern.compile("(v)?[0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{1,2}", Pattern.CASE_INSENSITIVE)
-        private fun check(i : Int): Int {
+        private fun check(i: Int): Int {
             if (i in 0..99) return i
             throw IllegalArgumentException("Version number must in 0..99, got $i")
         }
@@ -42,6 +44,7 @@ data class Version(val a: Int, val b: Int, val c: Int): Comparable<Version> {
             val l = version.removePrefix("v").removePrefix("V").split(".")
             return Version(l[0].toInt(), l[1].toInt(), l[2].toInt())
         }
+
         /**
          * Construct a Version from a String in the format "vX.Y.Z"
          */
@@ -49,7 +52,6 @@ data class Version(val a: Int, val b: Int, val c: Int): Comparable<Version> {
             return this.of(version)
         }
     }
-
 
 
     init {
@@ -64,7 +66,7 @@ data class Version(val a: Int, val b: Int, val c: Int): Comparable<Version> {
         return this - other
     }
 
-     operator fun minus(other: Version): Int {
+    operator fun minus(other: Version): Int {
         return (this.a - other.a) * 10000 + (this.b - other.b) * 100 + (this.c - other.c)
     }
 
@@ -133,6 +135,7 @@ inline fun using(crossinline block: ResourceManager.() -> Unit): Catcher {
 
     return Catcher(manager.throwable)
 }
+
 /**
  * Manager for AutoCloseable
  */
@@ -148,7 +151,7 @@ class ResourceManager : AutoCloseable {
     /**
      * Register AutoCloseable to auto-close quene
      */
-    fun <T: AutoCloseable> T.autoClose(): T {
+    fun <T : AutoCloseable> T.autoClose(): T {
         // The last opened Steam is the first closed
         resourceStack.addFirst(this)
         return this
@@ -173,6 +176,7 @@ class ResourceManager : AutoCloseable {
         }
     }
 }
+
 /**
  * Catcher for ResourceManager
  * @param caught Caught Throwable when running
@@ -269,6 +273,21 @@ class AssignOnce<T> {
     }
 
 }
+
+/**
+ * Open a URL in default browser
+ */
+fun openUrl(url: String) {
+    val command = when {
+        isWin -> listOf("cmd", "/c", "start", url)
+        isMac -> listOf("open", url)
+        isLinux -> listOf("xdg-open", url)
+        else -> throw RuntimeException("Unsupported OS")
+    }
+    ProcessBuilder(command).start()
+}
+
+
 
 /**
  * @see AssignOnce

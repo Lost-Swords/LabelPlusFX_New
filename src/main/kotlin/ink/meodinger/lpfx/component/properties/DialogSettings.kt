@@ -6,18 +6,22 @@ import ink.meodinger.lpfx.component.CLabelPane
 import ink.meodinger.lpfx.component.common.CColorPicker
 import ink.meodinger.lpfx.component.common.CComboBox
 import ink.meodinger.lpfx.component.common.CInputLabel
+import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.options.Preference
 import ink.meodinger.lpfx.options.Settings
+import ink.meodinger.lpfx.input.*
 import ink.meodinger.lpfx.type.TransFile
 import ink.meodinger.lpfx.util.color.isColorHex
 import ink.meodinger.lpfx.util.color.toHexRGB
 import ink.meodinger.lpfx.util.component.*
+import ink.meodinger.lpfx.util.doNothing
 import ink.meodinger.lpfx.util.property.minus
 import ink.meodinger.lpfx.util.property.onChange
 import ink.meodinger.lpfx.util.property.onNew
 import ink.meodinger.lpfx.util.string.emptyString
 import ink.meodinger.lpfx.util.string.isMathematicalDecimal
 
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.collections.FXCollections
 import javafx.geometry.Insets
 import javafx.geometry.Pos
@@ -25,7 +29,10 @@ import javafx.geometry.VPos
 import javafx.scene.Cursor
 import javafx.scene.Node
 import javafx.scene.control.*
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseEvent
+import javafx.scene.input.ScrollEvent
 import javafx.scene.layout.*
 import javafx.scene.paint.Color
 import javafx.scene.text.Text
@@ -55,6 +62,29 @@ class DialogSettings : AbstractPropertiesDialog() {
         private const val qRowShift = 1
         private const val rIsFrom = "C_Is_From"
         private const val rRuleIndex = "C_Rule_Index"
+
+        /**
+         * Supported languages enumeration
+         */
+        private enum class SupportedLanguage(val code: String, val displayName: String) {
+            ENGLISH("en", "English"),
+            SIMPLIFIED_CHINESE("zh_CN", "简体中文"),
+            TRADITIONAL_CHINESE("zh_TW", "繁體中文");
+        }
+
+        /**
+         * 根据语言代码获取在languageCombo中的索引位置
+         */
+        private fun getLanguageIndex(languageCode: String): Int {
+            return SupportedLanguage.entries.indexOfFirst { it.code == languageCode }.takeIf { it >= 0 } ?: 0
+        }
+
+        /**
+         * 根据languageCombo中的索引位置获取语言代码
+         */
+        private fun getLanguageCode(index: Int): String {
+            return SupportedLanguage.entries.getOrNull(index)?.code ?: SupportedLanguage.ENGLISH.code
+        }
     }
 
     private val gGridPane = GridPane().apply {
@@ -85,6 +115,19 @@ class DialogSettings : AbstractPropertiesDialog() {
         hgap = 32.0
     }
     private val qLabelHint = Label(I18N["settings.quick_input.hint"])
+
+    private val sGridPane = GridPane().apply {
+        alignment = Pos.TOP_CENTER
+        padding = Insets(16.0)
+        vgap = 12.0
+        hgap = 16.0
+    }
+    private val sConflictLabel = Label().apply {
+        textFill = Color.FIREBRICK
+        isWrapText = true
+    }
+    private val shortcutEdits = mutableMapOf<String, ShortcutGesture>()
+    private val shortcutConflictProperty = SimpleBooleanProperty(false)
 
     private val mComboInput = CComboBox<ViewMode>()
     private val mComboLabel = CComboBox<ViewMode>()
@@ -137,6 +180,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         dialogPane.prefWidth = 600.0
         dialogPane.prefHeight = 480.0
         dialogPane.buttonTypes.addAll(ButtonType.OK, ButtonType.CANCEL)
+        (dialogPane.lookupButton(ButtonType.OK) as Button).disableProperty().bind(shortcutConflictProperty)
         dialogPane.withContent(TabPane()) {
             tabClosingPolicy = TabPane.TabClosingPolicy.UNAVAILABLE
 
@@ -185,6 +229,20 @@ class DialogSettings : AbstractPropertiesDialog() {
                         add(Label(I18N["settings.quick_input.sample"]))
                         add(HBox()) { hgrow = Priority.ALWAYS }
                         add(Button(I18N["settings.quick_input.add"])) { does { createQuickInputRow() } }
+                    }
+                }
+            }
+            add(I18N["settings.shortcut.title"]) {
+                withContent(BorderPane()) {
+                    val stackPane = StackPane(sGridPane)
+                    val scrollPane = ScrollPane(stackPane)
+                    stackPane.prefWidthProperty().bind(scrollPane.widthProperty() - 16.0)
+
+                    center(scrollPane) { style = "-fx-background-color:transparent;" }
+                    bottom(HBox()) {
+                        alignment = Pos.CENTER_LEFT
+                        padding = Insets(8.0, 16.0, 8.0, 16.0)
+                        add(sConflictLabel)
                     }
                 }
             }
@@ -641,6 +699,161 @@ class DialogSettings : AbstractPropertiesDialog() {
         }
     }
 
+    // ----- Shortcut ----- //
+    private fun initShortcutTab() {
+        sGridPane.children.clear()
+        shortcutEdits.clear()
+
+        var row = 0
+        sGridPane.add(Label(I18N["settings.shortcut.action"]), 0, row)
+        sGridPane.add(Label(I18N["settings.shortcut.key"]), 1, row)
+        row += 1
+
+        // 先显示通用快捷键（有分组标题）
+        val generalShortcuts = ShortcutRegistry.definitions.filter { it.groupKey == "settings.shortcut.group.general" }
+        if (generalShortcuts.isNotEmpty()) {
+            val groupLabel = Label(I18N["settings.shortcut.group.general"])
+            groupLabel.style = "-fx-font-weight: bold;"
+            sGridPane.add(groupLabel, 0, row, 2, 1)
+            row += 1
+
+            for (definition in generalShortcuts) {
+                val gesture = ShortcutRegistry.resolveGesture(Settings.shortcuts, definition.id)
+                shortcutEdits[definition.id] = gesture
+
+                val actionLabel = Label(I18N[definition.labelKey])
+                val editor = TextField(gesture.toDisplayString()).apply {
+                    prefWidth = 260.0
+                    isEditable = false
+                    if (!definition.editable) isDisable = true
+                }
+
+                if (definition.editable) {
+                    bindShortcutEditor(definition, editor)
+                }
+
+                sGridPane.add(actionLabel, 0, row)
+                sGridPane.add(editor, 1, row)
+                row += 1
+            }
+        }
+
+        // 再显示图片查看区快捷键（有分组标题）
+        val imageViewShortcuts = ShortcutRegistry.definitions.filter { it.groupKey == "settings.shortcut.group.image_view" }
+        if (imageViewShortcuts.isNotEmpty()) {
+            val groupLabel = Label(I18N["settings.shortcut.group.image_view"])
+            groupLabel.style = "-fx-font-weight: bold;"
+            sGridPane.add(groupLabel, 0, row, 2, 1)
+            row += 1
+
+            for (definition in imageViewShortcuts) {
+                val gesture = ShortcutRegistry.resolveGesture(Settings.shortcuts, definition.id)
+                shortcutEdits[definition.id] = gesture
+
+                val actionLabel = Label(I18N[definition.labelKey])
+                val editor = TextField(gesture.toDisplayString()).apply {
+                    prefWidth = 260.0
+                    isEditable = false
+                    if (!definition.editable) isDisable = true
+                }
+
+                if (definition.editable) {
+                    bindShortcutEditor(definition, editor)
+                }
+
+                sGridPane.add(actionLabel, 0, row)
+                sGridPane.add(editor, 1, row)
+                row += 1
+            }
+        }
+
+        updateShortcutConflicts()
+    }
+
+    private fun bindShortcutEditor(definition: ShortcutDefinition, field: TextField) {
+        field.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+            if (!field.isFocused) return@addEventFilter
+            when (event.code) {
+                KeyCode.ESCAPE, KeyCode.BACK_SPACE, KeyCode.DELETE -> {
+                    applyShortcutGesture(definition, field, definition.defaultGesture)
+                    event.consume()
+                    return@addEventFilter
+                }
+                KeyCode.SHIFT, KeyCode.CONTROL, KeyCode.ALT, KeyCode.META -> return@addEventFilter
+                else -> {
+                    val modifiers = ModifierSpec(
+                        shift = event.isShiftDown,
+                        alt = event.isAltDown,
+                        shortcut = event.isControlDown || event.isMetaDown
+                    )
+                    val gesture = KeyGesture(event.code, modifiers)
+                    applyShortcutGesture(definition, field, gesture)
+                    event.consume()
+                }
+            }
+        }
+        if (definition.defaultGesture is MouseGesture) {
+            field.addEventFilter(MouseEvent.MOUSE_PRESSED) { event ->
+                if (!field.isFocused) return@addEventFilter
+                val modifiers = ModifierSpec(
+                    shift = event.isShiftDown,
+                    alt = event.isAltDown,
+                    shortcut = event.isControlDown || event.isMetaDown
+                )
+                val gesture = MouseGesture(event.button, modifiers)
+                applyShortcutGesture(definition, field, gesture)
+                event.consume()
+            }
+        }
+        if (definition.defaultGesture is ScrollGesture) {
+            field.addEventFilter(ScrollEvent.SCROLL) { event ->
+                if (!field.isFocused) return@addEventFilter
+                val modifiers = ModifierSpec(
+                    shift = event.isShiftDown,
+                    alt = event.isAltDown,
+                    shortcut = event.isControlDown || event.isMetaDown
+                )
+                val gesture = ScrollGesture(modifiers)
+                applyShortcutGesture(definition, field, gesture)
+                event.consume()
+            }
+        }
+    }
+
+    private fun applyShortcutGesture(definition: ShortcutDefinition, field: TextField, gesture: ShortcutGesture) {
+        shortcutEdits[definition.id] = gesture
+        field.text = gesture.toDisplayString()
+        updateShortcutConflicts()
+    }
+
+    private fun updateShortcutConflicts() {
+        val conflicts = mutableListOf<String>()
+        val definitions = ShortcutRegistry.definitions
+        for (i in definitions.indices) {
+            val left = definitions[i]
+            val leftGesture = shortcutEdits[left.id] ?: left.defaultGesture
+            val leftTokens = leftGesture.conflictTokens()
+            if (leftTokens.isEmpty()) continue
+            for (j in i + 1 until definitions.size) {
+                val right = definitions[j]
+                if (left.scopes.intersect(right.scopes).isEmpty()) continue
+                val rightGesture = shortcutEdits[right.id] ?: right.defaultGesture
+                val rightTokens = rightGesture.conflictTokens()
+                if (leftTokens.intersect(rightTokens).isNotEmpty()) {
+                    conflicts += "${I18N[left.labelKey]} ↔ ${I18N[right.labelKey]}"
+                }
+            }
+        }
+
+        if (conflicts.isEmpty()) {
+            sConflictLabel.text = ""
+            shortcutConflictProperty.set(false)
+        } else {
+            sConflictLabel.text = I18N["settings.shortcut.conflict"] + "\n" + conflicts.joinToString("\n")
+            shortcutConflictProperty.set(true)
+        }
+    }
+
 
     // ----- Initialize Properties ----- //
     override fun initProperties() {
@@ -652,6 +865,9 @@ class DialogSettings : AbstractPropertiesDialog() {
 
         // quick Input
         initQuickInputTab()
+
+        // Shortcut
+        initShortcutTab()
 
         // Mode
         mComboInput.select(Settings.viewModes[0])
@@ -688,18 +904,12 @@ class DialogSettings : AbstractPropertiesDialog() {
         xCheckUseTmp.isSelected = Settings.useExportNameTemplate
         xFieldTemplate.text = Settings.exportNameTemplate
         xPrismMode.select(Settings.currentPrismMode)
+        // Populate language combo box with display names from the enum
         languageCombo.items = FXCollections.observableArrayList(
-            "English",
-            "简体中文",
-            "繁體中文"
+            SupportedLanguage.entries.map { it.displayName }
         )
-        languageCombo.selectionModel.select(
-            when (Preference.currentLanguage) {
-                "zh_CN" -> 1
-                "zh_TW" -> 2
-                else -> 0
-            }
-        )
+        // Select the current language based on Preference
+        languageCombo.selectionModel.select(getLanguageIndex(Preference.currentLanguage))
 
 
     }
@@ -773,6 +983,13 @@ class DialogSettings : AbstractPropertiesDialog() {
         return map
     }
 
+    private fun convertShortcut(): Map<String, Any> {
+        val map = HashMap<String, Any>()
+        val storageMap = shortcutEdits.mapValues { it.value.toStorageString() }
+        map[Settings.Shortcuts] = ShortcutRegistry.toStorageList(storageMap)
+        return map
+    }
+
     private fun convertMode(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
@@ -815,24 +1032,63 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.UseExportNameTemplate] = xCheckUseTmp.isSelected
         map[Settings.ExportNameTemplate] = xFieldTemplate.text
         map[Settings.CurrentPrismMode] = xPrismMode.index.let(PrismMode.entries.toTypedArray()::get)
-        val selectedLanguage = when (languageCombo.selectionModel.selectedIndex) {
-            1 -> "zh_CN"
-            2 -> "zh_TW"
-            else -> "en"
-        }
+        val selectedLanguage = getLanguageCode(languageCombo.selectionModel.selectedIndex)
         map[Preference.CurrentLanguage] = selectedLanguage
         return map
     }
 
     override fun convertResult(): Map<String, Any> {
-        return HashMap<String, Any>().apply {
+        val map =  HashMap<String, Any>().apply {
             putAll(convertGroup())
             putAll(convertLigatureRule())
             putAll(convertQuickInput())
+            putAll(convertShortcut())
             putAll(convertMode())
             putAll(convertLabel())
             putAll(convertTool())
             putAll(convertOther())
+        }
+        // 直接在返回前保存一次设置
+        saveSettings(map)
+        return map
+    }
+
+    private fun saveSettings(map: Map<String,Any> ){
+        Logger.info("Generated common settings", "DialogSetting")
+        Logger.debug("got $map", "DialogSetting")
+
+        @Suppress("UNCHECKED_CAST")
+        for ((key, value) in map) when (key) {
+            Settings.DefaultGroupNameList     -> Settings.defaultGroupNameList        .setAll(value as List<String>)
+            Settings.DefaultGroupColorHexList -> Settings.defaultGroupColorHexList    .setAll(value as List<String>)
+            Settings.IsGroupCreateOnNewTrans  -> Settings.isGroupCreateOnNewTransList .setAll(value as List<Boolean>)
+            Settings.LigatureRules            -> Settings.ligatureRules               .setAll(value as List<Pair<String, String>>)
+            Settings.QuickInputTexts          -> Settings.quickInputTexts             .setAll(value as List<String>)
+            Settings.ViewModes                -> Settings.viewModes                   .setAll(value as List<ViewMode>)
+            Settings.NewPictureScale          -> Settings.newPictureScalePicture      = value as CLabelPane.NewPictureScale
+            Settings.UseWheelToScale          -> Settings.useWheelToScale             = value as Boolean
+            Settings.LabelRadius              -> Settings.labelRadius                 = value as Double
+            Settings.LabelColorOpacity        -> Settings.labelColorOpacity           = value as Double
+            Settings.LabelTextOpaque          -> Settings.labelTextOpaque             = value as Boolean
+            Settings.LabelSelectedStroke      -> Settings.labelSelectedStroke         = value as Boolean
+            Settings.CurrentPrismMode         -> Settings.currentPrismMode            = value as PrismMode
+            Settings.AutoCheckUpdate          -> Settings.autoCheckUpdate             = value as Boolean
+            Settings.AutoOpenLastFile         -> Settings.autoOpenLastFile            = value as Boolean
+            Settings.InstantTranslate         -> Settings.instantTranslate            = value as Boolean
+            Settings.CheckFormatWhenSave      -> Settings.checkFormatWhenSave         = value as Boolean
+            Settings.UseMeoFileAsDefault      -> Settings.useMeoFileAsDefault         = value as Boolean
+            Settings.UseExportNameTemplate    -> Settings.useExportNameTemplate       = value as Boolean
+            Settings.ExportNameTemplate       -> Settings.exportNameTemplate          = value as String
+            Settings.UseCustomBaiduKey        -> Settings.useCustomBaiduKey           = value as Boolean
+            Settings.BaiduTransLateKey        -> Settings.baiduTransLateKey           = value as String
+            Settings.BaiduTransLateAppId      -> Settings.baiduTransLateAppId         = value as String
+            Settings.SelectedTranslationAPI   -> Settings.selectedTranslationAPI      = TranslationAPI.fromString(value as String)
+            Settings.Shortcuts                -> Settings.shortcuts.apply {
+                clear()
+                putAll(ShortcutRegistry.normalizeShortcutMap(ShortcutRegistry.parseShortcutMap(value as List<String>)))
+            }
+            Preference.CurrentLanguage        -> Preference.currentLanguage           = value as String
+            else -> doNothing()
         }
     }
 

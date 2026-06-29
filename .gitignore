@@ -1,3 +1,6 @@
+.DS_Store
+agent.md
+
 /out/
 /target/
 
@@ -14,7 +17,7 @@
 /script/jlink/*
 !/script/jlink/*.bat
 /script/jpackage/*
-!/script/jpackage/build.*
+!/script/jpackage/build*.*
 !/script/jpackage/LabelPlusFXDict.lnk
 !/script/jpackage/*.dll
 

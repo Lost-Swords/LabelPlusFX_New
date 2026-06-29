@@ -10,7 +10,9 @@ import ink.meodinger.lpfx.action.LabelAction
 import ink.meodinger.lpfx.component.CLabelPane
 import ink.meodinger.lpfx.component.common.CFileChooser
 import ink.meodinger.lpfx.component.dialog.*
+import ink.meodinger.lpfx.input.ShortcutAction
 import ink.meodinger.lpfx.input.ShortcutManager
+import ink.meodinger.lpfx.input.ShortcutRegistry
 import ink.meodinger.lpfx.io.export
 import ink.meodinger.lpfx.io.load
 import ink.meodinger.lpfx.io.pack
@@ -40,6 +42,7 @@ import javafx.collections.SetChangeListener
 import javafx.embed.swing.SwingFXUtils
 import javafx.geometry.Insets
 import javafx.scene.Cursor
+import javafx.scene.Node
 import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
@@ -164,11 +167,68 @@ class Controller(private val state: State) {
                 if (file.exists()) {
                     var imageByFX = Image(file.toURI().toURL().toString())
 
-                    //if the image is too large,limit the size of image
+                    //if the image is too large, use tiled rendering with high-quality AWT scaling
                     if (Settings.currentPrismMode == PrismMode.HW_CHANGE_SIZE) {
                         if (isTooLarge(imageByFX)) {
-                            Logger.info("limit the size of image because `$file` is too large  ", "Controller")
-                            imageByFX = Image(file.toURI().toURL().toString(), MAX_WIDTH, MAX_HEIGHT, true, true)
+                            Logger.info("Image `$file` is too large, applying tiled rendering", "Controller")
+                            try {
+                                val buffered = ImageIO.read(file)
+                                if (buffered != null) {
+                                    val imgW = buffered.width
+                                    val imgH = buffered.height
+
+                                    // Use 8192 as safe texture limit, only scale down if exceeding
+                                    val maxTexture = 8192.0
+                                    val ratio = if (imgW > maxTexture || imgH > maxTexture) {
+                                        minOf(maxTexture / imgW, maxTexture / imgH)
+                                    } else {
+                                        1.0
+                                    }
+
+                                    val finalW = (imgW * ratio).toInt()
+                                    val finalH = (imgH * ratio).toInt()
+
+                                    // High-quality AWT scaling if needed
+                                    val source: java.awt.image.BufferedImage
+                                    if (ratio < 1.0) {
+                                        source = java.awt.image.BufferedImage(finalW, finalH, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+                                        val g2d = source.createGraphics()
+                                        g2d.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                                        g2d.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY)
+                                        g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON)
+                                        g2d.drawImage(buffered, 0, 0, finalW, finalH, null)
+                                        g2d.dispose()
+                                        Logger.info("Scaled image from ${imgW}x${imgH} to ${finalW}x${finalH}", "Controller")
+                                    } else {
+                                        source = buffered
+                                    }
+
+                                    // Write pixels in tiles to WritableImage to bypass GPU texture limit
+                                    val tileSize = 2048
+                                    val writableImage = javafx.scene.image.WritableImage(finalW, finalH)
+                                    val pixelWriter = writableImage.pixelWriter
+                                    var ty = 0
+                                    while (ty < finalH) {
+                                        var tx = 0
+                                        val th = minOf(tileSize, finalH - ty)
+                                        while (tx < finalW) {
+                                            val tw = minOf(tileSize, finalW - tx)
+                                            val argb = source.getRGB(tx, ty, tw, th, null, 0, tw)
+                                            pixelWriter.setPixels(tx, ty, tw, th,
+                                                javafx.scene.image.PixelFormat.getIntArgbInstance(),
+                                                argb, 0, tw)
+                                            tx += tileSize
+                                        }
+                                        ty += tileSize
+                                    }
+                                    imageByFX = writableImage
+                                    Logger.info("Tiled rendering complete: ${finalW}x${finalH}", "Controller")
+                                }
+                            } catch (e: Exception) {
+                                Logger.warning("Tiled rendering failed for `$file`, falling back", "Controller")
+                                Logger.exception(e)
+                                imageByFX = Image(file.toURI().toURL().toString(), MAX_WIDTH, MAX_HEIGHT, true, true)
+                            }
                         }
                     }
 
@@ -282,49 +342,6 @@ class Controller(private val state: State) {
         }
         Logger.info("Registered Drag and Drop", "Controller")
 
-        // Register Alt(Win)/Command(macOS) + X to mark/unmark Label
-//        val markHandler = EventHandler<KeyEvent> {
-//            if ((it.isAltDown || (Config.isMac && it.isControlDown)) && it.code == KeyCode.X) {
-//                if (state.isOpened && state.currentLabelIndex != NOT_FOUND) {
-//                    val transLabel = state.transFile.getTransLabel(state.currentPicName, state.currentLabelIndex)
-//                    transLabel.isMarked = !transLabel.isMarked
-//                }
-//            }
-//        }
-//        cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, markHandler)
-//        cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, markHandler)
-//        Logger.info("Registered Ctrl/Meta + X mark/unmark TransLabel", "Controller")
-
-        // Register Alias & Global redo/undo in TransArea
-//        cTransArea.addEventFilter(KeyEvent.KEY_PRESSED) {
-//            if ((it.isControlDown || it.isMetaDown) && it.code == KeyCode.Z) {
-//                // Mark immediately when this event will be consumed
-//                it.consume() // disable default undo/redo
-//
-//                if (!it.isShiftDown) {
-//                    if (cTransArea.isUndoable) cTransArea.undo() else if (state.isUndoable) state.undo()
-//                } else {
-//                    if (cTransArea.isRedoable) cTransArea.redo() else if (state.isRedoable) state.redo()
-//                }
-//            }
-//        }
-//        Logger.info("Registered CTransArea Alias & Global undo/redo", "Controller")
-
-        // Register Ctrl/Alt/Meta + Scroll with font size change in TransArea
-//        cTransArea.addEventHandler(ScrollEvent.SCROLL) {
-//            if (it.isControlDown || it.isAltDown || it.isMetaDown) {
-//                // Mark immediately when this event will be consumed
-//                it.consume() // stop further propagation
-//
-//                val newSize = (cTransArea.font.size + if (it.deltaY > 0) 1 else -1).roundToInt()
-//                    .coerceAtLeast(12).coerceAtMost(64).toDouble()
-//
-//                cTransArea.font = cTransArea.font.s(newSize)
-//                cTransArea.positionCaret(0)
-//            }
-//        }
-//        Logger.info("Registered TransArea font size change", "Controller")
-
         // Register CLabelPane handler
         cLabelPane.addEventFilter(CLabelPane.LabelEvent.LABEL_ANY) {
             when (it.eventType) {
@@ -336,7 +353,10 @@ class Controller(private val state: State) {
         }
         cLabelPane.setOnLabelCreate handler@{
             // support add/delete label by ctrl+mouse in InputMode
-            if (state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) return@handler
+            if (state.workMode == WorkMode.InputMode) {
+                val sourceEvent = it.sourceEvent
+                if (!ShortcutRegistry.matchesMouse(sourceEvent, Settings.shortcuts, ShortcutAction.LABEL_ADD)) return@handler
+            }
             if (state.currentGroupId == NOT_FOUND) return@handler
 
             // Use next as new label index if current found
@@ -359,8 +379,10 @@ class Controller(private val state: State) {
         }
         cLabelPane.setOnLabelRemove handler@{
             // support add/delete label by ctrl+mouse in InputMode
-            if (state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) return@handler
-
+            if (state.workMode == WorkMode.InputMode) {
+                val sourceEvent = it.sourceEvent
+                if (!ShortcutRegistry.matchesMouse(sourceEvent, Settings.shortcuts, ShortcutAction.LABEL_REMOVE)) return@handler
+            }
 
             state.doAction(
                 LabelAction(
@@ -510,21 +532,22 @@ class Controller(private val state: State) {
     private fun listen() {
         Logger.info("Attaching Listeners...", "Controller")
 
-        // Switch Prism for once (only in windows)
+        // Switch rendering mode when image is too large (only in windows)
         imageBinding.addListener(onNew {
-            // The restore procedure will be registered as a shutdown-hook
-            // when Config::usingSWPrism is true, here is next time LPFX starts.
             if (Config.isWin && !Config.usingSWPrism) {
-                if (it != null && isTooLarge(it)) {
+                if (it != null && isTooLarge(it) && Settings.currentPrismMode == PrismMode.HW) {
+                    // HW mode: switch to tiled rendering (no restart needed)
                     val result = showConfirmWithoutCancel(state.stage, I18N["graphic_switch.message"])
                     if (result.isPresent && result.get() == ButtonType.YES) {
-                        state.application.addShutdownHook("UseSWPrism", ::useSoftwarePrism)
-                        state.application.stop()
+                        Settings.currentPrismMode = PrismMode.HW_CHANGE_SIZE
+                        Options.save()
+                        // Re-load current image with tiled rendering
+                        imageBinding.invalidate()
                     }
                 }
             }
         })
-        Logger.info("Listened for prism crash", "Controller")
+        Logger.info("Listened for prism mode auto-switch", "Controller")
 
         // Update StatsBar
         state.currentPicNameProperty().addListener(onNew {
@@ -705,15 +728,19 @@ class Controller(private val state: State) {
 
         // Transform number key press to CTreeView select
         val numberBuilder = StringBuilder()
-        view.addEventHandler(KeyEvent.KEY_PRESSED) handler@{
-            if (!it.code.isDigitKey) {
+        view.addEventHandler(KeyEvent.KEY_PRESSED) handler@{ event ->
+            if (!ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.GROUP_SELECT_DIGITS)) {
+                numberBuilder.clear()
+                return@handler
+            }
+            if (!isFocusInLabelPane()) {
                 numberBuilder.clear()
                 return@handler
             }
             // Mark immediately when this event will be consumed
-            it.consume() // stop further propagation
+            event.consume() // stop further propagation
 
-            val number = it.text.toInt()
+            val number = event.text.toInt()
             if (numberBuilder.isEmpty()) {
                 // Not parsing
                 if (number == 0) {
@@ -748,155 +775,18 @@ class Controller(private val state: State) {
                 }
             }
         }
-        Logger.info("Transformed num-key pressed", "Controller")
-//
-//        /**
-//         * Find next LabelItem as int index.
-//         * @param  from  start index
-//         * @param  forward true for next, false for previous
-//         * @return NOT_FOUND when have no next
-//         */
-//        fun getNextLabelItemIndex(from: Int, forward: Boolean = true): Int {
-//            // Make sure we have items to select
-//            cTreeView.getTreeItem(from).apply { this?.expand() }
-//
-//            val direction = if (forward) 1 else -1
-//            var index = from + direction
-//
-//            while (true) {
-//                val item = cTreeView.getTreeItem(index) ?: return NOT_FOUND
-//                if (item is CTreeLabelItem) return index
-//
-//                item.expand()
-//                index += direction
-//            }
-//        }
-//
-//        /**
-//         * move CurrLabel to next/previous LabelItem
-//         * @param  forward true for next, false for previous
-//         * @param  isBreakPage true if break page
-//         * @return  true if succeeded, false if failed
-//         */
-//        fun moveCurrLabelTo(forward: Boolean = true,isBreakPage: Boolean = false) {
-//            var itemIndex = getNextLabelItemIndex(cTreeView.selectionModel.selectedIndex, forward)
-//            if (itemIndex == NOT_FOUND) {
-//                //  if no next/previous LabelItem, try to find next/previous LabelItem
-//                if (isBreakPage) {
-//                    //  if selected first and try getting previous, return last
-//                    if (forward) {
-//                        cPicBox.next()
-//                        cTreeView.selectFirst(clear = true, scrollTo = false)
-//                        cLabelPane.moveToLabel(cTreeView.selectedLabel)
-//                        return
-//                    } else {
-//                        //  if selected last and try getting next, return first
-//                        cPicBox.back()
-//                        cTreeView.selectLast(clear = true, scrollTo = false)
-//                        cLabelPane.moveToLabel(cTreeView.selectedLabel)
-//                       return
-//                    }
-//                } else {
-//                    // if selected first and try getting previous, return last;
-//                    // if selected last and try getting next, return first;
-//                    itemIndex = getNextLabelItemIndex(if (forward) 0 else cTreeView.expandedItemCount, forward)
-//                }
-//            }
-//            if(itemIndex == NOT_FOUND) {
-//                return
-//            }
-//            Logger.info("moveCurrLabelTo$itemIndex","moveCurrLabelTo")
-//            val item = cTreeView.getTreeItem(itemIndex) as CTreeLabelItem
-//            cLabelPane.moveToLabel(item.transLabel.index)
-//            cTreeView.selectLabel(item.transLabel.index, clear = true, scrollTo = true)
-//        }
 
 
-        // Transform Ctrl + Left/Right KeyEvent to CPicBox button click
-//        val arrowKeyChangePicHandler = EventHandler<KeyEvent> handler@{
-//            if (!(it.isControlDown || it.isMetaDown)) return@handler
-//
-//            when (it.code) {
-//                KeyCode.LEFT -> cPicBox.back()
-//                KeyCode.RIGHT -> cPicBox.next()
-//                else -> return@handler
-//            }
-//            cTreeView.selectFirst()
-//            cLabelPane.moveToLabel(cTreeView.selectedLabel)
-//            it.consume() // Consume used event
-//        }
-//        cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangePicHandler)
-//        cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangePicHandler)
-//        cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangePicHandler)
-//        Logger.info("Transformed Ctrl + Left/Right", "Controller")
+    }
 
-
-        // Transform Ctrl + Up/Down KeyEvent to CTreeView select (and have effect: move to label)
-//        val arrowKeyChangeLabelHandler = EventHandler<KeyEvent> handler@{
-//            if (!((it.isControlDown || it.isMetaDown) && it.code.isArrowKey)) return@handler
-//            // Make sure we'll not get into endless LabelItem find loop
-//            if (state.transFile.getTransList(state.currentPicName).isEmpty()) return@handler
-//            // Direction
-//            val forward: Boolean = when (it.code) {
-//                KeyCode.UP -> false
-//                KeyCode.DOWN -> true
-//                else -> return@handler
-//            }
-//            // Mark immediately when this event will be consumed
-//            it.consume() // stop further propagation
-//            moveCurrLabelTo(forward = forward)
-//        }
-//        cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangeLabelHandler)
-//        cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangeLabelHandler)
-//        Logger.info("Transformed Ctrl + Up/Down", "Controller")
-
-        // Transform Ctrl + Enter to Ctrl + Down / Right (+Shift -> back)
-//        val enterKeyTransformerHandler = EventHandler<KeyEvent> handler@{
-//            if (!(it.isControlDown || it.isMetaDown) || it.code != KeyCode.ENTER) return@handler
-//            // Mark immediately when this event will be consumed
-//            it.consume() // stop further propagation
-//            // transform
-//            if (it.isShiftDown) {
-//                   // Go to previous label
-//                    moveCurrLabelTo(forward = false,  isBreakPage = true)
-//            } else {
-//                    // Go to next label
-//                    moveCurrLabelTo(forward = true,  isBreakPage = true)
-//            }
-//        }
-//        cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, enterKeyTransformerHandler)
-//        cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, enterKeyTransformerHandler)
-//        Logger.info("Transformed Ctrl + Enter", "Controller")
-
-
-//        val copyLabelHandler = EventHandler<KeyEvent> handler@{
-//            // Only respond to key events with Ctrl (or Meta on macOS) modifier
-//            if (!(it.isControlDown || it.isMetaDown)) return@handler
-//
-//            when (it.code) {
-//                KeyCode.C -> {
-//                    // Copy the text of the selected label item
-//                    val treeItem = cTreeView.getTreeItem(cTreeView.selectionModel.selectedIndex) as CTreeLabelItem
-//                    cTreeView.copyLabelText(treeItem.transLabel.index)
-//                }
-//                KeyCode.V -> {
-//                    // Paste text to selected label items
-//                    val selectItems: Collection<CTreeLabelItem> =
-//                        cTreeView.selectionModel.selectedIndices.map { cTreeView.getTreeItem(it) }
-//                            .filterIsInstance<CTreeLabelItem>()
-//
-//                    cTreeView.pasteLabelsText(selectItems.map { it.transLabel.index }, state)
-//                }
-//                else -> return@handler
-//            }
-//
-//            it.consume() // Consume used event
-//        }
-//        cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, copyLabelHandler)
-//        Logger.info("Transformed Ctrl + C/V", "Controller")
-//
-
-
+    private fun isFocusInLabelPane(): Boolean {
+        val focusOwner = view.scene?.focusOwner ?: return false
+        var node: Node? = focusOwner
+        while (node != null) {
+            if (node == cLabelPane) return true
+            node = node.parent
+        }
+        return false
     }
 
     // Controller Methods
@@ -1218,6 +1108,36 @@ class Controller(private val state: State) {
         }
 
         showInfo(state.stage, I18N["info.exported_successful"])
+    }
+
+    /**
+     * Export current picture only as LP file.
+     */
+    fun exportCurrentPageAsLP() {
+        if (!state.isOpened) return
+
+        val picName = state.currentPicName
+        val picFile = state.getPicFileNow()
+        val file = picFile.parentFile.resolve("${picFile.nameWithoutExtension}.$EXTENSION_FILE_LP")
+        val transFile = TransFile(
+            version = state.transFile.version,
+            comment = state.transFile.comment,
+            groupList = state.transFile.groupList.map { TransGroup(it.name, it.colorHex) },
+            transMap = linkedMapOf(picName to state.transFile.getTransList(picName).map {
+                TransLabel(it.index, it.groupId, it.x, it.y, it.text)
+            })
+        )
+
+        Logger.info("Exporting current page `$picName` to ${file.path}", "Controller")
+
+        try {
+            export(file, transFile)
+        } catch (e: IOException) {
+            Logger.error("Export current page failed", "Controller")
+            Logger.exception(e)
+            showError(state.stage, I18N["error.export_failed"])
+            showException(state.stage, e)
+        }
     }
 
     /**

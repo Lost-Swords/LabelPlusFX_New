@@ -1,6 +1,5 @@
 ﻿package ink.meodinger.lpfx.input
 
-import ink.meodinger.lpfx.Config
 import ink.meodinger.lpfx.NOT_FOUND
 import ink.meodinger.lpfx.State
 import ink.meodinger.lpfx.action.ActionType
@@ -8,6 +7,7 @@ import ink.meodinger.lpfx.action.FunctionAction
 import ink.meodinger.lpfx.action.LabelAction
 import ink.meodinger.lpfx.component.CTreeLabelItem
 import ink.meodinger.lpfx.options.Logger
+import ink.meodinger.lpfx.options.Settings
 import ink.meodinger.lpfx.type.TransLabel
 import ink.meodinger.lpfx.util.collection.nextIndex
 import ink.meodinger.lpfx.util.collection.nextItem
@@ -23,7 +23,7 @@ import kotlin.math.roundToInt
 
 class ShortcutManager(private val state: State) {
 
-    // 注册所有的快捷键处理逻辑
+    // 注册所有可自定义的快捷键处理逻辑
     fun registerShortcuts() {
         registerTransLabelMark()
         registerTransAreaUndoRedo()
@@ -35,6 +35,7 @@ class ShortcutManager(private val state: State) {
         registerLabelNavigation()
         registerEnterTransform()
         registerCopyPaste()
+        registerCurrentPageExport()
         registerLabelGroupMove()
         registerLabelIndexMove()
     }
@@ -49,169 +50,166 @@ class ShortcutManager(private val state: State) {
     private val cTransArea = view.cTransArea
 
 
-    // Register Alt(Win)/Command(macOS) + X to mark/unmark Label
+    // 注册标记/取消标记 Label 的快捷键
     private fun registerTransLabelMark() {
-        val markHandler = EventHandler<KeyEvent> {
-            if ((it.isAltDown || (Config.isMac && it.isControlDown)) && it.code == KeyCode.X) {
-                if (state.isOpened && state.currentLabelIndex != NOT_FOUND) {
-                    val transLabel = state.transFile.getTransLabel(state.currentPicName, state.currentLabelIndex)
-                    transLabel.isMarked = !transLabel.isMarked
-                }
+        val markHandler = EventHandler<KeyEvent> { event ->
+            if (!ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.LABEL_MARK_TOGGLE)) return@EventHandler
+            if (state.isOpened && state.currentLabelIndex != NOT_FOUND) {
+                val transLabel = state.transFile.getTransLabel(state.currentPicName, state.currentLabelIndex)
+                transLabel.isMarked = !transLabel.isMarked
             }
+            event.consume()
         }
         cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, markHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, markHandler)
-        Logger.info("Registered Ctrl/Meta + X mark/unmark TransLabel", "Controller")
+        Logger.info("Registered mark/unmark TransLabel shortcut", "ShortcutManager")
     }
 
-    // Register Alias & Global redo/undo in TransArea
+    // 注册文本录入区撤销/重做快捷键（优先文本撤销，其次全局撤销）
     private fun registerTransAreaUndoRedo() {
         val handler = EventHandler<KeyEvent> { event ->
-            if ((event.isControlDown || event.isMetaDown) && event.code == KeyCode.Z) {
-                event.consume()
-                if (!event.isShiftDown) {
-                    if (cTransArea.isUndoable) cTransArea.undo()
-                    else if (state.isUndoable) state.undo()
-                } else {
-                    if (cTransArea.isRedoable) cTransArea.redo()
-                    else if (state.isRedoable) state.redo()
+            when {
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.TRAN_UNDO) -> {
+                    event.consume()
+                    if (cTransArea.isUndoable) cTransArea.undo() else if (state.isUndoable) state.undo()
+                }
+
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.TRAN_REDO) -> {
+                    event.consume()
+                    if (cTransArea.isRedoable) cTransArea.redo() else if (state.isRedoable) state.redo()
                 }
             }
         }
         cTransArea.addEventFilter(KeyEvent.KEY_PRESSED, handler)
-        Logger.info("Registered CTransArea Alias & Global undo/redo", "Controller")
+        Logger.info("Registered TransArea undo/redo shortcut", "ShortcutManager")
     }
 
-    // 注册调整字体大小的快捷键 Ctrl/Alt/Meta + 滚轮
+    // 注册调整文本录入区字体大小的快捷键
     private fun registerLabelPaneFontSizeChange() {
         cTransArea.addEventHandler(ScrollEvent.SCROLL) { event ->
-            if (event.isControlDown || event.isAltDown || event.isMetaDown) {
-                event.consume()
-                val newSize = (cTransArea.font.size + if (event.deltaY > 0) 1 else -1)
-                    .roundToInt().coerceAtLeast(12).coerceAtMost(64).toDouble()
-                cTransArea.font = cTransArea.font.s(newSize)
-                cTransArea.positionCaret(0)
-            }
+            if (!ShortcutRegistry.matchesScroll(event, Settings.shortcuts, ShortcutAction.TRAN_FONT_SIZE_SCROLL)) return@addEventHandler
+            event.consume()
+            val newSize = (cTransArea.font.size + if (event.deltaY > 0) 1 else -1)
+                .roundToInt().coerceAtLeast(12).coerceAtMost(64).toDouble()
+            cTransArea.font = cTransArea.font.s(newSize)
+            cTransArea.positionCaret(0)
         }
-        Logger.info("Registered TransArea font size change", "Controller")
+        Logger.info("Registered TransArea font size scroll shortcut", "ShortcutManager")
     }
 
-    // 注册切换 ViewMode 的快捷键（Tab）
+    // 注册切换查看模式的快捷键（TreeView 区域）
     private fun registerViewModeSwitch() {
         cTreeView.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.TAB) {
-                event.consume()
-                bSwitchViewMode.fire()
-            }
+            if (!ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.MODE_TOGGLE)) return@addEventFilter
+            event.consume()
+            bSwitchViewMode.fire()
         }
-        Logger.info("Transformed Tab on CTreeView", "Controller")
+        Logger.info("Registered view mode switch shortcut on CTreeView", "ShortcutManager")
     }
 
-    // 注册切换 WorkMode 的快捷键（Tab）
+    // 注册切换工作模式的快捷键（图片查看区域）
     private fun registerWorkModeSwitch() {
         cLabelPane.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
-            if (event.code == KeyCode.TAB) {
-                event.consume()
-                bSwitchWorkMode.fire()
-            }
+            if (!ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.MODE_TOGGLE)) return@addEventFilter
+            event.consume()
+            bSwitchWorkMode.fire()
         }
-        Logger.info("Transformed Tab on CLabelPane", "Controller")
+        Logger.info("Registered work mode switch shortcut on CLabelPane", "ShortcutManager")
     }
 
-    // 注册 Q/W 切换图片
+    // 注册图片查看区切换上一张/下一张图片的快捷键
     private fun registerCLabelPicNavigation() {
         val handler = EventHandler<KeyEvent> { event ->
-            if (event.isControlDown || event.isMetaDown || event.isShiftDown || event.isAltDown || event.code.isDigitKey) return@EventHandler
-            event.consume()
-            when (event.code) {
-                KeyCode.Q -> cPicBox.back()
-                KeyCode.W -> cPicBox.next()
+            when {
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.PIC_PREV_Q) -> {
+                    event.consume()
+                    cPicBox.back()
+                }
+
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.PIC_NEXT_W) -> {
+                    event.consume()
+                    cPicBox.next()
+                }
+
                 else -> return@EventHandler
             }
             cTreeView.selectRoot(clear = true, scrollTo = false)
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, handler)
-        Logger.info("Transformed Q/W pressed", "Controller")
+        Logger.info("Registered picture prev/next shortcut on CLabelPane", "ShortcutManager")
     }
 
 
-    // 注册 Ctrl+左右方向键切换图片
+    // 注册方向键切换上一张/下一张图片的快捷键（全局）
     private fun registerPicNavigation() {
-        val arrowKeyChangePicHandler = EventHandler<KeyEvent> handler@{
-            if (!(it.isControlDown || it.isMetaDown)) return@handler
-
-            when (it.code) {
-                KeyCode.LEFT -> cPicBox.back()
-                KeyCode.RIGHT -> cPicBox.next()
+        val arrowKeyChangePicHandler = EventHandler<KeyEvent> handler@{ event ->
+            when {
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.PIC_PREV_ARROW) -> cPicBox.back()
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.PIC_NEXT_ARROW) -> cPicBox.next()
                 else -> return@handler
             }
             cTreeView.selectFirst()
             cLabelPane.moveToLabel(cTreeView.selectedLabel)
-            it.consume() // Consume used event
+            event.consume() // Consume used event
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangePicHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangePicHandler)
         cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangePicHandler)
-        Logger.info("Transformed Ctrl + Left/Right", "Controller")
+        Logger.info("Registered picture prev/next arrow shortcut", "ShortcutManager")
     }
 
-    // 注册 Ctrl+上下方向键切换标签
+    // 注册切换上一个/下一个标签的快捷键
     private fun registerLabelNavigation() {
-        val arrowKeyChangeLabelHandler = EventHandler<KeyEvent> handler@{
-            if (!((it.isControlDown || it.isMetaDown) && it.code.isArrowKey)) return@handler
-            // Make sure we'll not get into endless LabelItem find loop
-            if (state.transFile.getTransList(state.currentPicName).isEmpty()) return@handler
-            // Direction
-            val forward: Boolean = when (it.code) {
-                KeyCode.UP -> false
-                KeyCode.DOWN -> true
+        val arrowKeyChangeLabelHandler = EventHandler<KeyEvent> handler@{ event ->
+            val forward: Boolean = when {
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.LABEL_PREV) -> false
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.LABEL_NEXT) -> true
                 else -> return@handler
             }
+            // Make sure we'll not get into endless LabelItem find loop
+            if (state.transFile.getTransList(state.currentPicName).isEmpty()) return@handler
             // Mark immediately when this event will be consumed
-            it.consume() // stop further propagation
+            event.consume() // stop further propagation
             moveCurrLabelToNext(forward = forward)
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangeLabelHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangeLabelHandler)
-        Logger.info("Transformed Ctrl + Up/Down", "Controller")
+        Logger.info("Registered label prev/next shortcut", "ShortcutManager")
 
     }
 
-    // 注册 Enter 键跳转下一条/上一条标签
+    // 注册跨图片切换上一个/下一个标签的快捷键
     private fun registerEnterTransform() {
-        val enterKeyTransformerHandler = EventHandler<KeyEvent> handler@{
-            if (!(it.isControlDown || it.isMetaDown) || it.code != KeyCode.ENTER) return@handler
-            // Mark immediately when this event will be consumed
-            it.consume() // stop further propagation
-            // transform
-            if (it.isShiftDown) {
-                // Go to previous label
-                moveCurrLabelToNext(forward = false, isBreakPage = true)
-            } else {
-                // Go to next label
-                moveCurrLabelToNext(forward = true, isBreakPage = true)
+        val enterKeyTransformerHandler = EventHandler<KeyEvent> handler@{ event ->
+            val forward = when {
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.LABEL_PREV_CROSS) -> false
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.LABEL_NEXT_CROSS) -> true
+                else -> return@handler
             }
+            // Mark immediately when this event will be consumed
+            event.consume() // stop further propagation
+            moveCurrLabelToNext(forward = forward, isBreakPage = true)
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, enterKeyTransformerHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, enterKeyTransformerHandler)
-        Logger.info("Transformed Ctrl + Enter", "Controller")
+        Logger.info("Registered label prev/next cross-page shortcut", "ShortcutManager")
     }
 
-    // 注册 Ctrl+C/V 复制粘贴标签文本
+    // 注册复制/粘贴标签文本的快捷键（固定为 Ctrl/Meta+C 和 Ctrl/Meta+V）
     private fun registerCopyPaste() {
         val copyLabelHandler = EventHandler<KeyEvent> handler@{
-            // Only respond to key events with Ctrl (or Meta on macOS) modifier
+            // 仅响应带有 Ctrl（或 macOS 上的 Meta）修饰键的按键事件
             if (!(it.isControlDown || it.isMetaDown)) return@handler
 
             when (it.code) {
                 KeyCode.C -> {
-                    // Copy the text of the selected label item
+                    // 复制选中标签的文本
                     val treeItem = cTreeView.getTreeItem(cTreeView.selectionModel.selectedIndex) as CTreeLabelItem
                     cTreeView.copyLabelText(treeItem.transLabel.index)
                 }
 
                 KeyCode.V -> {
-                    // Paste text to selected label items
+                    // 粘贴文本到选中的标签
                     val selectItems: Collection<CTreeLabelItem> =
                         cTreeView.selectionModel.selectedIndices.map { cTreeView.getTreeItem(it) }
                             .filterIsInstance<CTreeLabelItem>()
@@ -222,39 +220,50 @@ class ShortcutManager(private val state: State) {
                 else -> return@handler
             }
 
-            it.consume() // Consume used event
+            it.consume()
         }
         cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, copyLabelHandler)
-        Logger.info("Transformed Ctrl + C/V", "Controller")
+        Logger.info("Registered label copy/paste shortcut", "ShortcutManager")
     }
 
-    // 注册 Alt+左右方向键移动标签分组
-    private fun registerLabelGroupMove() {
-        val labelGroupChangeHandler = EventHandler<KeyEvent> handler@{
-            if (!(it.isAltDown  && it.code.isArrowKey)) return@handler
-            // 确保选中的是标签项
-            if (cTreeView.selectionModel.selectedItem !is CTreeLabelItem) return@handler
+    // 注册导出当前页为 LP 文件快捷键
+    private fun registerCurrentPageExport() {
+        view.addEventFilter(KeyEvent.KEY_PRESSED) { event ->
+            if (!ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.EXPORT_CURRENT_PAGE_LP)) return@addEventFilter
+            if (!state.isOpened) return@addEventFilter
 
+            event.consume()
+            state.controller.exportCurrentPageAsLP()
+        }
+        Logger.info("Registered current page LP export shortcut", "ShortcutManager")
+    }
+
+    // 注册移动标签至前一个/后一个分组的快捷键
+    private fun registerLabelGroupMove() {
+        val labelGroupChangeHandler = EventHandler<KeyEvent> handler@{ event ->
+            val newGroupId = when {
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.LABEL_GROUP_PREV) -> {
+                    if (cTreeView.selectionModel.selectedItem !is CTreeLabelItem) return@handler
+                    val selectedItem = cTreeView.selectionModel.selectedItem as CTreeLabelItem
+                    val groups = state.transFile.groupList
+                    if (groups.isEmpty()) return@handler
+                    groups.prevIndex(selectedItem.transLabel.groupId)
+                }
+
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.LABEL_GROUP_NEXT) -> {
+                    if (cTreeView.selectionModel.selectedItem !is CTreeLabelItem) return@handler
+                    val selectedItem = cTreeView.selectionModel.selectedItem as CTreeLabelItem
+                    val groups = state.transFile.groupList
+                    if (groups.isEmpty()) return@handler
+                    groups.nextIndex(selectedItem.transLabel.groupId)
+                }
+
+                else -> return@handler
+            }
 
             val selectedItem = cTreeView.selectionModel.selectedItem as CTreeLabelItem
             val itemIndex = selectedItem.transLabel.index
 
-
-            // 获取当前组ID和组列表
-            val groupId = selectedItem.transLabel.groupId
-            val groups = state.transFile.groupList
-            if (groups.isEmpty()) return@handler
-
-
-            // 根据左右键判断新的分组
-            val newGroupId = when (it.code) {
-                KeyCode.LEFT -> groups.prevIndex(groupId)
-                KeyCode.RIGHT -> groups.nextIndex(groupId)
-                else -> return@handler
-            }
-
-
-            // 创建动作
             val action = LabelAction(
                 ActionType.CHANGE, state,
                 state.currentPicName,
@@ -267,34 +276,36 @@ class ShortcutManager(private val state: State) {
                 { action.revert(); state.controller.requestUpdateTree() }
             )
             state.doAction(moveAction)
-            it.consume() // Consume used event
+            event.consume() // Consume used event
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, labelGroupChangeHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, labelGroupChangeHandler)
         cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, labelGroupChangeHandler)
-        Logger.info("Transformed Alt + Left/Right", "Controller")
+        Logger.info("Registered label group prev/next shortcut", "ShortcutManager")
     }
 
 
-    // 注册 Alt+上下方向键移动标签序号
+    // 注册移动标签至前一个/后一个序号的快捷键
     private fun registerLabelIndexMove() {
-        val labelIndexChangeHandler = EventHandler<KeyEvent> handler@{
-            if (!(it.isAltDown)  && it.code.isArrowKey) return@handler
-            // 确保选中的是标签项
+        val labelIndexChangeHandler = EventHandler<KeyEvent> handler@{ event ->
+            val newIndex = when {
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.LABEL_INDEX_PREV) -> {
+                    val selectedItem = cTreeView.selectionModel.selectedItem as? CTreeLabelItem ?: return@handler
+                    val labels = state.transFile.getTransList(state.currentPicName).map(TransLabel::index)
+                    labels.prevItem(selectedItem.transLabel.index)
+                }
 
+                ShortcutRegistry.matchesKey(event, Settings.shortcuts, ShortcutAction.LABEL_INDEX_NEXT) -> {
+                    val selectedItem = cTreeView.selectionModel.selectedItem as? CTreeLabelItem ?: return@handler
+                    val labels = state.transFile.getTransList(state.currentPicName).map(TransLabel::index)
+                    labels.nextItem(selectedItem.transLabel.index)
+                }
 
-            val selectedItem = cTreeView.selectionModel.selectedItem as? CTreeLabelItem ?: return@handler
-            val transLabel = selectedItem.transLabel
-            val labels = state.transFile.getTransList(state.currentPicName).map(TransLabel::index)
-
-
-            // 根据上下键判断新的序号
-            val newIndex = when (it.code) {
-                KeyCode.UP -> labels.prevItem(transLabel.index)
-                KeyCode.DOWN -> labels.nextItem(transLabel.index)
                 else -> return@handler
-            }
-            if (newIndex == NOT_FOUND || newIndex == null) return@handler
+            } ?: return@handler
+
+            if (newIndex == NOT_FOUND) return@handler
+            val selectedItem = cTreeView.selectionModel.selectedItem as? CTreeLabelItem ?: return@handler
             // 创建动作
             val action = LabelAction(
                 ActionType.CHANGE, state,
@@ -307,16 +318,14 @@ class ShortcutManager(private val state: State) {
                 { action.revert(); state.controller.requestUpdateTree() }
             )
             state.doAction(moveAction)
-            it.consume() // Consume used event
+            event.consume() // Consume used event
             cLabelPane.moveToLabel(newIndex)
             cTreeView.selectLabel(newIndex, clear = true, scrollTo = true)
-
-
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, labelIndexChangeHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, labelIndexChangeHandler)
         cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, labelIndexChangeHandler)
-        Logger.info("Transformed Alt + Up/Down for Index Move", "Controller")
+        Logger.info("Registered label index prev/next shortcut", "ShortcutManager")
     }
 
 

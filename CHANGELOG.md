@@ -7,8 +7,25 @@
 - 备份文件上限（Next）
 - 保存specify（Next）
 - 添加校阅功能（单独开一个beta分支进行）
-- 自定义快捷键
 - 添加日汉词典（如moJi）
+
+## [2.4.0] - 2026-6-29
+
+### Changed
+- 支持分块渲染超大图片
+
+### Added
+- 支持快捷键自定义（请在设置里自行配置）
+- 支持在树状图内拖拽Label调整序号和分组
+- [新增Linux版本支持](https://github.com/Lost-Swords/LabelPlusFX_New/pull/13)(satgo1546
+  c)
+- [增加导出当前页的功能](https://github.com/Lost-Swords/LabelPlusFX_New/pull/14)(夜夜)
+
+### Fixed
+- 修复标签文本提示框在靠近屏幕边缘时会频闪的问题
+- 修复标号模式下删除多个标签时会报错的问题
+- [修复中文输入法组合状态下 [ ] 方向键被错误插入文本区域的问题](https://github.com/Lost-Swords/LabelPlusFX_New/pull/16)(夜夜)
+
 
 ## [2.3.9] - 2025-11-08
 

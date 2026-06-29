@@ -29,6 +29,8 @@ object Config {
      * Whether current OS is macOS
      */
     val isMac: Boolean = OS.contains("mac")
+    /** Whether current OS is Linux */
+    val isLinux: Boolean = OS.contains("linux")
 
     /**
      * Whether SystemProxy enabled

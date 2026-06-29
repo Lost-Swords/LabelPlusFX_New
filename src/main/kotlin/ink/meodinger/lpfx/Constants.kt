@@ -199,12 +199,11 @@ enum class TranslationAPI {
     BaiduTranslate;
 
     companion object {
-        private val DEFAULT = FanHuaJi
         fun fromString(name: String): TranslationAPI {
             return try {
                 valueOf(name)
             } catch (e: IllegalArgumentException) {
-                DEFAULT
+                FanHuaJi
             }
         }
     }
@@ -231,7 +230,7 @@ enum class PrismMode(val description: String) {
      */
     SW(I18N["prism_mode.SW"]),
     /**
-     * Hardware Accelerated, but change size
+     * Hardware Accelerated, tiled rendering for oversized images
      */
     HW_CHANGE_SIZE(I18N["prism_mode.HW_change_size"]);
 

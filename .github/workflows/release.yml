@@ -10,19 +10,35 @@ on:
         default: "pro"
 
 jobs:
-  build-windows:
+  extract-version:
     runs-on: windows-latest
-    name: Build Windows Package
+    name: Extract project version
     outputs:
-      version: ${{ steps.extract-version.outputs.version }}
+      version: ${{ steps.get-version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (Liberica Full)
+      - name: Extract version from pom.xml
+        id: get-version
+        shell: pwsh
+        run: |
+          [xml]$pom = Get-Content pom.xml
+          $version = $pom.project.version
+          echo "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+  build-windows:
+    runs-on: windows-latest
+    name: Build Windows Package
+    needs: [extract-version]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21 (Liberica Full)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'liberica'
           java-package: jdk-full
 
@@ -31,14 +47,10 @@ jobs:
         with:
           maven-version: 3.8.6
 
-      - name: Extract version from pom.xml (Windows)
-        id: extract-version
+      - name: Set VERSION environment variable
         shell: pwsh
         run: |
-          [xml]$pom = Get-Content pom.xml
-          $version = $pom.project.version
-          echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
-          echo "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "VERSION=${{ needs.extract-version.outputs.version }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
       - name: Build project with Maven
         run: mvn clean package
@@ -56,31 +68,24 @@ jobs:
           path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Win64.zip
 
 
-
   build-macos:
     runs-on: macos-latest
     name: Build macOS Package
-    outputs:
-      version: ${{ steps.extract-version.outputs.version }}
-
+    needs: [extract-version]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (Liberica Full)
+      - name: Set up JDK 21 (Liberica Full)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'liberica'
           java-package: jdk-full
 
-      - name: Extract version from pom.xml
-        id: extract-version
+      - name: Set VERSION environment variable
         run: |
-          VERSION=$(xpath -q -e '/project/version/text()' pom.xml)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
+          echo "VERSION=${{ needs.extract-version.outputs.version }}" >> $GITHUB_ENV
 
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4
@@ -90,13 +95,10 @@ jobs:
       - name: Build project with Maven
         run: mvn clean package
 
-      - name: Make build.sh executable
-        run: chmod +x script/jpackage/build.sh
-
       - name: Run build.sh
         run: |
           cd script/jpackage
-          ./build.sh ${{ env.VERSION }}
+          ./build-macos.sh ${{ env.VERSION }}
 
       - name: Archive macOS ZIP
         uses: actions/upload-artifact@v4
@@ -104,8 +106,47 @@ jobs:
           name: LabelPlusFX-${{ env.VERSION }}-Mac
           path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Mac.zip
 
+
+  build-linux:
+    runs-on: ubuntu-latest
+    name: Build Linux Package
+    needs: [extract-version]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Liberica Full)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'liberica'
+          java-package: jdk-full
+
+      - name: Set VERSION environment variable
+        run: |
+          echo "VERSION=${{ needs.extract-version.outputs.version }}" >> $GITHUB_ENV
+
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: 3.8.6
+
+      - name: Build project with Maven
+        run: mvn clean package
+
+      - name: Run build.sh
+        run: |
+          cd script/jpackage
+          ./build-linux.sh ${{ env.VERSION }}
+
+      - name: Archive Linux ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: LabelPlusFX-${{ env.VERSION }}-Linux
+          path: ${{ github.workspace }}/script/jpackage/Output/LabelPlusFX-${{ env.VERSION }}-Linux.tar.gz
+
   create-release:
-    needs: [ build-windows, build-macos ]
+    needs: [extract-version, build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
     name: Create Draft GitHub Release
     permissions:
@@ -115,40 +156,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Windows Artifact
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64
           path: release/
-
-      - name: Download macOS Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac
-          path: release/
+          merge-multiple: true
 
       - name: List files after download
         run: ls -lh release/
 
       - name: Extract Current Version Changelog
         run: |
-          VERSION="${{ needs.build-windows.outputs.version }}"
+          VERSION="${{ needs.extract-version.outputs.version }}"
           echo "Extracting changelog for version: $VERSION"
           head -40 CHANGELOG.md
           sed -n "/^## \[$VERSION\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d' > changelog.md
           cat changelog.md
 
 
-      - name: Create Draft Release
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ needs.build-windows.outputs.version }}
-          name: ${{ needs.build-windows.outputs.version }}
+          tag_name: v${{ needs.extract-version.outputs.version }}
+          name: ${{ needs.extract-version.outputs.version }}
           body_path: changelog.md
           draft: false
           prerelease: false
           files: |
-            release/LabelPlusFX-${{ needs.build-windows.outputs.version }}-Win64.zip
-            release/LabelPlusFX-${{ needs.build-macos.outputs.version }}-Mac.zip
+            release/LabelPlusFX-${{ needs.extract-version.outputs.version }}-Win64.zip
+            release/LabelPlusFX-${{ needs.extract-version.outputs.version }}-Mac.zip
+            release/LabelPlusFX-${{ needs.extract-version.outputs.version }}-Linux.tar.gz

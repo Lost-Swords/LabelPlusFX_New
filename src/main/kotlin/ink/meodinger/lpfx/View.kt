@@ -4,47 +4,47 @@ import ink.meodinger.lpfx.action.*
 import ink.meodinger.lpfx.component.*
 import ink.meodinger.lpfx.component.common.*
 import ink.meodinger.lpfx.component.dialog.*
-import ink.meodinger.lpfx.options.*
+import ink.meodinger.lpfx.io.TranslationConstants
+import ink.meodinger.lpfx.io.convert2Simplified
+import ink.meodinger.lpfx.io.convert2Traditional
+import ink.meodinger.lpfx.options.Logger
+import ink.meodinger.lpfx.options.Preference
+import ink.meodinger.lpfx.options.RecentFiles
+import ink.meodinger.lpfx.options.Settings
 import ink.meodinger.lpfx.type.LPFXTask
 import ink.meodinger.lpfx.type.TransGroup
 import ink.meodinger.lpfx.util.collection.contact
 import ink.meodinger.lpfx.util.component.*
 import ink.meodinger.lpfx.util.doNothing
 import ink.meodinger.lpfx.util.image.resizeByRadius
-import ink.meodinger.lpfx.util.property.*
+import ink.meodinger.lpfx.util.openUrl
+import ink.meodinger.lpfx.util.property.emptyProperty
+import ink.meodinger.lpfx.util.property.onNew
+import ink.meodinger.lpfx.util.property.transform
 import ink.meodinger.lpfx.util.string.deleteTrailing
 import ink.meodinger.lpfx.util.string.emptyString
 import ink.meodinger.lpfx.util.string.sortByDigit
-import ink.meodinger.lpfx.io.TranslationConstants
-import ink.meodinger.lpfx.io.convert2Simplified
-import ink.meodinger.lpfx.io.convert2Traditional
-
 import javafx.animation.Interpolator
 import javafx.animation.KeyFrame
 import javafx.animation.KeyValue
 import javafx.animation.Timeline
-import javafx.beans.value.ChangeListener
+import javafx.application.Platform
 import javafx.collections.ListChangeListener
 import javafx.event.ActionEvent
 import javafx.geometry.Insets
 import javafx.geometry.Orientation
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
-import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyCodeCombination
-import javafx.scene.input.KeyCombination
+import javafx.scene.input.*
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.Region
-import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.stage.FileChooser
 import javafx.util.Callback
 import javafx.util.Duration
-import java.awt.Desktop
 import java.io.File
-import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
@@ -65,8 +65,8 @@ class View(private val state: State) : BorderPane() {
 
     companion object {
         // Scale
-        private const val SCALE_MIN : Double = 0.1
-        private const val SCALE_MAX : Double = 4.0
+        private const val SCALE_MIN: Double = 0.1
+        private const val SCALE_MAX: Double = 4.0
         private const val SCALE_INIT: Double = 0.8
     }
 
@@ -137,25 +137,35 @@ class View(private val state: State) : BorderPane() {
 
     // region Chooser & Filter
 
-    private val chooserPic    = CFileChooser()
-    private val chooserNew    = CFileChooser()
-    private val chooserFile   = CFileChooser()
-    private val chooserPack   = CFileChooser()
+    private val chooserPic = CFileChooser()
+    private val chooserNew = CFileChooser()
+    private val chooserFile = CFileChooser()
+    private val chooserPack = CFileChooser()
     private val chooserBackup = FileChooser()
 
-    private val filterAny     = FileChooser.ExtensionFilter(I18N["file_type.any"], "*.*")
-    private val filterPic     = FileChooser.ExtensionFilter(I18N["file_type.pictures"], List(EXTENSIONS_PIC.size) { index -> "*.${EXTENSIONS_PIC[index]}" })
-    private val filterBMP     = FileChooser.ExtensionFilter(I18N["file_type.picture_bmp"], "*.${EXTENSION_PIC_BMP}")
-    private val filterGIF     = FileChooser.ExtensionFilter(I18N["file_type.picture_gif"], "*.${EXTENSION_PIC_GIF}")
-    private val filterPNG     = FileChooser.ExtensionFilter(I18N["file_type.picture_png"], "*.${EXTENSION_PIC_PNG}")
-    private val filterJPEG    = FileChooser.ExtensionFilter(I18N["file_type.picture_jpeg"], "*.${EXTENSION_PIC_JPG}", "*.${EXTENSION_PIC_JPEG}", "*.${EXTENSION_PIC_JFIF}")
-    private val filterTIFF    = FileChooser.ExtensionFilter(I18N["file_type.picture_tiff"], "*.${EXTENSION_PIC_TIF}", "*.${EXTENSION_PIC_TIFF}")
-    private val filterWEBP    = FileChooser.ExtensionFilter(I18N["file_type.picture_webp"], "*.${EXTENSION_PIC_WEBP}")
-    private val filterFile    = FileChooser.ExtensionFilter(I18N["file_type.translation"],  List(EXTENSIONS_FILE.size) { index -> "*.${EXTENSIONS_FILE[index]}" })
-    private val filterLP      = FileChooser.ExtensionFilter(I18N["file_type.translation_lp"], "*.${EXTENSION_FILE_LP}")
-    private val filterMEO     = FileChooser.ExtensionFilter(I18N["file_type.translation_meo"], "*.${EXTENSION_FILE_MEO}")
-    private val filterBak     = FileChooser.ExtensionFilter(I18N["file_type.backup"], "*.${EXTENSION_BAK}")
-    private val filterPack    = FileChooser.ExtensionFilter(I18N["file_type.pack"], "*.${EXTENSION_PACK}")
+    private val filterAny = FileChooser.ExtensionFilter(I18N["file_type.any"], "*.*")
+    private val filterPic = FileChooser.ExtensionFilter(
+        I18N["file_type.pictures"],
+        List(EXTENSIONS_PIC.size) { index -> "*.${EXTENSIONS_PIC[index]}" })
+    private val filterBMP = FileChooser.ExtensionFilter(I18N["file_type.picture_bmp"], "*.${EXTENSION_PIC_BMP}")
+    private val filterGIF = FileChooser.ExtensionFilter(I18N["file_type.picture_gif"], "*.${EXTENSION_PIC_GIF}")
+    private val filterPNG = FileChooser.ExtensionFilter(I18N["file_type.picture_png"], "*.${EXTENSION_PIC_PNG}")
+    private val filterJPEG = FileChooser.ExtensionFilter(
+        I18N["file_type.picture_jpeg"],
+        "*.${EXTENSION_PIC_JPG}",
+        "*.${EXTENSION_PIC_JPEG}",
+        "*.${EXTENSION_PIC_JFIF}"
+    )
+    private val filterTIFF =
+        FileChooser.ExtensionFilter(I18N["file_type.picture_tiff"], "*.${EXTENSION_PIC_TIF}", "*.${EXTENSION_PIC_TIFF}")
+    private val filterWEBP = FileChooser.ExtensionFilter(I18N["file_type.picture_webp"], "*.${EXTENSION_PIC_WEBP}")
+    private val filterFile = FileChooser.ExtensionFilter(
+        I18N["file_type.translation"],
+        List(EXTENSIONS_FILE.size) { index -> "*.${EXTENSIONS_FILE[index]}" })
+    private val filterLP = FileChooser.ExtensionFilter(I18N["file_type.translation_lp"], "*.${EXTENSION_FILE_LP}")
+    private val filterMEO = FileChooser.ExtensionFilter(I18N["file_type.translation_meo"], "*.${EXTENSION_FILE_MEO}")
+    private val filterBak = FileChooser.ExtensionFilter(I18N["file_type.backup"], "*.${EXTENSION_BAK}")
+    private val filterPack = FileChooser.ExtensionFilter(I18N["file_type.pack"], "*.${EXTENSION_PACK}")
 
     // endregion
 
@@ -163,7 +173,15 @@ class View(private val state: State) : BorderPane() {
         state.view = this
 
         chooserPic.title = I18N["m.externalPic.chooser.title"]
-        chooserPic.extensionFilters.addAll(filterPic, filterPNG, filterJPEG, filterGIF, filterBMP, filterTIFF, filterWEBP)
+        chooserPic.extensionFilters.addAll(
+            filterPic,
+            filterPNG,
+            filterJPEG,
+            filterGIF,
+            filterBMP,
+            filterTIFF,
+            filterWEBP
+        )
 
         chooserNew.title = I18N["chooser.new"]
         chooserNew.extensionFilters.addAll(filterAny, filterFile, filterMEO, filterLP)
@@ -206,7 +224,9 @@ class View(private val state: State) : BorderPane() {
                                 }
                                 if (it.wasAdded()) {
                                     it.addedSubList.forEachIndexed { index, file ->
-                                        items.add(it.from + index, MenuItem(file.path) does { openRecentTranslation(this) })
+                                        items.add(
+                                            it.from + index,
+                                            MenuItem(file.path) does { openRecentTranslation(this) })
                                     }
                                 }
                             }
@@ -285,10 +305,13 @@ class View(private val state: State) : BorderPane() {
                     disableProperty().bind(!state.openedProperty())
                     accelerator = KeyCodeCombination(KeyCode.E, KeyCombination.SHORTCUT_DOWN)
                 }
+                item(I18N["m.lp_current_page"]) {
+                    does { state.controller.exportCurrentPageAsLP() }
+                    disableProperty().bind(!state.openedProperty())
+                }
                 item(I18N["m.meo"]) {
                     does { exportTransFile(FileType.MeoFile) }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.E, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
                 }
                 separator()
                 item(I18N["m.pack"]) {
@@ -428,36 +451,7 @@ class View(private val state: State) : BorderPane() {
                     center(cTreeView) {
                         contextMenu = cTreeMenu
                         disableProperty().bind(!state.openedProperty())
-                        setCellFactory { object : TreeCell<String>() {
-
-                            private var markListener: ChangeListener<Boolean> = onNew {
-                                textFill = if (it) Color.RED else Color.BLACK
-                            }
-
-                            init {
-                                treeItemProperty().addListener { _, oldV, newV ->
-                                    if (oldV is CTreeLabelItem) oldV.transLabel.markedProperty().removeListener(markListener)
-                                    if (newV is CTreeLabelItem) newV.transLabel.markedProperty().addListener(markListener)
-                                }
-                            }
-
-                            override fun updateItem(item: String?, empty: Boolean) {
-                                super.updateItem(item, empty)
-                                textFill = Color.BLACK
-
-                                val actualItem = treeItem
-                                if (item != null && !empty) {
-                                    text = item
-                                    graphic = actualItem.graphic
-                                    if (actualItem is CTreeLabelItem && actualItem.transLabel.isMarked) {
-                                        textFill = Color.RED
-                                    }
-                                } else {
-                                    text = emptyString()
-                                    graphic = null
-                                }
-                            }
-                        } }
+                        installCellFactory(state, cLabelPane)
                     }
                 }
                 add(TitledPane()) {
@@ -473,7 +467,8 @@ class View(private val state: State) : BorderPane() {
                     expandedProperty().addListener(onNew {
                         if (it) {
                             // @see javafx.scene.control.skin.TitledPaneSkin.doAnimationTransition
-                            val keyValue = KeyValue(dividers[0].positionProperty(), lastDividerPosition, Interpolator.LINEAR)
+                            val keyValue =
+                                KeyValue(dividers[0].positionProperty(), lastDividerPosition, Interpolator.LINEAR)
                             // @see javafx.scene.control.skin.TitledPaneSkin.TRANSITION_DURATION
                             val timeline = Timeline(KeyFrame(Duration.millis(350.0), keyValue))
                             // Start animation
@@ -510,8 +505,15 @@ class View(private val state: State) : BorderPane() {
                 prefWidth = 80.0
                 style = "-fx-text-fill: black; -fx-underline: true;"
                 setOnAction {
-                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                        Desktop.getDesktop().browse(URI(INFO["application.guide"]))
+                    // 异步调用，防止阻塞 UI
+                    Platform.runLater {
+                        val url = INFO["application.guide"]
+                        try {
+                            state.application.hostServices.showDocument(url)
+                        } catch (e: Exception) {
+                            Logger.exception(e)
+                            openUrl(url)
+                        }
                     }
                 }
             }
@@ -522,10 +524,18 @@ class View(private val state: State) : BorderPane() {
                 prefWidth = 80.0
                 style = "-fx-text-fill: black; -fx-underline: true;"
                 setOnAction {
-                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                        Desktop.getDesktop().browse(URI(INFO["application.guide.shortcut"]))
+                    Platform.runLater {
+                        val url = INFO["application.guide.shortcut"]
+                        try {
+                            state.application.hostServices.showDocument(url)
+                        } catch (e: Exception) {
+//                        Logger.warning("Failed to open shortcut guide: $url", "View")
+                            Logger.exception(e)
+                            openUrl(url)
+                        }
                     }
                 }
+
             }
             add(Separator()) {
                 orientation = Orientation.VERTICAL
@@ -572,6 +582,7 @@ class View(private val state: State) : BorderPane() {
     private fun switchViewMode() {
         state.viewMode = ViewMode.entries.toTypedArray()[(state.viewMode.ordinal + 1) % ViewMode.entries.size]
     }
+
     private fun switchWorkMode() {
         state.workMode = WorkMode.entries.toTypedArray()[(state.workMode.ordinal + 1) % WorkMode.entries.size]
         state.viewMode = Settings.viewModes[state.workMode.ordinal]
@@ -605,10 +616,11 @@ class View(private val state: State) : BorderPane() {
 
         var differentWithInput = false
         val file = chooserNew.showSaveDialog(state.stage)?.let file@{
-            val filename  = it.nameWithoutExtension.takeUnless(FILENAME_DEFAULT::equals) ?: it.parentFile.name
+            val filename = it.nameWithoutExtension.takeUnless(FILENAME_DEFAULT::equals) ?: it.parentFile.name
             val extexsion = it.extension.lowercase().takeIf(EXTENSIONS_FILE::contains) ?: extension
 
-            return@file it.parentFile.resolve("$filename.$extexsion").also { final -> differentWithInput = it.name != final.name }
+            return@file it.parentFile.resolve("$filename.$extexsion")
+                .also { final -> differentWithInput = it.name != final.name }
         } ?: return
         if (differentWithInput && file.exists()) {
             val confirm = showConfirm(state.stage, String.format(I18N["m.new.dialog.overwrite.s"], file.name))
@@ -620,6 +632,7 @@ class View(private val state: State) : BorderPane() {
         val projectFolder = state.controller.new(file)
         if (projectFolder != null) state.controller.open(file, projectFolder)
     }
+
     private fun openTranslation() {
         if (state.controller.stay()) return
 
@@ -632,11 +645,13 @@ class View(private val state: State) : BorderPane() {
 
         state.controller.open(file, file.parentFile)
     }
+
     private fun saveTranslation() {
         state.controller.save(state.translationFile, true)
 
         showChecker()
     }
+
     private fun saveAsTranslation() {
         chooserFile.title = I18N["chooser.save"]
         chooserFile.initialFilename = state.translationFile.name
@@ -646,11 +661,13 @@ class View(private val state: State) : BorderPane() {
         state.controller.save(file)
         showChecker()
     }
+
     private fun closeTranslation() {
         if (state.controller.stay()) return
 
         state.reset()
     }
+
     private fun bakRecovery() {
         if (state.controller.stay()) return
 
@@ -658,7 +675,7 @@ class View(private val state: State) : BorderPane() {
         chooserFile.initialDirectory = if (state.isOpened) state.getFileFolder() else CFileChooser.lastDirectory
         val bak = chooserBackup.showOpenDialog(state.stage) ?: return
 
-        val filename  = "Re.${bak.parentFile?.parentFile?.name ?: "cover"}"
+        val filename = "Re.${bak.parentFile?.parentFile?.name ?: "cover"}"
         val extension = if (Settings.useMeoFileAsDefault) EXTENSION_FILE_MEO else EXTENSION_FILE_LP
         chooserFile.title = I18N["chooser.rec"]
         chooserFile.initialFilename = "$filename.$extension"
@@ -668,6 +685,7 @@ class View(private val state: State) : BorderPane() {
         state.reset()
         state.controller.recovery(bak, rec)
     }
+
     private fun exitApplication() {
         if (state.controller.stay()) return
 
@@ -678,6 +696,7 @@ class View(private val state: State) : BorderPane() {
         state.application.searchAndReplace.show()
         state.application.searchAndReplace.toFront()
     }
+
     private fun editComment() {
         val result = showInputArea(state.stage, I18N["m.comment.dialog.title"], state.transFile.comment)
         if (!result.isPresent) return
@@ -701,6 +720,7 @@ class View(private val state: State) : BorderPane() {
 
         })
     }
+
     private fun editProjectPictures() {
         // Choose Pics
         val selected = state.transFile.sortedPicNames
@@ -740,6 +760,7 @@ class View(private val state: State) : BorderPane() {
         // Update selection
         state.currentPicName = state.transFile.sortedPicNames[0]
     }
+
     private fun addExternalPicture() {
         val files = chooserPic.showOpenMultipleDialog(state.stage) ?: return
         val picNames = state.transFile.sortedPicNames
@@ -765,6 +786,7 @@ class View(private val state: State) : BorderPane() {
             )
         }
     }
+
     private fun specifyPictures() {
         val completed = state.application.dialogSpecify.specify() ?: return
         if (!completed) showInfo(state.stage, I18N["specify.info.incomplete"])
@@ -787,6 +809,7 @@ class View(private val state: State) : BorderPane() {
         val file = chooserFile.showSaveDialog(state.stage) ?: return
         state.controller.export(file)
     }
+
     private fun exportTransPack() {
         chooserPack.initialFilename = "${state.getFileFolder().name}.$EXTENSION_PACK"
         chooserFile.initialDirectory = state.getFileFolder()
@@ -795,41 +818,9 @@ class View(private val state: State) : BorderPane() {
     }
 
     private fun settings() {
-        val map = state.application.dialogSettings.generateProperties()
-
-        Logger.info("Generated common settings", "MenuBar")
-        Logger.debug("got $map", "MenuBar")
-
-        @Suppress("UNCHECKED_CAST")
-        for ((key, value) in map) when (key) {
-            Settings.DefaultGroupNameList     -> Settings.defaultGroupNameList        .setAll(value as List<String>)
-            Settings.DefaultGroupColorHexList -> Settings.defaultGroupColorHexList    .setAll(value as List<String>)
-            Settings.IsGroupCreateOnNewTrans  -> Settings.isGroupCreateOnNewTransList .setAll(value as List<Boolean>)
-            Settings.LigatureRules            -> Settings.ligatureRules               .setAll(value as List<Pair<String, String>>)
-            Settings.QuickInputTexts          -> Settings.quickInputTexts             .setAll(value as List<String>)
-            Settings.ViewModes                -> Settings.viewModes                   .setAll(value as List<ViewMode>)
-            Settings.NewPictureScale          -> Settings.newPictureScalePicture      = value as CLabelPane.NewPictureScale
-            Settings.UseWheelToScale          -> Settings.useWheelToScale             = value as Boolean
-            Settings.LabelRadius              -> Settings.labelRadius                 = value as Double
-            Settings.LabelColorOpacity        -> Settings.labelColorOpacity           = value as Double
-            Settings.LabelTextOpaque          -> Settings.labelTextOpaque             = value as Boolean
-            Settings.LabelSelectedStroke      -> Settings.labelSelectedStroke         = value as Boolean
-            Settings.CurrentPrismMode          -> Settings.currentPrismMode           = value as PrismMode
-            Settings.AutoCheckUpdate          -> Settings.autoCheckUpdate             = value as Boolean
-            Settings.AutoOpenLastFile         -> Settings.autoOpenLastFile            = value as Boolean
-            Settings.InstantTranslate         -> Settings.instantTranslate            = value as Boolean
-            Settings.CheckFormatWhenSave      -> Settings.checkFormatWhenSave         = value as Boolean
-            Settings.UseMeoFileAsDefault      -> Settings.useMeoFileAsDefault         = value as Boolean
-            Settings.UseExportNameTemplate    -> Settings.useExportNameTemplate       = value as Boolean
-            Settings.ExportNameTemplate       -> Settings.exportNameTemplate          = value as String
-            Settings.UseCustomBaiduKey        -> Settings.useCustomBaiduKey           = value as Boolean
-            Settings.BaiduTransLateKey        -> Settings.baiduTransLateKey           = value as String
-            Settings.BaiduTransLateAppId      -> Settings.baiduTransLateAppId         = value as String
-            Settings.SelectedTranslationAPI   -> Settings.selectedTranslationAPI      = TranslationAPI.fromString(value as String)
-            Preference.CurrentLanguage        -> Preference.currentLanguage = value as String
-            else -> doNothing()
-        }
+        state.application.dialogSettings.generateProperties()
     }
+
     private fun logs() {
         val map = state.application.dialogLogs.generateProperties()
 
@@ -843,6 +834,7 @@ class View(private val state: State) : BorderPane() {
 
         Logger.level = Settings.logLevel
     }
+
     private fun about() {
         showLink(
             state.stage,
@@ -858,16 +850,20 @@ class View(private val state: State) : BorderPane() {
             state.application.hostServices.showDocument(INFO["application.url"])
         }
     }
+
     private fun checkUpdate() {
         state.controller.checkUpdate(true)
     }
+
     private fun cheatSheet() {
         state.application.cheatSheet.show()
         state.application.cheatSheet.toFront()
     }
-    private fun reportIssue(){
+
+    private fun reportIssue() {
         showReport(state.stage)
     }
+
     private fun crash() {
         throw RuntimeException("Crash")
     }
@@ -904,7 +900,15 @@ class View(private val state: State) : BorderPane() {
                     }.iterator()
                     Logger.info("Converting [$picName]", "MenuBar")
                     // Sometimes will get whitespaces at label start
-                    labels.mapTo(actions) { LabelAction(ActionType.CHANGE, state, picName, it, newText = iterator.next().trim()) }
+                    labels.mapTo(actions) {
+                        LabelAction(
+                            ActionType.CHANGE,
+                            state,
+                            picName,
+                            it,
+                            newText = iterator.next().trim()
+                        )
+                    }
                 }
 
                 state.doAction(ComplexAction(actions))
@@ -947,6 +951,7 @@ class View(private val state: State) : BorderPane() {
 
         task()
     }
+
     private fun showDict() {
         val dict = state.application.onlineDict
         dict.x = state.stage.x - 16.0 + state.stage.width - dict.width
@@ -954,6 +959,7 @@ class View(private val state: State) : BorderPane() {
         dict.show()
         dict.toFront()
     }
+
     private fun showChecker() {
         if (!Settings.checkFormatWhenSave) return
 

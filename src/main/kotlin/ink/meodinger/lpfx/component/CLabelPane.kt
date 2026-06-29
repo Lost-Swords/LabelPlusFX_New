@@ -2,6 +2,7 @@ package ink.meodinger.lpfx.component
 
 import ink.meodinger.lpfx.*
 import ink.meodinger.lpfx.Config.MonoFont
+import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.type.TransLabel
 import ink.meodinger.lpfx.util.collection.autoRangeTo
 import ink.meodinger.lpfx.util.color.toHexRGB
@@ -10,6 +11,7 @@ import ink.meodinger.lpfx.util.doNothing
 import ink.meodinger.lpfx.util.property.*
 import ink.meodinger.lpfx.util.string.shortenLongText
 import ink.meodinger.lpfx.util.string.shortenWideText
+import javafx.beans.binding.Bindings
 
 import javafx.beans.property.*
 import javafx.collections.*
@@ -419,8 +421,9 @@ class CLabelPane(
                 graphicsContext2D.font = TEXT_FONT
                 graphicsContext2D.textBaseline = VPos.TOP
 
-                widthProperty().bind(imageWidthBinding)
-                heightProperty().bind(imageHeightBinding)
+                //限制Canvas的最大显示尺寸
+                widthProperty().bind(Bindings.min(imageWidthBinding, 4096.0))
+                heightProperty().bind(Bindings.min(imageHeightBinding, 4096.0))
             }
         }
 
@@ -848,12 +851,50 @@ class CLabelPane(
      */
     fun showLabelText(labelIndex: Int, x: Double, y: Double) {
         val label = labelNodes.first { it.index == labelIndex }
-
         val screenBounds = root.localToScreen(root.boundsInLocal)
-        label.tooltip.show(root,
-            screenBounds.minX + x * scale + 8,
-            screenBounds.minY + y * scale + 8,
-        )
+        val screenWidth = javafx.stage.Screen.getPrimary().visualBounds.width
+        val screenHeight = javafx.stage.Screen.getPrimary().visualBounds.height
+
+        // 通过文本内容估算tooltip尺寸
+        val text = label.tooltip.text
+        val font = label.tooltip.font ?: TEXT_FONT
+
+        // 使用Text.getBoundsInLocal()来获取文本尺寸
+        val textNode = Text(text)
+        textNode.font = font
+        val textBounds = textNode.boundsInLocal
+
+        // 估算Tooltip的整体尺寸（包括背景、边框、内边距）
+        val estimatedPadding = 8.0
+        val estimatedBorder = 2.0
+        val estimatedTooltipWidth = textBounds.width + estimatedPadding * 2 + estimatedBorder * 2
+        val estimatedTooltipHeight = textBounds.height + estimatedPadding * 2 + estimatedBorder * 2
+
+        // 计算基础坐标
+        val baseX = screenBounds.minX + x * scale
+        val baseY = screenBounds.minY + y * scale
+
+//        Logger.info("Text position: $baseX, $baseY , Estimated width: $estimatedTooltipWidth, height: $estimatedTooltipHeight", "LabelPane")
+
+        val finalX = when {
+            baseX + estimatedTooltipWidth + 10 > screenWidth -> {
+                baseX - estimatedTooltipWidth - 20
+            }
+            else -> {
+                baseX + 10
+            }
+        }
+
+        val finalY = when {
+            baseY + estimatedTooltipHeight + 10 > screenHeight -> {
+                baseY - estimatedTooltipHeight - 20
+            }
+            else -> {
+                baseY + 10
+            }
+        }
+
+        label.tooltip.show(root, finalX, finalY)
     }
 
     /**
