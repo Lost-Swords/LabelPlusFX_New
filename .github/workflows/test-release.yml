@@ -34,7 +34,7 @@ jobs:
     needs: [extract-version]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 21 (Liberica Full)
         uses: actions/setup-java@v4
@@ -75,7 +75,7 @@ jobs:
     needs: [extract-version]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 21 (Liberica Full)
         uses: actions/setup-java@v4
@@ -114,7 +114,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 21 (Intel)
         uses: actions/setup-java@v4
@@ -154,7 +154,7 @@ jobs:
     needs: [extract-version]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 21 (Liberica Full)
         uses: actions/setup-java@v4
@@ -195,7 +195,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
