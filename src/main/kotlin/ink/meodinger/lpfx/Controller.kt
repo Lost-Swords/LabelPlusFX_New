@@ -954,6 +954,7 @@ class Controller(private val state: State) {
         if ((bakDir.exists() && bakDir.isDirectory) || bakDir.mkdir()) {
             backupManager.schedule()
             Logger.info("Scheduled auto-backup", "Controller")
+            if (checkBackupNewer(file, bakDir)) return
         } else {
             Logger.warning("Auto-backup unavailable", "Controller")
             showWarning(state.stage, I18N["warning.auto_backup_unavailable"])
@@ -993,6 +994,35 @@ class Controller(private val state: State) {
         // Change title
         state.stage.title = INFO["application.name"] + " - " + file.name
         Logger.info("Opened TransFile", "Controller")
+    }
+
+    /**
+     * Check if there is a newer backup file than the current file.
+     * @param file The current file
+     * @param bakDir The backup directory
+     * @return True if a newer backup exists and the user chooses to recover it, false otherwise
+     */
+    private fun checkBackupNewer(file: File, bakDir: File): Boolean {
+        if (!Settings.autoCheckBackup) return false
+
+        val latestBackup = bakDir
+            .listFiles { backup -> backup.isFile && backup.extension.equals(EXTENSION_BAK, ignoreCase = true) }
+            ?.maxByOrNull(File::lastModified)
+            ?: return false
+
+        if (latestBackup.lastModified() <= file.lastModified()) return false
+
+        Logger.info("Newer backup detected: ${latestBackup.path}", "Controller")
+        val result = showDialog(
+            state.stage,
+            DialogType.CONFIRM,
+            I18N["common.confirm"],
+            null,
+            I18N["confirm.backup_newer"],
+            ButtonType.YES,
+            ButtonType.CANCEL
+        )
+        return result.isPresent && result.get() == ButtonType.YES && view.bakRecovery()
     }
 
     /**

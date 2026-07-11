@@ -668,12 +668,12 @@ class View(private val state: State) : BorderPane() {
         state.reset()
     }
 
-    private fun bakRecovery() {
-        if (state.controller.stay()) return
+    fun bakRecovery(): Boolean {
+        if (state.controller.stay()) return false
 
         chooserBackup.initialDirectory = if (state.isOpened) state.getBakFolder() else CFileChooser.lastDirectory
         chooserFile.initialDirectory = if (state.isOpened) state.getFileFolder() else CFileChooser.lastDirectory
-        val bak = chooserBackup.showOpenDialog(state.stage) ?: return
+        val bak = chooserBackup.showOpenDialog(state.stage) ?: return false
 
         val filename = "Re.${bak.parentFile?.parentFile?.name ?: "cover"}"
         val extension = if (Settings.useMeoFileAsDefault) EXTENSION_FILE_MEO else EXTENSION_FILE_LP
@@ -681,9 +681,10 @@ class View(private val state: State) : BorderPane() {
         chooserFile.initialFilename = "$filename.$extension"
         chooserFile.selectedExtensionFilter = if (Settings.useMeoFileAsDefault) filterMEO else filterLP
 
-        val rec = chooserFile.showSaveDialog(state.stage) ?: return
+        val rec = chooserFile.showSaveDialog(state.stage) ?: return false
         state.reset()
         state.controller.recovery(bak, rec)
+        return true
     }
 
     private fun exitApplication() {

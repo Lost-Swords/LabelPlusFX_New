@@ -47,6 +47,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     const val LabelSelectedStroke      = "LabelSelectedStroke"
     const val AutoCheckUpdate          = "AutoCheckUpdate"
     const val AutoOpenLastFile         = "AutoOpenLastFile"
+    const val AutoCheckBackup          = "AutoCheckBackup"
     const val InstantTranslate         = "InstantTranslate"
     const val CheckFormatWhenSave      = "CheckFormatWhenSave"
     const val UseMeoFileAsDefault      = "UseMeoFileAsDefault"
@@ -105,6 +106,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         CProperty(CurrentPrismMode, PrismMode.HW.ordinal),
         CProperty(AutoCheckUpdate, true),
         CProperty(AutoOpenLastFile, false),
+        CProperty(AutoCheckBackup, true),
         CProperty(InstantTranslate, false),
         CProperty(CheckFormatWhenSave, true),
         CProperty(UseMeoFileAsDefault, false),
@@ -181,6 +183,10 @@ object Settings : AbstractProperties("Settings", Options.settings) {
     fun autoOpenLastFileProperty(): BooleanProperty = autoOpenLastFileProperty
     var autoOpenLastFile: Boolean by autoOpenLastFileProperty
 
+    private val autoCheckBackupProperty: BooleanProperty = SimpleBooleanProperty()
+    fun autoCheckBackupProperty(): BooleanProperty = autoCheckBackupProperty
+    var autoCheckBackup: Boolean by autoCheckBackupProperty
+
     private val instantTranslateProperty: BooleanProperty = SimpleBooleanProperty()
     fun instantTranslateProperty(): BooleanProperty = instantTranslateProperty
     var instantTranslate: Boolean by instantTranslateProperty
@@ -249,6 +255,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         currentPrismMode            = PrismMode.entries.toTypedArray().getOrNull(this[CurrentPrismMode].asInteger()) ?: PrismMode.entries.first()
         autoCheckUpdate             = this[AutoCheckUpdate].asBoolean()
         autoOpenLastFile            = this[AutoOpenLastFile].asBoolean()
+        autoCheckBackup             = this[AutoCheckBackup].asBoolean()
         instantTranslate            = this[InstantTranslate].asBoolean()
         checkFormatWhenSave         = this[CheckFormatWhenSave].asBoolean()
         useMeoFileAsDefault         = this[UseMeoFileAsDefault].asBoolean()
@@ -283,6 +290,7 @@ object Settings : AbstractProperties("Settings", Options.settings) {
         this[CurrentPrismMode]        .set(currentPrismMode.ordinal)
         this[AutoCheckUpdate]         .set(autoCheckUpdate)
         this[AutoOpenLastFile]        .set(autoOpenLastFile)
+        this[AutoCheckBackup]         .set(autoCheckBackup)
         this[InstantTranslate]        .set(instantTranslate)
         this[CheckFormatWhenSave]     .set(checkFormatWhenSave)
         this[UseMeoFileAsDefault]     .set(useMeoFileAsDefault)

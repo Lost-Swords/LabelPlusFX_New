@@ -146,6 +146,7 @@ class DialogSettings : AbstractPropertiesDialog() {
     private val xPrismMode = CComboBox<PrismMode>()
     private val xCheckUpdate = CheckBox(I18N["settings.other.auto_check_upd"])
     private val xCheckAutoOp = CheckBox(I18N["settings.other.auto_open_last"])
+    private val xCheckBackup = CheckBox(I18N["settings.other.auto_check_backup"])
     private val xCheckInstTr = CheckBox(I18N["settings.other.inst_trans"])
     private val xCheckFormat = CheckBox(I18N["settings.other.check_format"])
     private val xCheckUseMeo = CheckBox(I18N["settings.other.meo_default"])
@@ -495,10 +496,11 @@ class DialogSettings : AbstractPropertiesDialog() {
                     }
                     add(xCheckUpdate, 0, 1, 2, 1)
                     add(xCheckAutoOp, 0, 2, 2, 1)
-                    add(xCheckFormat, 0, 3, 2, 1)
-                    add(xCheckUseMeo, 0, 4, 2, 1)
-                    add(Label(I18N["settings.other.pic_prism_mode"]), 0, 5)
-                    add(xPrismMode, 0, 6, 2, 1) {
+                    add(xCheckBackup, 0, 3, 2, 1)
+                    add(xCheckFormat, 0, 4, 2, 1)
+                    add(xCheckUseMeo, 0, 5, 2, 1)
+                    add(Label(I18N["settings.other.pic_prism_mode"]), 0, 6)
+                    add(xPrismMode, 0, 7, 2, 1) {
                         prefWidth = 280.0
                         items = FXCollections.observableList(PrismMode.entries)
                         isWrapped = true
@@ -905,6 +907,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         // General
         xCheckUpdate.isSelected = Settings.autoCheckUpdate
         xCheckAutoOp.isSelected = Settings.autoOpenLastFile
+        xCheckBackup.isSelected = Settings.autoCheckBackup
         xCheckFormat.isSelected = Settings.checkFormatWhenSave
         xCheckUseMeo.isSelected = Settings.useMeoFileAsDefault
         xPrismMode.select(Settings.currentPrismMode)
@@ -1036,6 +1039,7 @@ class DialogSettings : AbstractPropertiesDialog() {
 
         map[Settings.AutoCheckUpdate] = xCheckUpdate.isSelected
         map[Settings.AutoOpenLastFile] = xCheckAutoOp.isSelected
+        map[Settings.AutoCheckBackup] = xCheckBackup.isSelected
         map[Settings.CheckFormatWhenSave] = xCheckFormat.isSelected
         map[Settings.UseMeoFileAsDefault] = xCheckUseMeo.isSelected
         map[Settings.CurrentPrismMode] = xPrismMode.index.let(PrismMode.entries.toTypedArray()::get)
@@ -1090,6 +1094,7 @@ class DialogSettings : AbstractPropertiesDialog() {
             Settings.CurrentPrismMode         -> Settings.currentPrismMode            = value as PrismMode
             Settings.AutoCheckUpdate          -> Settings.autoCheckUpdate             = value as Boolean
             Settings.AutoOpenLastFile         -> Settings.autoOpenLastFile            = value as Boolean
+            Settings.AutoCheckBackup          -> Settings.autoCheckBackup             = value as Boolean
             Settings.InstantTranslate         -> Settings.instantTranslate            = value as Boolean
             Settings.CheckFormatWhenSave      -> Settings.checkFormatWhenSave         = value as Boolean
             Settings.UseMeoFileAsDefault      -> Settings.useMeoFileAsDefault         = value as Boolean
