@@ -1012,6 +1012,16 @@ class Controller(private val state: State) {
 
         if (latestBackup.lastModified() <= file.lastModified()) return false
 
+        try {
+            val backupTransFile = load(latestBackup)
+            if (labelTextSnapshot(state.transFile) == labelTextSnapshot(backupTransFile)) {
+                Logger.info("Newer backup ignored because label content is identical: ${latestBackup.path}", "Controller")
+                return false
+            }
+        } catch (e: IOException) {
+            Logger.warning("Failed to compare backup label content: ${e.message}", "Controller")
+        }
+
         Logger.info("Newer backup detected: ${latestBackup.path}", "Controller")
         val result = showDialog(
             state.stage,
@@ -1023,6 +1033,14 @@ class Controller(private val state: State) {
             ButtonType.CANCEL
         )
         return result.isPresent && result.get() == ButtonType.YES && view.bakRecovery()
+    }
+
+    private fun labelTextSnapshot(transFile: TransFile): Map<String, List<String>> {
+        return transFile.sortedPicNames.associateWith { picName ->
+            transFile.getTransList(picName)
+                .sortedBy(TransLabel::index)
+                .map { it.text.replace("\r\n", "\n").replace("\r", "\n") }
+        }
     }
 
     /**
