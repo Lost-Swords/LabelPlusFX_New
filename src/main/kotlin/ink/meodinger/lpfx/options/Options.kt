@@ -72,11 +72,14 @@ object Options {
             Logger.debug("Got Preference:\n$Preference", "Options")
             Logger.debug("Got Settings:\n$Settings", "Options")
         } catch (e: IOException) {
+            // Don't terminate the JVM here. Failing to load options should not hard-kill the
+            // application; instead log the problem, notify the user and continue with defaults.
             Logger.fatal("Load Options failed", "Options")
             Logger.exception(e)
             showError(null, I18N["error.options.load_failed"])
             showException(null, e)
-            exitProcess(-1)
+            // Continue without exiting; defaults will be used for missing/invalid options.
+            return
         }
     }
 

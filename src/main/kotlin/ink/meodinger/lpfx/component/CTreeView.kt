@@ -443,12 +443,13 @@ class CTreeView: TreeView<String>() {
                                 is CTreeLabelItem -> {
                                     val targetLabel = (treeItem as CTreeLabelItem).transLabel
                                     val toIndex = targetLabel.index
+                                    val insertAfter = event.y >= height / 2.0
                                     val shouldReorder = viewMode == ViewMode.IndexMode
                                             || fromIndices.all {
                                         state.transFile.getTransLabel(state.currentPicName, it).groupId == targetLabel.groupId
                                     }
                                     if (shouldReorder) {
-                                        success = doBatchReorder(state, labelPane, fromIndices, toIndex)
+                                        success = doBatchReorder(state, labelPane, fromIndices, toIndex, insertAfter)
                                     } else {
                                         success = doBatchGroupChange(state, fromIndices, targetLabel.groupId)
                                     }
@@ -496,11 +497,18 @@ class CTreeView: TreeView<String>() {
      * 批量改变序号：直接操作底层列表做一次性重排，避免多次 remove/add 触发连锁 listener 导致卡死。
      * 用 FunctionAction 包装，支持撤销。
      */
-    private fun doBatchReorder(state: State, labelPane: CLabelPane, fromIndices: List<Int>, toIndex: Int): Boolean {
+    private fun doBatchReorder(
+        state: State,
+        labelPane: CLabelPane,
+        fromIndices: List<Int>,
+        toIndex: Int,
+        insertAfter: Boolean
+    ): Boolean {
         val picName = state.currentPicName
         val list = state.transFile.transMapObservable[picName] ?: return false
         val indicesToMove = fromIndices.filter { it != toIndex }
         if (indicesToMove.isEmpty()) return false
+        val movedLabels = list.filter { it.index in indicesToMove }
 
         // 快照原始列表顺序（保存每个 TransLabel 对象的引用和原始 index）
         val originalSnapshot = list.map { Pair(it, it.index) }
@@ -513,7 +521,7 @@ class CTreeView: TreeView<String>() {
                 // 从列表中移除要移动的标签
                 list.removeAll(labelsToMove.toSet())
                 // 找到目标标签的新位置并插入
-                val insertPos = list.indexOf(targetLabel)
+                val insertPos = (list.indexOf(targetLabel) + if (insertAfter) 1 else 0).coerceAtMost(list.size)
                 list.addAll(insertPos, labelsToMove)
                 // 重新编号（1-based）
                 for ((i, label) in list.withIndex()) label.index = i + 1
@@ -542,9 +550,9 @@ class CTreeView: TreeView<String>() {
             }
         )
         state.doAction(action)
-        // 重排后 toIndex 对应的标签编号可能变了，选中目标位置附近
-        selectLabel(toIndex, clear = true, scrollTo = true)
-        labelPane.moveToLabel(toIndex)
+        val movedLabelIndex = movedLabels.firstOrNull()?.index ?: toIndex
+        selectLabel(movedLabelIndex, clear = true, scrollTo = true)
+        labelPane.moveToLabel(movedLabelIndex)
         return true
     }
 
