@@ -242,9 +242,14 @@ enum class PrismMode(val description: String) {
 object ImageSize {
     const val MAX_WIDTH: Double = 4096.0
     const val MAX_HEIGHT: Double = 4096.0
+    const val MAX_OVERLAY_CANVAS_SIZE: Double = 2048.0
 
     fun isTooLarge(image: Image): Boolean {
         return image.width > MAX_WIDTH || image.height > MAX_HEIGHT
+    }
+
+    fun isTooLarge(width: Int, height: Int): Boolean {
+        return width > MAX_WIDTH || height > MAX_HEIGHT
     }
 }
 

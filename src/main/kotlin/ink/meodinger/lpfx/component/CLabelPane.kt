@@ -1,6 +1,7 @@
 package ink.meodinger.lpfx.component
 
 import ink.meodinger.lpfx.*
+import ink.meodinger.lpfx.ImageSize.MAX_OVERLAY_CANVAS_SIZE
 import ink.meodinger.lpfx.Config.MonoFont
 import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.type.TransLabel
@@ -422,8 +423,8 @@ class CLabelPane(
                 graphicsContext2D.textBaseline = VPos.TOP
 
                 //限制Canvas的最大显示尺寸
-                widthProperty().bind(Bindings.min(imageWidthBinding, 4096.0))
-                heightProperty().bind(Bindings.min(imageHeightBinding, 4096.0))
+                widthProperty().bind(Bindings.min(imageWidthBinding, MAX_OVERLAY_CANVAS_SIZE))
+                heightProperty().bind(Bindings.min(imageHeightBinding, MAX_OVERLAY_CANVAS_SIZE))
             }
         }
 

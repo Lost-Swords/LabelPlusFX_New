@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "LabelPlusFx"
-#define MyAppVersion "2.3.9"
+#define MyAppVersion "2.4.0"
 #define MyAppPublisher "MoeDinger,Yeding"
 #define MyAppURL "https://github.com/Lost-Swords/LabelPlusFX"
 #define MyAppExeName "LabelPlusFX.exe"
@@ -34,7 +34,7 @@ ChangesAssociations=yes
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputBaseFilename=LabelPlusFX-setup-2.3.9-Win64
+OutputBaseFilename=LabelPlusFX-setup-2.4.0-Win64
 SolidCompression=yes
 WizardStyle=modern
 

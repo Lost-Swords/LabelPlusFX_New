@@ -98,6 +98,11 @@ class View(private val state: State) : BorderPane() {
     val lAccEditTime: Label = Label()
 
     /**
+     * StatsBar label: current file character count
+     */
+    val lFileCharCount: Label = Label()
+
+    /**
      * Picture ComboBox, change pictures
      */
     val cPicBox: CComboBox<String> = CComboBox()
@@ -564,6 +569,14 @@ class View(private val state: State) : BorderPane() {
             }
             add(lAccEditTime) {
                 text = String.format(I18N["stats.accumulator.s"], "--:--:--")
+                padding = generalPadding
+                prefWidth = 180.0
+            }
+            add(Separator()) {
+                orientation = Orientation.VERTICAL
+            }
+            add(lFileCharCount) {
+                text = String.format(I18N["stats.file_char_count.i"], 0)
                 padding = generalPadding
                 prefWidth = 180.0
             }

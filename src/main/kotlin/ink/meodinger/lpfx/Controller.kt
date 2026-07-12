@@ -36,7 +36,10 @@ import ink.meodinger.lpfx.util.timer.TimerTaskManager
 import javafx.application.Platform
 import javafx.beans.binding.Bindings
 import javafx.beans.binding.ObjectBinding
+import javafx.beans.value.ChangeListener
 import javafx.collections.FXCollections
+import javafx.collections.ListChangeListener
+import javafx.collections.MapChangeListener
 import javafx.collections.ObservableList
 import javafx.collections.SetChangeListener
 import javafx.embed.swing.SwingFXUtils
@@ -88,6 +91,7 @@ class Controller(private val state: State) {
     private val lLocation = view.lLocation
     private val lBackup = view.lBackup
     private val lAccEditTime = view.lAccEditTime
+    private val lFileCharCount = view.lFileCharCount
     private val cPicBox = view.cPicBox
     private val cGroupBox = view.cGroupBox
     private val cGroupBar = view.cGroupBar
@@ -137,6 +141,24 @@ class Controller(private val state: State) {
         }
     }
 
+    private val labelTextCountListener = ChangeListener<String> { _, _, _ ->
+        updateFileCharCount()
+    }
+
+    private val labelListCountListener = ListChangeListener<TransLabel> { change ->
+        while (change.next()) {
+            change.removed.forEach { it.textProperty().removeListener(labelTextCountListener) }
+            change.addedSubList.forEach { it.textProperty().addListener(labelTextCountListener) }
+        }
+        updateFileCharCount()
+    }
+
+    private val transMapCountListener = MapChangeListener<String, ObservableList<TransLabel>> { change ->
+        if (change.wasRemoved()) detachLabelListCount(change.valueRemoved)
+        if (change.wasAdded()) attachLabelListCount(change.valueAdded)
+        updateFileCharCount()
+    }
+
     // endregion
 
     // region Global Bindings
@@ -165,73 +187,7 @@ class Controller(private val state: State) {
                 // Opened and selected
                 val file = state.getPicFileNow()
                 if (file.exists()) {
-                    var imageByFX = Image(file.toURI().toURL().toString())
-
-                    //if the image is too large, use tiled rendering with high-quality AWT scaling
-                    if (Settings.currentPrismMode == PrismMode.HW_CHANGE_SIZE) {
-                        if (isTooLarge(imageByFX)) {
-                            Logger.info("Image `$file` is too large, applying tiled rendering", "Controller")
-                            try {
-                                val buffered = ImageIO.read(file)
-                                if (buffered != null) {
-                                    val imgW = buffered.width
-                                    val imgH = buffered.height
-
-                                    // Use 8192 as safe texture limit, only scale down if exceeding
-                                    val maxTexture = 8192.0
-                                    val ratio = if (imgW > maxTexture || imgH > maxTexture) {
-                                        minOf(maxTexture / imgW, maxTexture / imgH)
-                                    } else {
-                                        1.0
-                                    }
-
-                                    val finalW = (imgW * ratio).toInt()
-                                    val finalH = (imgH * ratio).toInt()
-
-                                    // High-quality AWT scaling if needed
-                                    val source: java.awt.image.BufferedImage
-                                    if (ratio < 1.0) {
-                                        source = java.awt.image.BufferedImage(finalW, finalH, java.awt.image.BufferedImage.TYPE_INT_ARGB)
-                                        val g2d = source.createGraphics()
-                                        g2d.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-                                        g2d.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY)
-                                        g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON)
-                                        g2d.drawImage(buffered, 0, 0, finalW, finalH, null)
-                                        g2d.dispose()
-                                        Logger.info("Scaled image from ${imgW}x${imgH} to ${finalW}x${finalH}", "Controller")
-                                    } else {
-                                        source = buffered
-                                    }
-
-                                    // Write pixels in tiles to WritableImage to bypass GPU texture limit
-                                    val tileSize = 2048
-                                    val writableImage = javafx.scene.image.WritableImage(finalW, finalH)
-                                    val pixelWriter = writableImage.pixelWriter
-                                    var ty = 0
-                                    while (ty < finalH) {
-                                        var tx = 0
-                                        val th = minOf(tileSize, finalH - ty)
-                                        while (tx < finalW) {
-                                            val tw = minOf(tileSize, finalW - tx)
-                                            val argb = source.getRGB(tx, ty, tw, th, null, 0, tw)
-                                            pixelWriter.setPixels(tx, ty, tw, th,
-                                                javafx.scene.image.PixelFormat.getIntArgbInstance(),
-                                                argb, 0, tw)
-                                            tx += tileSize
-                                        }
-                                        ty += tileSize
-                                    }
-                                    imageByFX = writableImage
-                                    Logger.info("Tiled rendering complete: ${finalW}x${finalH}", "Controller")
-                                }
-                            } catch (e: Exception) {
-                                Logger.warning("Tiled rendering failed for `$file`, falling back", "Controller")
-                                Logger.exception(e)
-                                imageByFX = Image(file.toURI().toURL().toString(), MAX_WIDTH, MAX_HEIGHT, true, true)
-                            }
-                        }
-                    }
-
+                    val imageByFX = loadFxImage(file)
 
                     if (!imageByFX.isError) {
                         imageByFX
@@ -246,7 +202,7 @@ class Controller(private val state: State) {
                         }
 
                         try {
-                            val imageByIO = ImageIO.read(file)?.let { SwingFXUtils.toFXImage(it, null) }
+                            val imageByIO = loadAwtImage(file)
                             if (imageByIO != null) {
                                 imageByIO
                             } else {
@@ -278,6 +234,64 @@ class Controller(private val state: State) {
     )
 
     // endregion
+
+    private fun loadFxImage(file: File): Image {
+        val url = file.toURI().toURL().toString()
+        val dimensions = readImageDimensions(file)
+        val shouldResize = dimensions?.let { (width, height) -> isTooLarge(width, height) } ?: false
+
+        if (shouldResize) {
+            Logger.info(
+                "Image `$file` is too large (${dimensions!!.first}x${dimensions.second}), loading capped preview ${MAX_WIDTH.toInt()}x${MAX_HEIGHT.toInt()}",
+                "Controller"
+            )
+            return Image(url, MAX_WIDTH, MAX_HEIGHT, true, true)
+        }
+
+        return Image(url)
+    }
+
+    private fun readImageDimensions(file: File): Pair<Int, Int>? {
+        val stream = ImageIO.createImageInputStream(file) ?: return null
+        stream.use {
+            val readers = ImageIO.getImageReaders(it)
+            if (!readers.hasNext()) return null
+
+            val reader = readers.next()
+            return try {
+                reader.input = it
+                reader.getWidth(0) to reader.getHeight(0)
+            } catch (e: IOException) {
+                Logger.warning("Read image dimensions failed for `$file`: ${e.message}", "Controller")
+                null
+            } finally {
+                reader.dispose()
+            }
+        }
+    }
+
+    private fun loadAwtImage(file: File): Image? {
+        val buffered = ImageIO.read(file) ?: return null
+        val ratio = minOf(MAX_WIDTH / buffered.width, MAX_HEIGHT / buffered.height, 1.0)
+
+        if (ratio >= 1.0) return SwingFXUtils.toFXImage(buffered, null)
+
+        val width = (buffered.width * ratio).toInt().coerceAtLeast(1)
+        val height = (buffered.height * ratio).toInt().coerceAtLeast(1)
+        val scaled = java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        val graphics = scaled.createGraphics()
+        try {
+            graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+            graphics.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY)
+            graphics.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON)
+            graphics.drawImage(buffered, 0, 0, width, height, null)
+        } finally {
+            graphics.dispose()
+        }
+
+        Logger.info("Scaled AWT image from ${buffered.width}x${buffered.height} to ${width}x${height}", "Controller")
+        return SwingFXUtils.toFXImage(scaled, null)
+    }
 
     init {
         state.controller = this
@@ -531,6 +545,12 @@ class Controller(private val state: State) {
      */
     private fun listen() {
         Logger.info("Attaching Listeners...", "Controller")
+
+        state.transFileProperty().addListener { _, oldValue, newValue ->
+            if (oldValue != null) detachTransFileCountListeners(oldValue)
+            if (newValue != null) attachTransFileCountListeners(newValue)
+            else lFileCharCount.text = String.format(I18N["stats.file_char_count.i"], 0)
+        }
 
         // Switch rendering mode when image is too large (only in windows)
         imageBinding.addListener(onNew {
@@ -1041,6 +1061,34 @@ class Controller(private val state: State) {
                 .sortedBy(TransLabel::index)
                 .map { it.text.replace("\r\n", "\n").replace("\r", "\n") }
         }
+    }
+
+    private fun attachTransFileCountListeners(transFile: TransFile) {
+        transFile.transMapObservable.addListener(transMapCountListener)
+        transFile.transMapObservable.values.forEach(::attachLabelListCount)
+        updateFileCharCount()
+    }
+
+    private fun detachTransFileCountListeners(transFile: TransFile) {
+        transFile.transMapObservable.removeListener(transMapCountListener)
+        transFile.transMapObservable.values.forEach(::detachLabelListCount)
+    }
+
+    private fun attachLabelListCount(labels: ObservableList<TransLabel>) {
+        labels.addListener(labelListCountListener)
+        labels.forEach { it.textProperty().addListener(labelTextCountListener) }
+    }
+
+    private fun detachLabelListCount(labels: ObservableList<TransLabel>) {
+        labels.removeListener(labelListCountListener)
+        labels.forEach { it.textProperty().removeListener(labelTextCountListener) }
+    }
+
+    private fun updateFileCharCount() {
+        val count = state.transFileProperty().value?.transMap?.values
+            ?.sumOf { labels -> labels.sumOf { it.text.length } }
+            ?: 0
+        lFileCharCount.text = String.format(I18N["stats.file_char_count.i"], count)
     }
 
     /**
