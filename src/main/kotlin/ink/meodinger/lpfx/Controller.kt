@@ -49,6 +49,7 @@ import javafx.scene.Node
 import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
+import javafx.scene.image.WritableImage
 import javafx.scene.input.*
 import javafx.scene.layout.VBox
 import javafx.stage.DirectoryChooser
@@ -144,6 +145,16 @@ class Controller(private val state: State) {
     private val labelTextCountListener = ChangeListener<String> { _, _, _ ->
         updateFileCharCount()
     }
+
+    private var tiledImageRequest: TiledImageRequest? = null
+    private var oversizedImageRequest: TiledImageRequest? = null
+    private val tiledImageFailures = HashSet<File>()
+
+    private data class TiledImageRequest(
+        val file: File,
+        val width: Int,
+        val height: Int
+    )
 
     private val labelListCountListener = ListChangeListener<TransLabel> { change ->
         while (change.next()) {
@@ -241,6 +252,17 @@ class Controller(private val state: State) {
         val shouldResize = dimensions?.let { (width, height) -> isTooLarge(width, height) } ?: false
 
         if (shouldResize) {
+            oversizedImageRequest = TiledImageRequest(file, dimensions!!.first, dimensions.second)
+            if (Settings.currentPrismMode == PrismMode.HW_CHANGE_SIZE && file !in tiledImageFailures) {
+                tiledImageRequest = oversizedImageRequest
+                Logger.info(
+                    "Image `$file` is too large (${dimensions.first}x${dimensions.second}), loading native-size tiled image",
+                    "Controller"
+                )
+                return WritableImage(1, 1)
+            }
+
+            tiledImageRequest = null
             Logger.info(
                 "Image `$file` is too large (${dimensions!!.first}x${dimensions.second}), loading capped preview ${MAX_WIDTH.toInt()}x${MAX_HEIGHT.toInt()}",
                 "Controller"
@@ -248,6 +270,8 @@ class Controller(private val state: State) {
             return Image(url, MAX_WIDTH, MAX_HEIGHT, true, true)
         }
 
+        oversizedImageRequest = null
+        tiledImageRequest = null
         return Image(url)
     }
 
@@ -554,18 +578,35 @@ class Controller(private val state: State) {
 
         // Switch rendering mode when image is too large (only in windows)
         imageBinding.addListener(onNew {
-            if (Config.isWin && !Config.usingSWPrism) {
-                if (it != null && isTooLarge(it) && Settings.currentPrismMode == PrismMode.HW) {
-                    // HW mode: switch to tiled rendering (no restart needed)
-                    val result = showConfirmWithoutCancel(state.stage, I18N["graphic_switch.message"])
-                    if (result.isPresent && result.get() == ButtonType.YES) {
-                        Settings.currentPrismMode = PrismMode.HW_CHANGE_SIZE
-                        Options.save()
-                        // Re-load current image with tiled rendering
-                        imageBinding.invalidate()
-                    }
+            val request = tiledImageRequest
+            if (request != null && it !== INIT_IMAGE) {
+                try {
+                    cLabelPane.showTiledImage(request.file, request.width, request.height)
+                } catch (e: Exception) {
+                    Logger.warning("Native-size tiled image load failed for `${request.file}`, falling back to capped preview", "Controller")
+                    Logger.exception(e)
+                    tiledImageFailures.add(request.file)
+                    tiledImageRequest = null
+                    cLabelPane.clearTiledImage()
+                    imageBinding.invalidate()
+                    return@onNew
                 }
+            } else {
+                cLabelPane.clearTiledImage()
             }
+
+//            if (Config.isWin && !Config.usingSWPrism) {
+//                if (oversizedImageRequest != null && Settings.currentPrismMode == PrismMode.HW) {
+//                    // HW mode: switch to tiled rendering (no restart needed)
+//                    val result = showConfirmWithoutCancel(state.stage, I18N["graphic_switch.message"])
+//                    if (result.isPresent && result.get() == ButtonType.YES) {
+//                        Settings.currentPrismMode = PrismMode.HW_CHANGE_SIZE
+//                        Options.save()
+//                        // Re-load current image with tiled rendering
+//                        imageBinding.invalidate()
+//                    }
+//                }
+//            }
         })
         Logger.info("Listened for prism mode auto-switch", "Controller")
 
@@ -639,6 +680,8 @@ class Controller(private val state: State) {
                 if (result.isPresent && result.get() == ButtonType.YES) {
                     state.application.stop()
                 }
+            } else {
+                imageBinding.invalidate()
             }
 
         }
