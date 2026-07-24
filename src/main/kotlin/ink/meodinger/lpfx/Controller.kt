@@ -938,13 +938,7 @@ class Controller(private val state: State) {
         val transFile = TransFile(
             groupList = Settings.defaultGroupNameList
                 .mapIndexed { index, name -> TransGroup(name, Settings.defaultGroupColorHexList[index]) }
-                .filterIndexed { index, _ -> Settings.isGroupCreateOnNewTransList[index] }
-                .let {
-                    if (FileType.getFileType(file) == FileType.LPFile) it.subList(
-                        0,
-                        it.size.coerceAtMost(9)
-                    ) else it
-                },
+                .filterIndexed { index, _ -> Settings.isGroupCreateOnNewTransList[index] },
             transMap = selectedPics.associateWith { emptyList() }
         )
         Logger.info("Built TransFile", "Controller")

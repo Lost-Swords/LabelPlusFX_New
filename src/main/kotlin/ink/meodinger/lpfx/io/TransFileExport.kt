@@ -77,9 +77,6 @@ private fun exportMeo(file: File, transFile: TransFile) {
  * @return LPFile content in String
  */
 fun TransFile.toLPString(): String {
-    // Group count validate
-    if (groupCount > 9) throw IOException(I18N["exception.loader.too_many_groups"])
-
     // <--
     // ----------------[index]----------------[xxxx,yyyy,g]
     // text
