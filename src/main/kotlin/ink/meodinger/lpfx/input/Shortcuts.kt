@@ -1,4 +1,4 @@
-﻿package ink.meodinger.lpfx.input
+package ink.meodinger.lpfx.input
 
 import ink.meodinger.lpfx.Config
 import javafx.scene.input.KeyCode
@@ -127,7 +127,7 @@ sealed class ShortcutGesture {
                 "KEY" -> parseKey(body)
                 "MOUSE" -> parseMouse(body)
                 "SCROLL" -> parseScroll(body)
-                "DIGITS" -> DigitRangeGesture(1, 9)
+                "DIGITS" -> DigitRangeGesture(0, 9)
                 "FIXED" -> FixedGesture(body)
                 else -> null
             }
@@ -229,12 +229,13 @@ data class ScrollGesture(val modifiers: ModifierSpec) : ShortcutGesture() {
 }
 
 data class DigitRangeGesture(val from: Int, val to: Int) : ShortcutGesture() {
-    override fun toDisplayString(): String = "Digit $from-$to"
+    override fun toDisplayString(): String = if (from == 0 && to == 9) "Digit 1-9 / 0xx" else "Digit $from-$to"
 
     override fun toStorageString(): String = "DIGITS:$from-$to"
 
     override fun conflictTokens(): Set<String> {
         return (from..to).mapNotNull { digit ->
+            if (digit !in 0..9) return@mapNotNull null
             KeyCode.getKeyCode("DIGIT$digit")?.name?.let { "KEY:$it" }
         }.toSet()
     }
@@ -259,7 +260,7 @@ object ShortcutRegistry {
             ShortcutAction.GROUP_SELECT_DIGITS,
             "shortcut.action.group_select_digits",
             setOf(ShortcutScope.IMAGE_VIEW),
-            DigitRangeGesture(1, 9),
+            DigitRangeGesture(0, 9),
             editable = false,
             groupKey = "settings.shortcut.group.image_view",
         ),
