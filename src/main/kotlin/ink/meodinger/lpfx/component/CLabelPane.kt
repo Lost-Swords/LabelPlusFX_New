@@ -452,6 +452,7 @@ class CLabelPane(
             }
             add(canvas) {
                 isMouseTransparent = true
+                isManaged = false
                 graphicsContext2D.font = TEXT_FONT
                 graphicsContext2D.textBaseline = VPos.TOP
 
@@ -976,11 +977,22 @@ class CLabelPane(
      * @param x X coordinate where the text will be displayed, based on the image width
      * @param y Y coordinate where the text will be displayed, based on the image height
      */
-    fun showText(text: String, color: Color, x: Double, y: Double) {
+    fun showText(text: String, color: Color, x: Double, y: Double, screenX: Double, screenY: Double) {
         val gc = canvas.graphicsContext2D
+        val pointerPosition = root.screenToLocal(screenX, screenY)
+        val pointerX = pointerPosition?.x ?: x
+        val pointerY = pointerPosition?.y ?: y
 
         // Clear
         gc.clearRect(0.0, 0.0, canvas.width, canvas.height)
+
+        // Keep the capped overlay canvas around the pointer instead of letting
+        // StackPane center it within a large image.
+        val canvasX = (pointerX - canvas.width / 2).coerceIn(0.0, (displayWidth - canvas.width).coerceAtLeast(0.0))
+        val canvasY = (pointerY - canvas.height / 2).coerceIn(0.0, (displayHeight - canvas.height).coerceAtLeast(0.0))
+        canvas.relocate(canvasX, canvasY)
+        gc.save()
+        gc.translate(-canvasX, -canvasY)
 
         val s = shortenWideText(shortenLongText(text), (displayWidth - 2 * (SHIFT_X + TEXT_INSET)) / 2, TEXT_FONT)
         val t = Text(s).apply { font = TEXT_FONT }
@@ -993,18 +1005,18 @@ class CLabelPane(
         //   0 -> x  ------
         //   鈫?      |    |
         //   y       ------
-        var textX = x + SHIFT_X + TEXT_INSET
-        var textY = y + TEXT_INSET
-        var shapeX = x + SHIFT_X
-        var shapeY = y
+        var textX = pointerX + SHIFT_X + TEXT_INSET
+        var textY = pointerY + TEXT_INSET
+        var shapeX = pointerX + SHIFT_X
+        var shapeY = pointerY
 
         if (shapeX + shapeW > displayWidth) {
-            textX = x - textW - SHIFT_X - TEXT_INSET
-            shapeX = x - shapeW - SHIFT_X
+            textX = pointerX - textW - SHIFT_X - TEXT_INSET
+            shapeX = pointerX - shapeW - SHIFT_X
         }
         if (shapeY + shapeH > displayHeight) {
-            textY = y - textH - TEXT_INSET
-            shapeY = y - shapeH
+            textY = pointerY - textH - TEXT_INSET
+            shapeY = pointerY - shapeH
         }
 
         gc.fill = Color.web(Color.WHEAT.toHexRGB() + TEXT_ALPHA)
@@ -1014,6 +1026,7 @@ class CLabelPane(
         gc.strokeRect(shapeX, shapeY, shapeW, shapeH)
         gc.fill = color
         gc.fillText(t.text, textX, textY)
+        gc.restore()
     }
 
     /**

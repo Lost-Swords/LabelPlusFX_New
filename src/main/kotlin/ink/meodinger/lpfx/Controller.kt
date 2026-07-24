@@ -437,7 +437,7 @@ class Controller(private val state: State) {
                     if (it.sourceEvent.isControlDown) {
                         val transLabel = state.transFile.getTransLabel(state.currentPicName, it.labelIndex)
                         val transGroup = state.transFile.groupList[transLabel.groupId]
-                        cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY)
+                        cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY, it.sourceEvent.screenX, it.sourceEvent.screenY)
                     } else {
                         cLabelPane.showLabelText(it.labelIndex, it.displayX, it.displayY)
                     }
@@ -447,7 +447,7 @@ class Controller(private val state: State) {
                 WorkMode.LabelMode -> {
                     val transLabel = state.transFile.getTransLabel(state.currentPicName, it.labelIndex)
                     val transGroup = state.transFile.groupList[transLabel.groupId]
-                    cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY)
+                    cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY, it.sourceEvent.screenX, it.sourceEvent.screenY)
                 }
             }
         }
@@ -486,7 +486,7 @@ class Controller(private val state: State) {
             if (state.currentGroupId == NOT_FOUND) return@handler
 
             val transGroup = state.transFile.groupList[state.currentGroupId]
-            cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY)
+            cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY, it.sourceEvent.screenX, it.sourceEvent.screenY)
 
 
         }
