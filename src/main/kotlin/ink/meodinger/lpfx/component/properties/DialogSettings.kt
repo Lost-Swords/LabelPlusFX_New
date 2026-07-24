@@ -538,6 +538,8 @@ class DialogSettings : AbstractPropertiesDialog() {
             tabs.remove(exportTab)
             val modeIndex = tabs.indexOfFirst { it.text == I18N["settings.mode.title"] }
             tabs.add(modeIndex, exportTab)
+
+            selectionModel.select(generalTab)
         }
 
         initProperties()
