@@ -98,6 +98,11 @@ class View(private val state: State) : BorderPane() {
     val lAccEditTime: Label = Label()
 
     /**
+     * StatsBar label: current file character count
+     */
+    val lFileCharCount: Label = Label()
+
+    /**
      * Picture ComboBox, change pictures
      */
     val cPicBox: CComboBox<String> = CComboBox()
@@ -567,6 +572,14 @@ class View(private val state: State) : BorderPane() {
                 padding = generalPadding
                 prefWidth = 180.0
             }
+            add(Separator()) {
+                orientation = Orientation.VERTICAL
+            }
+            add(lFileCharCount) {
+                text = String.format(I18N["stats.file_char_count.i"], 0)
+                padding = generalPadding
+                prefWidth = 180.0
+            }
             add(CResizeGrid()) {
                 prefHeightProperty().bind(statsBar.heightProperty())
                 prefWidthProperty().bind(statsBar.heightProperty())
@@ -668,12 +681,12 @@ class View(private val state: State) : BorderPane() {
         state.reset()
     }
 
-    private fun bakRecovery() {
-        if (state.controller.stay()) return
+    fun bakRecovery(): Boolean {
+        if (state.controller.stay()) return false
 
         chooserBackup.initialDirectory = if (state.isOpened) state.getBakFolder() else CFileChooser.lastDirectory
         chooserFile.initialDirectory = if (state.isOpened) state.getFileFolder() else CFileChooser.lastDirectory
-        val bak = chooserBackup.showOpenDialog(state.stage) ?: return
+        val bak = chooserBackup.showOpenDialog(state.stage) ?: return false
 
         val filename = "Re.${bak.parentFile?.parentFile?.name ?: "cover"}"
         val extension = if (Settings.useMeoFileAsDefault) EXTENSION_FILE_MEO else EXTENSION_FILE_LP
@@ -681,9 +694,10 @@ class View(private val state: State) : BorderPane() {
         chooserFile.initialFilename = "$filename.$extension"
         chooserFile.selectedExtensionFilter = if (Settings.useMeoFileAsDefault) filterMEO else filterLP
 
-        val rec = chooserFile.showSaveDialog(state.stage) ?: return
+        val rec = chooserFile.showSaveDialog(state.stage) ?: return false
         state.reset()
         state.controller.recovery(bak, rec)
+        return true
     }
 
     private fun exitApplication() {

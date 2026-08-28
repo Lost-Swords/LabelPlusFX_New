@@ -146,6 +146,7 @@ class DialogSettings : AbstractPropertiesDialog() {
     private val xPrismMode = CComboBox<PrismMode>()
     private val xCheckUpdate = CheckBox(I18N["settings.other.auto_check_upd"])
     private val xCheckAutoOp = CheckBox(I18N["settings.other.auto_open_last"])
+    private val xCheckBackup = CheckBox(I18N["settings.other.auto_check_backup"])
     private val xCheckInstTr = CheckBox(I18N["settings.other.inst_trans"])
     private val xCheckFormat = CheckBox(I18N["settings.other.check_format"])
     private val xCheckUseMeo = CheckBox(I18N["settings.other.meo_default"])
@@ -283,6 +284,7 @@ class DialogSettings : AbstractPropertiesDialog() {
                     }
                     add(HBox(), 0, 5)
                     add(mCheckWheel, 0, 6, 2, 1)
+                    add(xCheckInstTr, 0, 7, 2, 1)
                 }
             }
             add(I18N["settings.label.title"]) {
@@ -481,54 +483,63 @@ class DialogSettings : AbstractPropertiesDialog() {
                     add(tTranslateTextFlow, 0, 6, 2, 1)
                 }
             }
-            add(I18N["settings.other.title"]) {
+            add(I18N["settings.general.title"]) {
                 withContent(GridPane()) {
                     alignment = Pos.TOP_CENTER
                     padding = Insets(16.0)
                     vgap = 16.0
                     hgap = 16.0
 
-                    //   0        1
-                    // 1 1 UpdateCheck
-                    // 2 2 OpenLastFile
-                    // 3 3 InstantTranslate
-                    // 4 4 CheckFormatWhenSave
-                    // 5 5 UseMeoFileAsDefault
-                    // 6 6 UseExportTemplate
-                    // 7   |  template text  |
+                    add(languageLabel, 0, 0)
+                    add(languageCombo, 1, 0).apply {
+                        prefWidth = 160.0
+                    }
+                    add(xCheckUpdate, 0, 1, 2, 1)
+                    add(xCheckAutoOp, 0, 2, 2, 1)
+                    add(xCheckBackup, 0, 3, 2, 1)
+                    add(xCheckFormat, 0, 4, 2, 1)
+                    add(xCheckUseMeo, 0, 5, 2, 1)
+                    add(Label(I18N["settings.other.pic_prism_mode"]), 0, 6)
+                    add(xPrismMode, 0, 7, 2, 1) {
+                        prefWidth = 280.0
+                        items = FXCollections.observableList(PrismMode.entries)
+                        isWrapped = true
+//                        tooltip = Tooltip(I18N["settings.other.pic_prism_mode.description"]).apply {
+//                            showDelay = Duration(500.0)
+//                        }
+                    }
+//                    add(xUseSWPrism, 0, 7, 2, 1)
 
+                }
+            }
+            add(I18N["settings.export.title"]) {
+                withContent(GridPane()) {
+                    alignment = Pos.TOP_CENTER
+                    padding = Insets(16.0)
+                    vgap = 16.0
+                    hgap = 16.0
 
-                    add(xCheckUpdate, 0, 0, 2, 1)
-                    add(xCheckAutoOp, 0, 1, 2, 1)
-                    add(xCheckInstTr, 0, 2, 2, 1)
-                    add(xCheckFormat, 0, 3, 2, 1)
-                    add(xCheckUseMeo, 0, 4, 2, 1)
-                    add(xCheckUseTmp, 0, 5, 2, 1)
-                    add(xFieldTemplate, 0, 6, 2, 1) {
+                    add(xCheckUseTmp, 0, 0, 2, 1)
+                    add(xFieldTemplate, 0, 1, 2, 1) {
                         disableProperty().bind(!xCheckUseTmp.selectedProperty())
                         textFormatter = genTextFormatter<String> { it.text.replace(Regex("[:*?<>|/\"\\\\]"), "") }
                         tooltip = Tooltip(I18N["settings.other.template.hint"]).apply {
                             showDelay = Duration(500.0)
                         }
                     }
-                    add(Label(I18N["settings.other.pic_prism_mode"]), 0, 7)
-                    add(xPrismMode, 0, 8, 2, 1) {
-                        prefWidth = 280.0
-                        items = FXCollections.observableList(PrismMode.entries)
-                        isWrapped = true
-                        tooltip = Tooltip(I18N["settings.other.pic_prism_mode.description"]).apply {
-                            showDelay = Duration(500.0)
-                        }
-                    }
-                    add(languageLabel, 0, 9)
-                    add(languageCombo, 1, 9,).apply {
-                        prefWidth = 160.0
-                    }
-
-//                    add(xUseSWPrism, 0, 7, 2, 1)
-
                 }
             }
+
+            val generalTab = tabs.first { it.text == I18N["settings.general.title"] }
+            tabs.remove(generalTab)
+            tabs.add(0, generalTab)
+
+            val exportTab = tabs.first { it.text == I18N["settings.export.title"] }
+            tabs.remove(exportTab)
+            val modeIndex = tabs.indexOfFirst { it.text == I18N["settings.mode.title"] }
+            tabs.add(modeIndex, exportTab)
+
+            selectionModel.select(generalTab)
         }
 
         initProperties()
@@ -874,6 +885,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         mComboLabel.select(Settings.viewModes[1])
         mComboScale.select(Settings.newPictureScalePicture)
         mCheckWheel.isSelected = Settings.useWheelToScale
+        xCheckInstTr.isSelected = Settings.instantTranslate
 
         // Label
         lCLabel.anchorX = (lLabelPane.prefWidth - lCLabel.prefWidth) / 2
@@ -894,22 +906,24 @@ class DialogSettings : AbstractPropertiesDialog() {
         tFieldBaiduTranslateKey.text = Settings.baiduTransLateKey
         tFieldBaiduTranslateAppId.text = Settings.baiduTransLateAppId
 
-        // Other
-
+        // General
         xCheckUpdate.isSelected = Settings.autoCheckUpdate
         xCheckAutoOp.isSelected = Settings.autoOpenLastFile
-        xCheckInstTr.isSelected = Settings.instantTranslate
+        xCheckBackup.isSelected = Settings.autoCheckBackup
         xCheckFormat.isSelected = Settings.checkFormatWhenSave
         xCheckUseMeo.isSelected = Settings.useMeoFileAsDefault
-        xCheckUseTmp.isSelected = Settings.useExportNameTemplate
-        xFieldTemplate.text = Settings.exportNameTemplate
         xPrismMode.select(Settings.currentPrismMode)
+
         // Populate language combo box with display names from the enum
         languageCombo.items = FXCollections.observableArrayList(
             SupportedLanguage.entries.map { it.displayName }
         )
         // Select the current language based on Preference
         languageCombo.selectionModel.select(getLanguageIndex(Preference.currentLanguage))
+
+        // Export
+        xCheckUseTmp.isSelected = Settings.useExportNameTemplate
+        xFieldTemplate.text = Settings.exportNameTemplate
 
 
     }
@@ -996,6 +1010,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.ViewModes] = listOf(mComboInput.index, mComboLabel.index).map(ViewMode.entries.toTypedArray()::get)
         map[Settings.NewPictureScale] = mComboScale.index.let(CLabelPane.NewPictureScale.entries.toTypedArray()::get)
         map[Settings.UseWheelToScale] = mCheckWheel.isSelected
+        map[Settings.InstantTranslate] = xCheckInstTr.isSelected
 
         return map
     }
@@ -1021,19 +1036,25 @@ class DialogSettings : AbstractPropertiesDialog() {
         return map
     }
 
-    private fun convertOther(): Map<String, Any> {
+    private fun convertGeneral(): Map<String, Any> {
         val map = HashMap<String, Any>()
 
         map[Settings.AutoCheckUpdate] = xCheckUpdate.isSelected
         map[Settings.AutoOpenLastFile] = xCheckAutoOp.isSelected
-        map[Settings.InstantTranslate] = xCheckInstTr.isSelected
+        map[Settings.AutoCheckBackup] = xCheckBackup.isSelected
         map[Settings.CheckFormatWhenSave] = xCheckFormat.isSelected
         map[Settings.UseMeoFileAsDefault] = xCheckUseMeo.isSelected
-        map[Settings.UseExportNameTemplate] = xCheckUseTmp.isSelected
-        map[Settings.ExportNameTemplate] = xFieldTemplate.text
         map[Settings.CurrentPrismMode] = xPrismMode.index.let(PrismMode.entries.toTypedArray()::get)
         val selectedLanguage = getLanguageCode(languageCombo.selectionModel.selectedIndex)
         map[Preference.CurrentLanguage] = selectedLanguage
+        return map
+    }
+
+    private fun convertExport(): Map<String, Any> {
+        val map = HashMap<String, Any>()
+
+        map[Settings.UseExportNameTemplate] = xCheckUseTmp.isSelected
+        map[Settings.ExportNameTemplate] = xFieldTemplate.text
         return map
     }
 
@@ -1046,7 +1067,8 @@ class DialogSettings : AbstractPropertiesDialog() {
             putAll(convertMode())
             putAll(convertLabel())
             putAll(convertTool())
-            putAll(convertOther())
+            putAll(convertGeneral())
+            putAll(convertExport())
         }
         // 直接在返回前保存一次设置
         saveSettings(map)
@@ -1074,6 +1096,7 @@ class DialogSettings : AbstractPropertiesDialog() {
             Settings.CurrentPrismMode         -> Settings.currentPrismMode            = value as PrismMode
             Settings.AutoCheckUpdate          -> Settings.autoCheckUpdate             = value as Boolean
             Settings.AutoOpenLastFile         -> Settings.autoOpenLastFile            = value as Boolean
+            Settings.AutoCheckBackup          -> Settings.autoCheckBackup             = value as Boolean
             Settings.InstantTranslate         -> Settings.instantTranslate            = value as Boolean
             Settings.CheckFormatWhenSave      -> Settings.checkFormatWhenSave         = value as Boolean
             Settings.UseMeoFileAsDefault      -> Settings.useMeoFileAsDefault         = value as Boolean

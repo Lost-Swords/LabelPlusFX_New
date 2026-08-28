@@ -1,6 +1,7 @@
 package ink.meodinger.lpfx.component
 
 import ink.meodinger.lpfx.*
+import ink.meodinger.lpfx.ImageSize.MAX_OVERLAY_CANVAS_SIZE
 import ink.meodinger.lpfx.Config.MonoFont
 import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.type.TransLabel
@@ -13,13 +14,16 @@ import ink.meodinger.lpfx.util.string.shortenLongText
 import ink.meodinger.lpfx.util.string.shortenWideText
 import javafx.beans.binding.Bindings
 
+import javafx.application.Platform
 import javafx.beans.property.*
 import javafx.collections.*
 import javafx.event.*
+import javafx.embed.swing.SwingFXUtils
 import javafx.geometry.Pos
 import javafx.geometry.VPos
 import javafx.scene.Cursor
 import javafx.scene.canvas.Canvas
+import javafx.scene.control.Alert
 import javafx.scene.control.ScrollPane
 import javafx.scene.control.Tooltip
 import javafx.scene.image.Image
@@ -31,6 +35,9 @@ import javafx.scene.paint.Color
 import javafx.scene.text.Font
 import javafx.scene.text.Text
 import javafx.util.Duration
+import java.awt.Rectangle
+import java.io.File
+import javax.imageio.ImageIO
 import kotlin.math.abs
 
 
@@ -52,6 +59,7 @@ class CLabelPane(
         private const val SHIFT_X = 20.0
         private const val TEXT_INSET = 10.0
         private const val TEXT_ALPHA = "A0"
+        private const val TILE_SIZE = 2048
         private val TEXT_FONT = Font(MonoFont, 32.0)
     }
 
@@ -209,6 +217,14 @@ class CLabelPane(
     private val anchorPane = AnchorPane().apply { isPickOnBounds = false }
 
     /**
+     * For oversized image display
+     */
+    private val tileLayer = AnchorPane().apply {
+        isMouseTransparent = true
+        isPickOnBounds = false
+    }
+
+    /**
      * For image display
      */
     private val imageView = ImageView(INIT_IMAGE)
@@ -226,9 +242,18 @@ class CLabelPane(
     private var shiftY = 0.0
     private var dragging = false
     private var selecting = false
+    private var tiledImageFile: File? = null
+    private var tileLoadingDialog: Alert? = null
+    @Volatile
+    private var tileLoadGeneration = 0
 
     @Suppress("UNCHECKED_CAST")
     private val labelNodes: ObservableList<CLabel> get() = anchorPane.children as ObservableList<CLabel>
+
+    private val displayWidthProperty: DoubleProperty = SimpleDoubleProperty(INIT_IMAGE.width)
+    private val displayHeightProperty: DoubleProperty = SimpleDoubleProperty(INIT_IMAGE.height)
+    private val displayWidth: Double get() = displayWidthProperty.get()
+    private val displayHeight: Double get() = displayHeightProperty.get()
 
     // endregion
 
@@ -406,11 +431,20 @@ class CLabelPane(
             alignment = Pos.CENTER
 
             // Layer system
-            val imageWidthBinding = imageProperty.transform(Image::getWidth).primitive()
-            val imageHeightBinding = imageProperty.transform(Image::getHeight).primitive()
+            root.isPickOnBounds = true
+            val imageWidthBinding = displayWidthProperty
+            val imageHeightBinding = displayHeightProperty
             add(imageView) {
                 isPreserveRatio = true
                 isPickOnBounds = true
+            }
+            add(tileLayer) {
+                prefWidthProperty().bind(imageWidthBinding)
+                prefHeightProperty().bind(imageHeightBinding)
+                minWidthProperty().bind(imageWidthBinding)
+                minHeightProperty().bind(imageHeightBinding)
+                maxWidthProperty().bind(imageWidthBinding)
+                maxHeightProperty().bind(imageHeightBinding)
             }
             add(anchorPane) {
                 prefWidthProperty().bind(imageWidthBinding)
@@ -418,12 +452,13 @@ class CLabelPane(
             }
             add(canvas) {
                 isMouseTransparent = true
+                isManaged = false
                 graphicsContext2D.font = TEXT_FONT
                 graphicsContext2D.textBaseline = VPos.TOP
 
-                //限制Canvas的最大显示尺寸
-                widthProperty().bind(Bindings.min(imageWidthBinding, 4096.0))
-                heightProperty().bind(Bindings.min(imageHeightBinding, 4096.0))
+                // Limit the maximum displayed canvas size.
+                widthProperty().bind(Bindings.min(imageWidthBinding, MAX_OVERLAY_CANVAS_SIZE))
+                heightProperty().bind(Bindings.min(imageHeightBinding, MAX_OVERLAY_CANVAS_SIZE))
             }
         }
 
@@ -457,8 +492,8 @@ class CLabelPane(
                 scale += deltaScale
                 // x, y -> location not related to scale, based on left-top of the image
                 // nLx = Lx + (imgW / 2 - x) * dS
-                root.translateX += deltaScale * (image.width  / 2 - it.x)
-                root.translateY += deltaScale * (image.height / 2 - it.y)
+                root.translateX += deltaScale * (displayWidth  / 2 - it.x)
+                root.translateY += deltaScale * (displayHeight / 2 - it.y)
 
                 it.consume()
             }
@@ -525,10 +560,10 @@ class CLabelPane(
             if (selecting) {
                 canvas.clearGraphicContext()
 
-                val shiftPercentX = shiftX / image.width
-                val shiftPercentY = shiftY / image.height
-                val eventPercentX = it.x / image.width
-                val eventPercentY = it.y / image.height
+                val shiftPercentX = shiftX / displayWidth
+                val shiftPercentY = shiftY / displayHeight
+                val eventPercentX = it.x / displayWidth
+                val eventPercentY = it.y / displayHeight
 
                 val rangeX = shiftPercentX.autoRangeTo(eventPercentX)
                 val rangeY = shiftPercentY.autoRangeTo(eventPercentY)
@@ -584,18 +619,25 @@ class CLabelPane(
 
                 // Make sure all labels will not be placed partial outside
                 val pickRadius = labelRadius.coerceAtLeast(CLabel.MIN_PICK_RADIUS)
-                if (it.x <= pickRadius || it.x + pickRadius >= image.width) return@addEventHandler
-                if (it.y <= pickRadius || it.y + pickRadius >= image.height) return@addEventHandler
+                if (it.x <= pickRadius || it.x + pickRadius >= displayWidth) return@addEventHandler
+                if (it.y <= pickRadius || it.y + pickRadius >= displayHeight) return@addEventHandler
 
                 fireEvent(LabelEvent(LabelEvent.LABEL_CREATE,
                     it, NOT_FOUND, it.x, it.y,
-                    it.x / image.width,
-                    it.y / image.height,
+                    it.x / displayWidth,
+                    it.y / displayHeight,
                 ))
             }
         }
 
         imageProperty.addListener(onNew {
+            if (tiledImageFile == null) {
+                displayWidthProperty.set(it.width)
+                displayHeightProperty.set(it.height)
+                tileLayer.children.clear()
+                imageView.isVisible = true
+                relayoutLabels()
+            }
             if (it === INIT_IMAGE) {
                 root.isDisable = true
                 scale = initScale
@@ -694,8 +736,8 @@ class CLabelPane(
             //  |     LR        LR      |
             //  |LR LR|-----    LR      |
             //  |     |         --------|
-            if (newAnchorX < 0 || newAnchorX > image.width - 2 * label.radius) return@addEventHandler
-            if (newAnchorY < 0 || newAnchorY > image.height - 2 * label.radius) return@addEventHandler
+            if (newAnchorX < 0 || newAnchorX > displayWidth - 2 * label.radius) return@addEventHandler
+            if (newAnchorY < 0 || newAnchorY > displayHeight - 2 * label.radius) return@addEventHandler
 
             label.anchorX = newAnchorX
             label.anchorY = newAnchorY
@@ -710,8 +752,8 @@ class CLabelPane(
                 it, transLabel.index,
                 label.anchorX + it.x,
                 label.anchorY + it.y,
-                (label.anchorX + label.radius) / image.width,
-                (label.anchorY + label.radius) / image.height,
+                (label.anchorX + label.radius) / displayWidth,
+                (label.anchorY + label.radius) / displayHeight,
             ))
 
             dragging = false
@@ -777,8 +819,8 @@ class CLabelPane(
         //  |    R
         //  | LR X-----  x = (Anchor + LR) / imageWidth
         //  |    |
-        label.anchorX = -label.radius + transLabel.x * image.width
-        label.anchorY = -label.radius + transLabel.y * image.height
+        label.anchorX = -label.radius + transLabel.x * displayWidth
+        label.anchorY = -label.radius + transLabel.y * displayHeight
     }
     private fun removeLabel(transLabel: TransLabel) {
         val label = labelNodes.first { it.index == transLabel.index } ?: return
@@ -795,6 +837,137 @@ class CLabelPane(
         labelNodes.remove(label)
     }
 
+    fun showTiledImage(file: File, imageWidth: Int, imageHeight: Int) {
+        val generation = ++tileLoadGeneration
+        tiledImageFile = file
+        displayWidthProperty.set(imageWidth.toDouble())
+        displayHeightProperty.set(imageHeight.toDouble())
+        imageView.isVisible = false
+        tileLayer.children.clear()
+        root.isDisable = false
+        val totalTiles = tileCount(imageWidth, imageHeight)
+        showTileLoadingDialog(0, totalTiles)
+        relayoutLabels()
+
+        Thread({
+            var loadedTiles = 0
+            try {
+                val stream = ImageIO.createImageInputStream(file) ?: throw IllegalStateException("Cannot create image stream: $file")
+                stream.use {
+                    val readers = ImageIO.getImageReaders(it)
+                    if (!readers.hasNext()) throw IllegalStateException("No ImageIO reader for: $file")
+
+                    val reader = readers.next()
+                    try {
+                        reader.input = it
+                        var tileY = 0
+                        while (tileY < imageHeight && generation == tileLoadGeneration) {
+                            var tileX = 0
+                            val tileHeight = minOf(TILE_SIZE, imageHeight - tileY)
+                            while (tileX < imageWidth && generation == tileLoadGeneration) {
+                                val tileWidth = minOf(TILE_SIZE, imageWidth - tileX)
+                                val param = reader.defaultReadParam
+                                param.sourceRegion = Rectangle(tileX, tileY, tileWidth, tileHeight)
+
+                                val currentX = tileX
+                                val currentY = tileY
+                                val tileImage = SwingFXUtils.toFXImage(reader.read(0, param), null)
+                                loadedTiles++
+                                val loadedCount = loadedTiles
+
+                                Platform.runLater {
+                                    if (generation != tileLoadGeneration) return@runLater
+                                    tileLayer.children.add(ImageView(tileImage).apply {
+                                        layoutX = currentX.toDouble()
+                                        layoutY = currentY.toDouble()
+                                        isPreserveRatio = false
+                                        isMouseTransparent = true
+                                    })
+                                    updateTileLoadingDialog(loadedCount, totalTiles)
+                                    if (loadedCount >= totalTiles) {
+                                        hideTileLoadingDialog()
+                                        Logger.info("Tiled image loaded: $file (${imageWidth}x$imageHeight), $loadedCount tiles", "LabelPane")
+                                    }
+                                }
+
+                                tileX += TILE_SIZE
+                            }
+                            tileY += TILE_SIZE
+                        }
+                    } finally {
+                        reader.dispose()
+                    }
+                }
+            } catch (e: Exception) {
+                Logger.warning("Tiled image load failed for `$file`: ${e.message}", "LabelPane")
+                Logger.exception(e)
+                Platform.runLater {
+                    if (generation == tileLoadGeneration) hideTileLoadingDialog()
+                }
+            }
+        }, "LPFX-TiledImageLoader").apply {
+            isDaemon = true
+            start()
+        }
+    }
+
+    private fun tileCount(imageWidth: Int, imageHeight: Int): Int {
+        val columns = (imageWidth + TILE_SIZE - 1) / TILE_SIZE
+        val rows = (imageHeight + TILE_SIZE - 1) / TILE_SIZE
+        return columns * rows
+    }
+
+    private fun showTileLoadingDialog(loadedTiles: Int, totalTiles: Int) {
+        hideTileLoadingDialog()
+        tileLoadingDialog = Alert(Alert.AlertType.INFORMATION).apply {
+            title = ""
+            headerText = null
+            contentText = buildTileLoadingText(loadedTiles, totalTiles)
+            dialogPane.buttonTypes.clear()
+            initOwner(state.stage)
+            show()
+        }
+    }
+
+    private fun updateTileLoadingDialog(loadedTiles: Int, totalTiles: Int) {
+        tileLoadingDialog?.contentText = buildTileLoadingText(loadedTiles, totalTiles)
+    }
+
+    private fun buildTileLoadingText(loadedTiles: Int, totalTiles: Int): String {
+        val percent = if (totalTiles <= 0) 0 else (loadedTiles.coerceAtMost(totalTiles) * 100) / totalTiles
+        return "\u6B63\u5728\u5206\u5757\u52A0\u8F7D\u5927\u5C3A\u5BF8\u56FE\u7247\u2026\u2026 $percent%"
+    }
+
+    private fun hideTileLoadingDialog() {
+        val dialog = tileLoadingDialog ?: return
+        tileLoadingDialog = null
+        val hideAction = {
+            dialog.hide()
+            dialog.dialogPane.scene?.window?.hide()
+            Unit
+        }
+        if (Platform.isFxApplicationThread()) hideAction() else Platform.runLater(hideAction)
+    }
+
+    fun clearTiledImage() {
+        tileLoadGeneration++
+        tiledImageFile = null
+        tileLayer.children.clear()
+        imageView.isVisible = true
+        hideTileLoadingDialog()
+        displayWidthProperty.set(image.width)
+        displayHeightProperty.set(image.height)
+        relayoutLabels()
+    }
+
+    private fun relayoutLabels() {
+        for (transLabel in labels) {
+            val label = labelNodes.firstOrNull { it.index == transLabel.index } ?: continue
+            label.anchorX = -label.radius + transLabel.x * displayWidth
+            label.anchorY = -label.radius + transLabel.y * displayHeight
+        }
+    }
+
     // Text rendering
 
     /**
@@ -804,13 +977,24 @@ class CLabelPane(
      * @param x X coordinate where the text will be displayed, based on the image width
      * @param y Y coordinate where the text will be displayed, based on the image height
      */
-    fun showText(text: String, color: Color, x: Double, y: Double) {
+    fun showText(text: String, color: Color, x: Double, y: Double, screenX: Double, screenY: Double) {
         val gc = canvas.graphicsContext2D
+        val pointerPosition = root.screenToLocal(screenX, screenY)
+        val pointerX = pointerPosition?.x ?: x
+        val pointerY = pointerPosition?.y ?: y
 
         // Clear
         gc.clearRect(0.0, 0.0, canvas.width, canvas.height)
 
-        val s = shortenWideText(shortenLongText(text), (image.width - 2 * (SHIFT_X + TEXT_INSET)) / 2, TEXT_FONT)
+        // Keep the capped overlay canvas around the pointer instead of letting
+        // StackPane center it within a large image.
+        val canvasX = (pointerX - canvas.width / 2).coerceIn(0.0, (displayWidth - canvas.width).coerceAtLeast(0.0))
+        val canvasY = (pointerY - canvas.height / 2).coerceIn(0.0, (displayHeight - canvas.height).coerceAtLeast(0.0))
+        canvas.relocate(canvasX, canvasY)
+        gc.save()
+        gc.translate(-canvasX, -canvasY)
+
+        val s = shortenWideText(shortenLongText(text), (displayWidth - 2 * (SHIFT_X + TEXT_INSET)) / 2, TEXT_FONT)
         val t = Text(s).apply { font = TEXT_FONT }
 
         val textW = t.boundsInLocal.width
@@ -819,20 +1003,20 @@ class CLabelPane(
         val shapeH = textH + 2 * TEXT_INSET
 
         //   0 -> x  ------
-        //   ↓       |    |
+        //   鈫?      |    |
         //   y       ------
-        var textX = x + SHIFT_X + TEXT_INSET
-        var textY = y + TEXT_INSET
-        var shapeX = x + SHIFT_X
-        var shapeY = y
+        var textX = pointerX + SHIFT_X + TEXT_INSET
+        var textY = pointerY + TEXT_INSET
+        var shapeX = pointerX + SHIFT_X
+        var shapeY = pointerY
 
-        if (shapeX + shapeW > image.width) {
-            textX = x - textW - SHIFT_X - TEXT_INSET
-            shapeX = x - shapeW - SHIFT_X
+        if (shapeX + shapeW > displayWidth) {
+            textX = pointerX - textW - SHIFT_X - TEXT_INSET
+            shapeX = pointerX - shapeW - SHIFT_X
         }
-        if (shapeY + shapeH > image.height) {
-            textY = y - textH - TEXT_INSET
-            shapeY = y - shapeH
+        if (shapeY + shapeH > displayHeight) {
+            textY = pointerY - textH - TEXT_INSET
+            shapeY = pointerY - shapeH
         }
 
         gc.fill = Color.web(Color.WHEAT.toHexRGB() + TEXT_ALPHA)
@@ -842,6 +1026,7 @@ class CLabelPane(
         gc.strokeRect(shapeX, shapeY, shapeW, shapeH)
         gc.fill = color
         gc.fillText(t.text, textX, textY)
+        gc.restore()
     }
 
     /**
@@ -855,22 +1040,22 @@ class CLabelPane(
         val screenWidth = javafx.stage.Screen.getPrimary().visualBounds.width
         val screenHeight = javafx.stage.Screen.getPrimary().visualBounds.height
 
-        // 通过文本内容估算tooltip尺寸
+        // Estimate tooltip size from text content.
         val text = label.tooltip.text
         val font = label.tooltip.font ?: TEXT_FONT
 
-        // 使用Text.getBoundsInLocal()来获取文本尺寸
+        // Use Text.getBoundsInLocal() to estimate text size.
         val textNode = Text(text)
         textNode.font = font
         val textBounds = textNode.boundsInLocal
 
-        // 估算Tooltip的整体尺寸（包括背景、边框、内边距）
+        // Estimate the tooltip size including background, border, and padding.
         val estimatedPadding = 8.0
         val estimatedBorder = 2.0
         val estimatedTooltipWidth = textBounds.width + estimatedPadding * 2 + estimatedBorder * 2
         val estimatedTooltipHeight = textBounds.height + estimatedPadding * 2 + estimatedBorder * 2
 
-        // 计算基础坐标
+        // Calculate base coordinates.
         val baseX = screenBounds.minX + x * scale
         val baseY = screenBounds.minY + y * scale
 
@@ -922,8 +1107,8 @@ class CLabelPane(
         // Scaled (fake)
         // -> Image / 2 - (Image / 2 - Center) * Scale
         // -> Image / 2 * (1 - Scale) + Center * Scale
-        val fakeX = image.width / 2 * (1 - scale) + label.anchorX * scale
-        val fakeY = image.height / 2 * (1 - scale) + label.anchorY * scale
+        val fakeX = displayWidth / 2 * (1 - scale) + label.anchorX * scale
+        val fakeY = displayHeight / 2 * (1 - scale) + label.anchorY * scale
 
         // To center
         // -> Scroll / 2 = Layout + Fake + Radius
@@ -938,8 +1123,8 @@ class CLabelPane(
         vvalue = 0.0
         hvalue = 0.0
 
-        root.translateX = - (1 - scale) * image.width / 2
-        root.translateY = - (1 - scale) * image.height / 2
+        root.translateX = - (1 - scale) * displayWidth / 2
+        root.translateY = - (1 - scale) * displayHeight / 2
     }
     /**
      * Move the image to the center of the LabelPane
@@ -948,8 +1133,8 @@ class CLabelPane(
         vvalue = 0.0
         hvalue = 0.0
 
-        root.translateX = (width - image.width) / 2
-        root.translateY = (height - image.height) / 2
+        root.translateX = (width - displayWidth) / 2
+        root.translateY = (height - displayHeight) / 2
     }
 
     // Scale
@@ -959,7 +1144,7 @@ class CLabelPane(
      * width of the image equals to the width of the pane.
      */
     fun fitToPane() {
-        scale = width / image.width
+        scale = width / displayWidth
     }
 
     // Dangerous Zone
