@@ -200,7 +200,10 @@ class View(private val state: State) : BorderPane() {
         chooserPack.title = I18N["chooser.pack"]
         chooserPack.extensionFilters.add(filterPack)
 
-        top(MenuBar()) {
+        top(MenuBar().apply {
+            // On macOS, place the menu in the system menu bar at the top of the screen.
+            isUseSystemMenuBar = Config.isMac
+        }) {
             menu(I18N["mm.file"]) {
                 item(I18N["m.new"]) {
                     does { newTranslation() }
