@@ -13,10 +13,11 @@ echo "VERSION: $VERSION"
 DIR=$(cd "$(dirname "$0")/../../" && pwd)
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 MODULES="$DIR/target/build"
-ICON="$DIR/images/icons/cat.icns"
+ICON="$DIR/images/icons/cat-macos.icns"
 TARGET_DIR="$SCRIPT_DIR/LabelPlusFX.app"
 OUTPUT_DIR="$SCRIPT_DIR/Output"
 ZIP_NAME="LabelPlusFX-$VERSION-Mac.zip"
+MAC_PACKAGE_IDENTIFIER="${MAC_PACKAGE_IDENTIFIER:-ink.meodinger.lpfx}"
 
 # 清理旧目录
 rm -rf "$TARGET_DIR"
@@ -28,6 +29,7 @@ jpackage --verbose \
     --app-version "$VERSION" \
     --copyright "Meodinger Tech (C) 2025" \
     --name LabelPlusFX \
+    --mac-package-identifier "$MAC_PACKAGE_IDENTIFIER" \
     --icon "$ICON" \
     --dest "$SCRIPT_DIR" \
     --module-path $MODULES \

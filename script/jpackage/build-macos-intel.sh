@@ -28,7 +28,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/../../" && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 MODULE_PATH="$ROOT_DIR/target/build"
-ICON_PATH="$ROOT_DIR/images/icons/cat.icns"
+ICON_PATH="$ROOT_DIR/images/icons/cat-macos.icns"
 
 APP_DIR="$SCRIPT_DIR/${APP_NAME}.app"
 OUTPUT_DIR="$SCRIPT_DIR/Output"

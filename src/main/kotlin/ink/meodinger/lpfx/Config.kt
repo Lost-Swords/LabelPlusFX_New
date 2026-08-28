@@ -53,7 +53,7 @@ object Config {
     /**
      * Whether SystemTray is enabled. Used in BOSS key
      */
-    val supportSysTray: Boolean = SystemTray.isSupported()
+    val supportSysTray: Boolean by lazy { SystemTray.isSupported() }
 
     /**
      * The working dir of current process
