@@ -63,6 +63,12 @@ import kotlin.io.path.name
  */
 class View(private val state: State) : BorderPane() {
 
+    private fun topMenuText(text: String): String =
+        if (Config.isMac) text.removePrefix("_").replace(Regex("\\(_[A-Za-z]\\)$"), "") else text
+
+    /** Main menu bar, registered with the macOS system menu after the stage is shown. */
+    val mainMenuBar = MenuBar()
+
     companion object {
         // Scale
         private const val SCALE_MIN: Double = 0.1
@@ -200,8 +206,9 @@ class View(private val state: State) : BorderPane() {
         chooserPack.title = I18N["chooser.pack"]
         chooserPack.extensionFilters.add(filterPack)
 
-        top(MenuBar()) {
-            menu(I18N["mm.file"]) {
+        top(mainMenuBar)
+        mainMenuBar.apply {
+            menu(topMenuText(I18N["mm.file"])) {
                 item(I18N["m.new"]) {
                     does { newTranslation() }
                     accelerator = KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN)
@@ -268,7 +275,7 @@ class View(private val state: State) : BorderPane() {
                     does { exitApplication() }
                 }
             }
-            menu(I18N["mm.edit"]) {
+            menu(topMenuText(I18N["mm.edit"])) {
                 item(I18N["m.undo"]) {
                     does { state.undo() }
                     disableProperty().bind(!state.undoableProperty())
@@ -304,7 +311,7 @@ class View(private val state: State) : BorderPane() {
                     disableProperty().bind(!state.openedProperty())
                 }
             }
-            menu(I18N["mm.export"]) {
+            menu(topMenuText(I18N["mm.export"])) {
                 item(I18N["m.lp"]) {
                     does { exportTransFile(FileType.LPFile) }
                     disableProperty().bind(!state.openedProperty())
@@ -324,7 +331,7 @@ class View(private val state: State) : BorderPane() {
                     disableProperty().bind(!state.openedProperty())
                 }
             }
-            menu(I18N["mm.tools"]) {
+            menu(topMenuText(I18N["mm.tools"])) {
                 checkItem(I18N["m.dict"]) {
                     does { showDict(); isSelected = true; }
                     accelerator = KeyCodeCombination(KeyCode.D, KeyCombination.SHORTCUT_DOWN)
@@ -346,7 +353,7 @@ class View(private val state: State) : BorderPane() {
                     selectedProperty().bindBidirectional(Preference.showStatsBarProperty())
                 }
             }
-            menu(I18N["mm.about"]) {
+            menu(topMenuText(I18N["mm.about"])) {
                 item(I18N["m.logs"]) {
                     does { logs() }
                 }
@@ -369,6 +376,12 @@ class View(private val state: State) : BorderPane() {
                 }
             }
         }
+        if (Config.isMac) mainMenuBar.isUseSystemMenuBar = true
+        Logger.info(
+            "Menu initialized: isMac=${Config.isMac}, system=${mainMenuBar.isUseSystemMenuBar}, " +
+                "menus=${mainMenuBar.menus.map { it.text }}",
+            "MenuBar"
+        )
         center(SplitPane()) {
             orientation = Orientation.HORIZONTAL
 
@@ -831,7 +844,7 @@ class View(private val state: State) : BorderPane() {
         state.controller.pack(file)
     }
 
-    private fun settings() {
+    fun settings() {
         state.application.dialogSettings.generateProperties()
     }
 

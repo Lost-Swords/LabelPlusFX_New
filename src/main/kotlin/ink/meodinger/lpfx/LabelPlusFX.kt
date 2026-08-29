@@ -213,6 +213,15 @@ class LabelPlusFX: HookedApplication() {
 
         // Show
         primaryStage.show()
+        // Register the menu with macOS after the stage has been attached to a scene.
+        if (Config.isMac) Platform.runLater {
+            root.mainMenuBar.isUseSystemMenuBar = true
+            Logger.info(
+                "Menu registered: system=${root.mainMenuBar.isUseSystemMenuBar}, " +
+                    "scene=${root.mainMenuBar.scene != null}, window=${root.mainMenuBar.scene?.window != null}",
+                "MenuBar"
+            )
+        }
 
         Logger.info("App started", "Application")
 
