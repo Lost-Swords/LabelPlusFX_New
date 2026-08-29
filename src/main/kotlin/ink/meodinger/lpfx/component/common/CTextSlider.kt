@@ -75,6 +75,8 @@ class CTextSlider : HBox() {
     var scale: Double by scaleProperty
 
     init {
+        // Keep the scale control easy to adjust; JavaFX's default slider width is too short.
+        slider.prefWidth = 200.0
         label.textProperty().bind(scaleProperty.transform { "${(it * 100).roundToInt()}%" })
 
         alignment = Pos.CENTER_LEFT
