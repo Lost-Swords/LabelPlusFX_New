@@ -10,6 +10,7 @@ import ink.meodinger.lpfx.component.properties.AbstractPropertiesDialog
 import ink.meodinger.lpfx.component.properties.DialogLogs
 import ink.meodinger.lpfx.component.properties.DialogSettings
 import ink.meodinger.lpfx.component.tools.*
+import ink.meodinger.lpfx.menu.nsmenufx.MacMenuStateSync
 import ink.meodinger.lpfx.options.*
 import ink.meodinger.lpfx.util.HookedApplication
 import ink.meodinger.lpfx.util.component.withOwner
@@ -19,6 +20,7 @@ import javafx.application.Platform
 import javafx.beans.value.ChangeListener
 import javafx.embed.swing.SwingFXUtils
 import javafx.scene.Scene
+import javafx.scene.control.Menu
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.stage.Stage
@@ -221,6 +223,10 @@ class LabelPlusFX: HookedApplication() {
         // Show
         primaryStage.show()
 
+        // NSMenuFX 的原生 keyEquivalent 可能因 autoenablesItems 失效，这里把菜单快捷键额外注册到
+        // Scene（纯 JavaFX），保证 Cmd+N/O/S/Z/F/E/D 等快捷键在 JavaFX 层直接触发菜单动作。
+        if (Config.isMac) primaryStage.scene?.let { registerSceneAccelerators(root, it) }
+
         Logger.info("App started", "Application")
 
         // region Post-Start Operations
@@ -261,6 +267,7 @@ class LabelPlusFX: HookedApplication() {
             root.mainMenuBar.isVisible = false
             root.mainMenuBar.isManaged = false
             toolkit.setMenuBar(root.mainMenuBar)
+            MacMenuStateSync.sync(root.mainMenuBar)
             Logger.info("Menu registered (NSMenuFX global)", "MenuBar")
             System.err.println("[MenuBar] NSMenuFX global menu installed")
 
@@ -311,8 +318,24 @@ class LabelPlusFX: HookedApplication() {
         try {
             val (adapter, setMenuBar) = macNativeSetMenuBar
             setMenuBar.invoke(adapter, menuBar.menus)
+            MacMenuStateSync.sync(menuBar)
         } catch (e: Throwable) {
             Logger.warning("NSMenuFX native reassert failed: ${e.message}", "MenuBar")
+        }
+    }
+
+    /** 把菜单项的 accelerator 注册到 Scene，让快捷键在 JavaFX 层直接触发（不依赖原生 keyEquivalent）。 */
+    private fun registerSceneAccelerators(root: View, scene: Scene) {
+        root.mainMenuBar.menus.forEach { registerMenuAccelerators(it, scene) }
+    }
+
+    private fun registerMenuAccelerators(menu: Menu, scene: Scene) {
+        for (item in menu.items) {
+            if (item is Menu) registerMenuAccelerators(item, scene)
+            val accel = item.accelerator
+            if (accel != null) {
+                scene.accelerators[accel] = Runnable { if (!item.isDisable) item.fire() }
+            }
         }
     }
 

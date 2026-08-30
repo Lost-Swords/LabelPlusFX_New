@@ -67,6 +67,14 @@ class View(private val state: State) : BorderPane() {
     private fun topMenuText(text: String): String =
         if (Config.isMac) text.removePrefix("_").replace(Regex("\\(_[A-Za-z]\\)$"), "") else text
 
+    /**
+     * macOS 的快捷键修饰键用 META_DOWN（而非 SHORTCUT_DOWN）：NSMenuFX 的加速键翻译只读
+     * KeyCombination.getMeta()，不识别抽象的 SHORTCUT_DOWN，用 META_DOWN 才能正确显示 ⌘ 图标。
+     * 其余平台用 SHORTCUT_DOWN（Ctrl）。
+     */
+    private val shortcutModifier: KeyCombination.Modifier =
+        if (Config.isMac) KeyCombination.META_DOWN else KeyCombination.SHORTCUT_DOWN
+
     /** Main menu bar, registered with the macOS system menu after the stage is shown. */
     val mainMenuBar = MenuBar()
 
@@ -216,24 +224,29 @@ class View(private val state: State) : BorderPane() {
                 menu(INFO["application.name"]) {
                     item(I18N["m.about"]) { does { about() } }
                     separator()
+                    item(I18N["m.settings"]) {
+                        does { settings() }
+                        accelerator = KeyCodeCombination(KeyCode.COMMA, shortcutModifier)
+                    }
+                    separator()
                     add(menuToolkit.createHideMenuItem(INFO["application.name"]))
                     add(menuToolkit.createHideOthersMenuItem())
                     add(menuToolkit.createUnhideAllMenuItem())
                     separator()
                     item(I18N["m.exit"]) {
                         does { exitApplication() }
-                        accelerator = KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN)
+                        accelerator = KeyCodeCombination(KeyCode.Q, shortcutModifier)
                     }
                 }
             }
             menu(topMenuText(I18N["mm.file"])) {
                 item(I18N["m.new"]) {
                     does { newTranslation() }
-                    accelerator = KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.N, shortcutModifier)
                 }
                 item(I18N["m.open"]) {
                     does { openTranslation() }
-                    accelerator = KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.O, shortcutModifier)
                 }
                 menu(I18N["m.recent"]) {
                     disableProperty().bind(items.emptyProperty())
@@ -274,21 +287,21 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.save"]) {
                     does { saveTranslation() }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.S, shortcutModifier)
                 }
                 item(I18N["m.save_as"]) {
                     does { saveAsTranslation() }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.S, shortcutModifier, KeyCombination.SHIFT_DOWN)
                 }
                 separator()
                 item(I18N["m.bak_recovery"]) {
                     does { bakRecovery() }
                 }
-                item(I18N["m.settings"]) {
-                    does { settings() }
-                }
                 if (!Config.isMac) {
+                    item(I18N["m.settings"]) {
+                        does { settings() }
+                    }
                     separator()
                     item(I18N["m.exit"]) {
                         does { exitApplication() }
@@ -299,18 +312,18 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.undo"]) {
                     does { state.undo() }
                     disableProperty().bind(!state.undoableProperty())
-                    accelerator = KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.Z, shortcutModifier)
                 }
                 item(I18N["m.redo"]) {
                     does { state.redo() }
                     disableProperty().bind(!state.redoableProperty())
-                    accelerator = KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.Z, shortcutModifier, KeyCombination.SHIFT_DOWN)
                 }
                 separator()
                 item(I18N["m.snr"]) {
                     does { searchAndReplace() }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.F, shortcutModifier)
                 }
                 separator()
                 item(I18N["m.comment"]) {
@@ -335,7 +348,7 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.lp"]) {
                     does { exportTransFile(FileType.LPFile) }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.E, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.E, shortcutModifier)
                 }
                 item(I18N["m.lp_current_page"]) {
                     does { state.controller.exportCurrentPageAsLP() }
@@ -354,7 +367,7 @@ class View(private val state: State) : BorderPane() {
             menu(topMenuText(I18N["mm.tools"])) {
                 checkItem(I18N["m.dict"]) {
                     does { showDict(); isSelected = true; }
-                    accelerator = KeyCodeCombination(KeyCode.D, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.D, shortcutModifier)
 
                     // Use binding will make item not operatable
                     state.application.onlineDict.showingProperty().addListener(onNew(this::setSelected))

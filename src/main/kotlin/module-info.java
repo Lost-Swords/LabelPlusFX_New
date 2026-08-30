@@ -12,6 +12,8 @@ module lpfx {
     requires javafx.swing;
     // NSMenuFX (macOS 原生菜单栏 SPIKE)
     requires nsmenufx;
+    // jfa：NSMenuFX 的 JNA AppKit 封装，用于手动同步原生菜单项的 enabled 状态
+    requires jfa;
     // Mail
     requires jakarta.mail;
     // HTML Parser
