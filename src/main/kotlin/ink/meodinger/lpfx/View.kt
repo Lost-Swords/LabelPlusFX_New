@@ -1021,6 +1021,7 @@ class View(private val state: State) : BorderPane() {
 
     private fun showDict() {
         val dict = state.application.onlineDict
+        System.err.println("[Dict] showDict: isShowing=${dict.isShowing}, isFocused=${dict.isFocused}")
         if (dict.isShowing) {
             dict.hide()
             return

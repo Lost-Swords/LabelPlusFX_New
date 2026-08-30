@@ -3,7 +3,12 @@ package ink.meodinger.lpfx
 
 
 
+import com.sun.jna.Function
+import com.sun.jna.NativeLibrary
+import com.sun.jna.Pointer
 import de.jangassen.MenuToolkit
+import de.jangassen.jfa.FoundationCallbackRegistry
+import de.jangassen.jfa.ObjcToJava
 import ink.meodinger.lpfx.component.dialog.showException
 import ink.meodinger.lpfx.component.dialog.showInfo
 import ink.meodinger.lpfx.component.properties.AbstractPropertiesDialog
@@ -268,16 +273,20 @@ class LabelPlusFX: HookedApplication() {
             root.mainMenuBar.isManaged = false
             toolkit.setMenuBar(root.mainMenuBar)
             MacMenuStateSync.sync(root.mainMenuBar)
+            registerActivationObserver(root.mainMenuBar)
             Logger.info("Menu registered (NSMenuFX global)", "MenuBar")
             System.err.println("[MenuBar] NSMenuFX global menu installed")
 
             // 焦点切换时重断言完整菜单（纯 JNA setMainMenu，复刻老 JNI 的 nativeReassertMenu）。
-            // 关键：Glass 只在「应用激活（切回）」时重设 NSApp.mainMenu（把业务菜单清掉）；
-            // 「应用失活（切走）」时 macOS 只是切到别的 app 的菜单栏，本 app 菜单根本没被清。
-            // 因此只需在切回（focused=true）时重断言，切走无需处理。
+            // Glass 会在两种情况下重设 NSApp.mainMenu（清掉业务菜单）：
+            // 1) 应用激活（切回，focused=true）；2) 应用内打开新窗口成为 key（如小词典，主窗口 focused=false）。
+            // 应用失活（切到别的 app）时 macOS 只是切走菜单栏、本 app 菜单不动。
+            // 为覆盖这两种情况，焦点获得/失去都重断言（对"切到别的 app"是冗余但无害）。
             state.stage.focusedProperty().addListener { _, _, focused ->
                 if (focused) {
                     reassertSoon(root.mainMenuBar, intArrayOf(0, 20, 40, 60, 80, 100, 120, 140))
+                } else {
+                    reassertSoon(root.mainMenuBar, intArrayOf(40, 80, 120, 160))
                 }
             }
         } catch (e: Throwable) {
@@ -319,6 +328,56 @@ class LabelPlusFX: HookedApplication() {
                 setOnFinished { reassertNativeMenuBar(menuBar) }
                 play()
             }
+        }
+    }
+
+    /**
+     * 用 raw JNA 注册 `NSApplicationDidBecomeActiveNotification` 观察者：应用激活（切回）时同步重设菜单，
+     * 目标是把"消失→恢复"的可见间隙压到零（在 Glass 清菜单之后、同一 runloop 内同步设回）。
+     *
+     * 注意：不能用 jfa 的 Foundation.invoke（它把参数统一转成 NativeLong，4 参数 + 回调时挂起），
+     * 这里用 raw JNA 的 objc_msgSend、以正确的 Pointer 类型传参；回调复用 jfa 的 registerCallback。
+     */
+    private fun registerActivationObserver(menuBar: javafx.scene.control.MenuBar) {
+        try {
+            val lib = NativeLibrary.getInstance("/usr/lib/libobjc.dylib")
+            val msgSend = lib.getFunction("objc_msgSend")
+            val selReg = lib.getFunction("sel_registerName")
+            val getClass = lib.getFunction("objc_getClass")
+
+            // [NSNotificationCenter defaultCenter]
+            val notifClass = getClass.invokePointer(arrayOf("NSNotificationCenter"))
+            val defaultCenterSel = selReg.invokePointer(arrayOf("defaultCenter"))
+            val center = msgSend.invokePointer(arrayOf(notifClass, defaultCenterSel))
+
+            // 回调：通知触发时重设菜单（jfa 创建）
+            val callback = FoundationCallbackRegistry.registerCallback { _ ->
+                reassertNativeMenuBar(menuBar)
+            }
+
+            // 通知名 NSString
+            val namePtr = ObjcToJava.toID("NSApplicationDidBecomeActiveNotification").toPointer()
+            // 观察者对象（callback.target 是 ID，转 Pointer）
+            val observerPtr = callback.target.toPointer()
+
+            // [center addObserver:observerPtr selector:callback.selector name:namePtr object:nil]
+            val addSel = selReg.invokePointer(arrayOf("addObserver:selector:name:object:"))
+            msgSend.invokePointer(
+                arrayOf(
+                    center,              // 接收者 NSNotificationCenter
+                    addSel,              // SEL
+                    observerPtr,         // 观察者
+                    callback.selector,   // 回调选择器（已是 Pointer）
+                    namePtr,             // 通知名 NSString
+                    Pointer.NULL,        // object = nil
+                )
+            )
+            Logger.info("Activation observer registered (raw JNA)", "MenuBar")
+            System.err.println("[MenuBar] activation observer registered (raw JNA)")
+        } catch (e: Throwable) {
+            Logger.warning("activation observer register failed: ${e.message}", "MenuBar")
+            Logger.exception(e)
+            System.err.println("[MenuBar] observer register failed: ${e.message}")
         }
     }
 

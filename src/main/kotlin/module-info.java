@@ -14,6 +14,8 @@ module lpfx {
     requires nsmenufx;
     // jfa：NSMenuFX 的 JNA AppKit 封装，用于手动同步原生菜单项的 enabled 状态
     requires jfa;
+    // JNA：用 raw JNA 调 objc_msgSend 注册通知观察者（绕开 jfa 的 toID 转换）
+    requires com.sun.jna;
     // Mail
     requires jakarta.mail;
     // HTML Parser
