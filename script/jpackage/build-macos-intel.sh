@@ -54,6 +54,7 @@ jpackage \
   --dest "$SCRIPT_DIR" \
   --module-path "$MODULE_PATH" \
   --add-modules jdk.crypto.cryptoki \
+  --java-options "--add-opens nsmenufx/de.jangassen.platform.mac=lpfx" \
   --module "${MAIN_MODULE}/${MAIN_CLASS}"
 
 # =========================

@@ -7,6 +7,7 @@ import ink.meodinger.lpfx.component.dialog.*
 import ink.meodinger.lpfx.io.TranslationConstants
 import ink.meodinger.lpfx.io.convert2Simplified
 import ink.meodinger.lpfx.io.convert2Traditional
+import de.jangassen.MenuToolkit
 import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.options.Preference
 import ink.meodinger.lpfx.options.RecentFiles
@@ -206,8 +207,25 @@ class View(private val state: State) : BorderPane() {
         chooserPack.title = I18N["chooser.pack"]
         chooserPack.extensionFilters.add(filterPack)
 
-        top(mainMenuBar)
+        // macOS 用原生 NSMenu（系统菜单栏），不在窗口内显示 JavaFX 菜单栏，避免重复
+        if (!Config.isMac) top(mainMenuBar)
+        val menuToolkit = if (Config.isMac) MenuToolkit.toolkit() else null
         mainMenuBar.apply {
+            // macOS 应用菜单（第一个；About/Quit 移到这里符合 macOS 惯例，经 NSMenuFX 原生安装）
+            if (Config.isMac && menuToolkit != null) {
+                menu(INFO["application.name"]) {
+                    item(I18N["m.about"]) { does { about() } }
+                    separator()
+                    add(menuToolkit.createHideMenuItem(INFO["application.name"]))
+                    add(menuToolkit.createHideOthersMenuItem())
+                    add(menuToolkit.createUnhideAllMenuItem())
+                    separator()
+                    item(I18N["m.exit"]) {
+                        does { exitApplication() }
+                        accelerator = KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN)
+                    }
+                }
+            }
             menu(topMenuText(I18N["mm.file"])) {
                 item(I18N["m.new"]) {
                     does { newTranslation() }
@@ -270,9 +288,11 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.settings"]) {
                     does { settings() }
                 }
-                separator()
-                item(I18N["m.exit"]) {
-                    does { exitApplication() }
+                if (!Config.isMac) {
+                    separator()
+                    item(I18N["m.exit"]) {
+                        does { exitApplication() }
+                    }
                 }
             }
             menu(topMenuText(I18N["mm.edit"])) {
@@ -358,8 +378,10 @@ class View(private val state: State) : BorderPane() {
                     does { logs() }
                 }
                 separator()
-                item(I18N["m.about"]) {
-                    does { about() }
+                if (!Config.isMac) {
+                    item(I18N["m.about"]) {
+                        does { about() }
+                    }
                 }
                 item(I18N["m.update"]) {
                     does { checkUpdate() }
@@ -375,8 +397,13 @@ class View(private val state: State) : BorderPane() {
                     does { crash() }
                 }
             }
+            // macOS Window 菜单（最后一个；最小化/缩放/前置全部窗口）
+            if (Config.isMac && menuToolkit != null) {
+                menu(topMenuText(I18N["mm.window"])) {
+                    menuToolkit.autoAddWindowMenuItems(this)
+                }
+            }
         }
-        if (Config.isMac) mainMenuBar.isUseSystemMenuBar = true
         Logger.info(
             "Menu initialized: isMac=${Config.isMac}, system=${mainMenuBar.isUseSystemMenuBar}, " +
                 "menus=${mainMenuBar.menus.map { it.text }}",

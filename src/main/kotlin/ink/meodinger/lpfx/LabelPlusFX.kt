@@ -3,6 +3,7 @@ package ink.meodinger.lpfx
 
 
 
+import de.jangassen.MenuToolkit
 import ink.meodinger.lpfx.component.dialog.showException
 import ink.meodinger.lpfx.component.dialog.showInfo
 import ink.meodinger.lpfx.component.properties.AbstractPropertiesDialog
@@ -13,6 +14,7 @@ import ink.meodinger.lpfx.options.*
 import ink.meodinger.lpfx.util.HookedApplication
 import ink.meodinger.lpfx.util.component.withOwner
 import ink.meodinger.lpfx.util.property.onChange
+import javafx.animation.PauseTransition
 import javafx.application.Platform
 import javafx.beans.value.ChangeListener
 import javafx.embed.swing.SwingFXUtils
@@ -20,6 +22,7 @@ import javafx.scene.Scene
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.stage.Stage
+import javafx.util.Duration
 import java.awt.SystemTray
 import java.awt.TrayIcon
 import java.io.File
@@ -211,17 +214,12 @@ class LabelPlusFX: HookedApplication() {
             }
         }
 
+        // 在 stage show 之前安装原生菜单：此时无窗口，NSMenuFX 走纯 JNA setMainMenu，
+        // 规避 JavaFX useSystemMenuBar 在焦点切换时丢业务菜单的 bug（JDK-8380900）。
+        if (Config.isMac) installNativeMenuBar(root)
+
         // Show
         primaryStage.show()
-        // Register the menu with macOS after the stage has been attached to a scene.
-        if (Config.isMac) Platform.runLater {
-            root.mainMenuBar.isUseSystemMenuBar = true
-            Logger.info(
-                "Menu registered: system=${root.mainMenuBar.isUseSystemMenuBar}, " +
-                    "scene=${root.mainMenuBar.scene != null}, window=${root.mainMenuBar.scene?.window != null}",
-                "MenuBar"
-            )
-        }
 
         Logger.info("App started", "Application")
 
@@ -252,6 +250,70 @@ class LabelPlusFX: HookedApplication() {
         // endregion
 
         Logger.toc()
+    }
+
+    /** 用 NSMenuFX 安装原生 macOS 菜单栏（show 之前调用走纯 JNA），并注册焦点重断言。 */
+    private fun installNativeMenuBar(root: View) {
+        try {
+            val toolkit = MenuToolkit.toolkit()
+            // 隐藏窗口内的 JavaFX 菜单栏（原生 NSMenu 接管）
+            root.mainMenuBar.isUseSystemMenuBar = false
+            root.mainMenuBar.isVisible = false
+            root.mainMenuBar.isManaged = false
+            toolkit.setMenuBar(root.mainMenuBar)
+            Logger.info("Menu registered (NSMenuFX global)", "MenuBar")
+            System.err.println("[MenuBar] NSMenuFX global menu installed")
+
+            // 焦点切换时重断言完整菜单（纯 JNA setMainMenu，复刻老 JNI 的 nativeReassertMenu）。
+            // Glass 清业务菜单是异步的，所以重断言必须延迟到它清完之后：
+            // - 切走（失活）：500ms 后重断言（用户在看别的显示器，延迟无感）。
+            // - 切回（激活）：200ms 短延迟（覆盖 Glass 早清、减少闪烁）+ 500ms 兜底（保证最终恢复）。
+            state.stage.focusedProperty().addListener { _, _, focused ->
+                if (focused) {
+                    PauseTransition(Duration.millis(200.0)).apply {
+                        setOnFinished { reassertNativeMenuBar(root.mainMenuBar) }
+                        play()
+                    }
+                    PauseTransition(Duration.millis(500.0)).apply {
+                        setOnFinished { reassertNativeMenuBar(root.mainMenuBar) }
+                        play()
+                    }
+                } else {
+                    PauseTransition(Duration.millis(500.0)).apply {
+                        setOnFinished { reassertNativeMenuBar(root.mainMenuBar) }
+                        play()
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            Logger.warning("NSMenuFX menu install failed: ${e.message}", "MenuBar")
+            Logger.exception(e)
+            System.err.println("[MenuBar] NSMenuFX menu install failed: ${e.message}")
+        }
+    }
+
+    /** 缓存反射查找结果：`MacNativeAdapter` 单例 + `setMenuBar(List)` 方法，只解析一次。 */
+    private val macNativeSetMenuBar by lazy {
+        val adapterClass = Class.forName("de.jangassen.platform.mac.MacNativeAdapter")
+        val adapter = adapterClass.getMethod("getInstance").invoke(null)
+        val method = adapterClass.getMethod("setMenuBar", java.util.List::class.java)
+        method.isAccessible = true
+        adapter to method
+    }
+
+    /**
+     * 纯 JNA 重设完整原生菜单栏（`NSApplication.setMainMenu`）。
+     * NSMenuFX 的 `MacNativeAdapter.setMenuBar(List)` 是限定导出到 jfa 的，公开 API 在窗口存在后
+     * 走不到纯 JNA 分支（会退回 useSystemMenuBar），故这里用反射直接调用，复刻老 JNI 的 nativeReassertMenu。
+     * 需启动参数 `--add-opens nsmenufx/de.jangassen.platform.mac=lpfx`。
+     */
+    private fun reassertNativeMenuBar(menuBar: javafx.scene.control.MenuBar) {
+        try {
+            val (adapter, setMenuBar) = macNativeSetMenuBar
+            setMenuBar.invoke(adapter, menuBar.menus)
+        } catch (e: Throwable) {
+            Logger.warning("NSMenuFX native reassert failed: ${e.message}", "MenuBar")
+        }
     }
 
     /**

@@ -34,6 +34,7 @@ jpackage --verbose \
     --dest "$SCRIPT_DIR" \
     --module-path $MODULES \
     --add-modules jdk.crypto.cryptoki \
+    --java-options "--add-opens nsmenufx/de.jangassen.platform.mac=lpfx" \
     --module lpfx/ink.meodinger.lpfx.LauncherKt
 
 

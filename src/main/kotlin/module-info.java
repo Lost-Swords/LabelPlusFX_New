@@ -10,6 +10,8 @@ module lpfx {
     requires javafx.controls;
     requires javafx.graphics;
     requires javafx.swing;
+    // NSMenuFX (macOS 原生菜单栏 SPIKE)
+    requires nsmenufx;
     // Mail
     requires jakarta.mail;
     // HTML Parser
