@@ -28,6 +28,7 @@ import javafx.scene.Scene
 import javafx.scene.control.Menu
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
+import javafx.scene.input.MouseEvent
 import javafx.stage.Stage
 import javafx.util.Duration
 import java.awt.SystemTray
@@ -287,6 +288,13 @@ class LabelPlusFX: HookedApplication() {
                 } else {
                     reassertSoon(root.mainMenuBar, intArrayOf(40, 80, 120, 160))
                 }
+            }
+
+            // 兜底：Glass 还会在「场景内鼠标交互」后重设 NSApp.mainMenu（清掉业务菜单），
+            // 例如点击图片开始标号（不伴随主窗口焦点变化，JDK-8351094）。在场景级
+            // MOUSE_CLICKED 后延迟重断言，覆盖这类触发。
+            state.stage.scene?.addEventFilter(MouseEvent.MOUSE_CLICKED) {
+                reassertSoon(root.mainMenuBar, intArrayOf(30, 80, 150))
             }
         } catch (e: Throwable) {
             Logger.warning("NSMenuFX menu install failed: ${e.message}", "MenuBar")
