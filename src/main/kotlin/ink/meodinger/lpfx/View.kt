@@ -222,7 +222,7 @@ class View(private val state: State) : BorderPane() {
             // macOS 应用菜单（第一个；About/Quit 移到这里符合 macOS 惯例，经 NSMenuFX 原生安装）
             if (Config.isMac && menuToolkit != null) {
                 menu(INFO["application.name"]) {
-                    item(I18N["m.about"]) { does { about() } }
+                    item("${I18N["m.about"]} ${INFO["application.name"]}") { does { about() } }
                     separator()
                     item(I18N["m.settings"]) {
                         does { settings() }
@@ -233,7 +233,7 @@ class View(private val state: State) : BorderPane() {
                     add(menuToolkit.createHideOthersMenuItem())
                     add(menuToolkit.createUnhideAllMenuItem())
                     separator()
-                    item(I18N["m.exit"]) {
+                    item("${I18N["m.exit"]} ${INFO["application.name"]}") {
                         does { exitApplication() }
                         accelerator = KeyCodeCombination(KeyCode.Q, shortcutModifier)
                     }
@@ -366,7 +366,7 @@ class View(private val state: State) : BorderPane() {
             }
             menu(topMenuText(I18N["mm.tools"])) {
                 checkItem(I18N["m.dict"]) {
-                    does { showDict(); isSelected = true; }
+                    does { showDict() }
                     accelerator = KeyCodeCombination(KeyCode.D, shortcutModifier)
 
                     // Use binding will make item not operatable
@@ -1021,6 +1021,10 @@ class View(private val state: State) : BorderPane() {
 
     private fun showDict() {
         val dict = state.application.onlineDict
+        if (dict.isShowing) {
+            dict.hide()
+            return
+        }
         dict.x = state.stage.x - 16.0 + state.stage.width - dict.width
         dict.y = state.stage.y + 16.0
         dict.show()

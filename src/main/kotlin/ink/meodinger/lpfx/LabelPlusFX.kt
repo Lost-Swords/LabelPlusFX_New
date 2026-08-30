@@ -272,24 +272,12 @@ class LabelPlusFX: HookedApplication() {
             System.err.println("[MenuBar] NSMenuFX global menu installed")
 
             // 焦点切换时重断言完整菜单（纯 JNA setMainMenu，复刻老 JNI 的 nativeReassertMenu）。
-            // Glass 清业务菜单是异步的，所以重断言必须延迟到它清完之后：
-            // - 切走（失活）：500ms 后重断言（用户在看别的显示器，延迟无感）。
-            // - 切回（激活）：200ms 短延迟（覆盖 Glass 早清、减少闪烁）+ 500ms 兜底（保证最终恢复）。
+            // 关键：Glass 只在「应用激活（切回）」时重设 NSApp.mainMenu（把业务菜单清掉）；
+            // 「应用失活（切走）」时 macOS 只是切到别的 app 的菜单栏，本 app 菜单根本没被清。
+            // 因此只需在切回（focused=true）时重断言，切走无需处理。
             state.stage.focusedProperty().addListener { _, _, focused ->
                 if (focused) {
-                    PauseTransition(Duration.millis(200.0)).apply {
-                        setOnFinished { reassertNativeMenuBar(root.mainMenuBar) }
-                        play()
-                    }
-                    PauseTransition(Duration.millis(500.0)).apply {
-                        setOnFinished { reassertNativeMenuBar(root.mainMenuBar) }
-                        play()
-                    }
-                } else {
-                    PauseTransition(Duration.millis(500.0)).apply {
-                        setOnFinished { reassertNativeMenuBar(root.mainMenuBar) }
-                        play()
-                    }
+                    reassertSoon(root.mainMenuBar, intArrayOf(0, 20, 40, 60, 80, 100, 120, 140))
                 }
             }
         } catch (e: Throwable) {
@@ -321,6 +309,16 @@ class LabelPlusFX: HookedApplication() {
             MacMenuStateSync.sync(menuBar)
         } catch (e: Throwable) {
             Logger.warning("NSMenuFX native reassert failed: ${e.message}", "MenuBar")
+        }
+    }
+
+    /** 按给定毫秒序列安排多次重断言（一次性突发，到点各触发一次即结束）。 */
+    private fun reassertSoon(menuBar: javafx.scene.control.MenuBar, delaysMs: IntArray) {
+        for (delay in delaysMs) {
+            PauseTransition(Duration.millis(delay.toDouble())).apply {
+                setOnFinished { reassertNativeMenuBar(menuBar) }
+                play()
+            }
         }
     }
 
