@@ -275,7 +275,6 @@ class LabelPlusFX: HookedApplication() {
             MacMenuStateSync.sync(root.mainMenuBar)
             registerActivationObserver(root.mainMenuBar)
             Logger.info("Menu registered (NSMenuFX global)", "MenuBar")
-            System.err.println("[MenuBar] NSMenuFX global menu installed")
 
             // 焦点切换时重断言完整菜单（纯 JNA setMainMenu，复刻老 JNI 的 nativeReassertMenu）。
             // Glass 会在两种情况下重设 NSApp.mainMenu（清掉业务菜单）：
@@ -292,7 +291,6 @@ class LabelPlusFX: HookedApplication() {
         } catch (e: Throwable) {
             Logger.warning("NSMenuFX menu install failed: ${e.message}", "MenuBar")
             Logger.exception(e)
-            System.err.println("[MenuBar] NSMenuFX menu install failed: ${e.message}")
         }
     }
 
@@ -373,11 +371,9 @@ class LabelPlusFX: HookedApplication() {
                 )
             )
             Logger.info("Activation observer registered (raw JNA)", "MenuBar")
-            System.err.println("[MenuBar] activation observer registered (raw JNA)")
         } catch (e: Throwable) {
             Logger.warning("activation observer register failed: ${e.message}", "MenuBar")
             Logger.exception(e)
-            System.err.println("[MenuBar] observer register failed: ${e.message}")
         }
     }
 

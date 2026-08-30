@@ -229,9 +229,11 @@ class View(private val state: State) : BorderPane() {
                         accelerator = KeyCodeCombination(KeyCode.COMMA, shortcutModifier)
                     }
                     separator()
-                    add(menuToolkit.createHideMenuItem(INFO["application.name"]))
-                    add(menuToolkit.createHideOthersMenuItem())
-                    add(menuToolkit.createUnhideAllMenuItem())
+                    add(menuToolkit.createHideMenuItem(INFO["application.name"]).apply {
+                        text = "${I18N["m.hide"]} ${INFO["application.name"]}"
+                    })
+                    add(menuToolkit.createHideOthersMenuItem().apply { text = I18N["m.hide_others"] })
+                    add(menuToolkit.createUnhideAllMenuItem().apply { text = I18N["m.show_all"] })
                     separator()
                     item("${I18N["m.exit"]} ${INFO["application.name"]}") {
                         does { exitApplication() }
@@ -1021,7 +1023,6 @@ class View(private val state: State) : BorderPane() {
 
     private fun showDict() {
         val dict = state.application.onlineDict
-        System.err.println("[Dict] showDict: isShowing=${dict.isShowing}, isFocused=${dict.isFocused}")
         if (dict.isShowing) {
             dict.hide()
             return
