@@ -7,6 +7,7 @@ import ink.meodinger.lpfx.component.dialog.*
 import ink.meodinger.lpfx.io.TranslationConstants
 import ink.meodinger.lpfx.io.convert2Simplified
 import ink.meodinger.lpfx.io.convert2Traditional
+import de.jangassen.MenuToolkit
 import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.options.Preference
 import ink.meodinger.lpfx.options.RecentFiles
@@ -65,6 +66,14 @@ class View(private val state: State) : BorderPane() {
 
     private fun topMenuText(text: String): String =
         if (Config.isMac) text.removePrefix("_").replace(Regex("\\(_[A-Za-z]\\)$"), "") else text
+
+    /**
+     * macOS 的快捷键修饰键用 META_DOWN（而非 SHORTCUT_DOWN）：NSMenuFX 的加速键翻译只读
+     * KeyCombination.getMeta()，不识别抽象的 SHORTCUT_DOWN，用 META_DOWN 才能正确显示 ⌘ 图标。
+     * 其余平台用 SHORTCUT_DOWN（Ctrl）。
+     */
+    private val shortcutModifier: KeyCombination.Modifier =
+        if (Config.isMac) KeyCombination.META_DOWN else KeyCombination.SHORTCUT_DOWN
 
     /** Main menu bar, registered with the macOS system menu after the stage is shown. */
     val mainMenuBar = MenuBar()
@@ -206,16 +215,40 @@ class View(private val state: State) : BorderPane() {
         chooserPack.title = I18N["chooser.pack"]
         chooserPack.extensionFilters.add(filterPack)
 
-        top(mainMenuBar)
+        // macOS 用原生 NSMenu（系统菜单栏），不在窗口内显示 JavaFX 菜单栏，避免重复
+        if (!Config.isMac) top(mainMenuBar)
+        val menuToolkit = if (Config.isMac) MenuToolkit.toolkit() else null
         mainMenuBar.apply {
+            // macOS 应用菜单（第一个；About/Quit 移到这里符合 macOS 惯例，经 NSMenuFX 原生安装）
+            if (Config.isMac && menuToolkit != null) {
+                menu(INFO["application.name"]) {
+                    item("${I18N["m.about"]} ${INFO["application.name"]}") { does { about() } }
+                    separator()
+                    item(I18N["m.settings"]) {
+                        does { settings() }
+                        accelerator = KeyCodeCombination(KeyCode.COMMA, shortcutModifier)
+                    }
+                    separator()
+                    add(menuToolkit.createHideMenuItem(INFO["application.name"]).apply {
+                        text = "${I18N["m.hide"]} ${INFO["application.name"]}"
+                    })
+                    add(menuToolkit.createHideOthersMenuItem().apply { text = I18N["m.hide_others"] })
+                    add(menuToolkit.createUnhideAllMenuItem().apply { text = I18N["m.show_all"] })
+                    separator()
+                    item("${I18N["m.exit"]} ${INFO["application.name"]}") {
+                        does { exitApplication() }
+                        accelerator = KeyCodeCombination(KeyCode.Q, shortcutModifier)
+                    }
+                }
+            }
             menu(topMenuText(I18N["mm.file"])) {
                 item(I18N["m.new"]) {
                     does { newTranslation() }
-                    accelerator = KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.N, shortcutModifier)
                 }
                 item(I18N["m.open"]) {
                     does { openTranslation() }
-                    accelerator = KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.O, shortcutModifier)
                 }
                 menu(I18N["m.recent"]) {
                     disableProperty().bind(items.emptyProperty())
@@ -256,41 +289,43 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.save"]) {
                     does { saveTranslation() }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.S, shortcutModifier)
                 }
                 item(I18N["m.save_as"]) {
                     does { saveAsTranslation() }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.S, shortcutModifier, KeyCombination.SHIFT_DOWN)
                 }
                 separator()
                 item(I18N["m.bak_recovery"]) {
                     does { bakRecovery() }
                 }
-                item(I18N["m.settings"]) {
-                    does { settings() }
-                }
-                separator()
-                item(I18N["m.exit"]) {
-                    does { exitApplication() }
+                if (!Config.isMac) {
+                    item(I18N["m.settings"]) {
+                        does { settings() }
+                    }
+                    separator()
+                    item(I18N["m.exit"]) {
+                        does { exitApplication() }
+                    }
                 }
             }
             menu(topMenuText(I18N["mm.edit"])) {
                 item(I18N["m.undo"]) {
                     does { state.undo() }
                     disableProperty().bind(!state.undoableProperty())
-                    accelerator = KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.Z, shortcutModifier)
                 }
                 item(I18N["m.redo"]) {
                     does { state.redo() }
                     disableProperty().bind(!state.redoableProperty())
-                    accelerator = KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.Z, shortcutModifier, KeyCombination.SHIFT_DOWN)
                 }
                 separator()
                 item(I18N["m.snr"]) {
                     does { searchAndReplace() }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.F, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.F, shortcutModifier)
                 }
                 separator()
                 item(I18N["m.comment"]) {
@@ -315,7 +350,7 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.lp"]) {
                     does { exportTransFile(FileType.LPFile) }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.E, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.E, shortcutModifier)
                 }
                 item(I18N["m.lp_current_page"]) {
                     does { state.controller.exportCurrentPageAsLP() }
@@ -333,8 +368,8 @@ class View(private val state: State) : BorderPane() {
             }
             menu(topMenuText(I18N["mm.tools"])) {
                 checkItem(I18N["m.dict"]) {
-                    does { showDict(); isSelected = true; }
-                    accelerator = KeyCodeCombination(KeyCode.D, KeyCombination.SHORTCUT_DOWN)
+                    does { showDict() }
+                    accelerator = KeyCodeCombination(KeyCode.D, shortcutModifier)
 
                     // Use binding will make item not operatable
                     state.application.onlineDict.showingProperty().addListener(onNew(this::setSelected))
@@ -358,8 +393,10 @@ class View(private val state: State) : BorderPane() {
                     does { logs() }
                 }
                 separator()
-                item(I18N["m.about"]) {
-                    does { about() }
+                if (!Config.isMac) {
+                    item(I18N["m.about"]) {
+                        does { about() }
+                    }
                 }
                 item(I18N["m.update"]) {
                     does { checkUpdate() }
@@ -375,8 +412,13 @@ class View(private val state: State) : BorderPane() {
                     does { crash() }
                 }
             }
+            // macOS Window 菜单（最后一个；最小化/缩放/前置全部窗口）
+            if (Config.isMac && menuToolkit != null) {
+                menu(topMenuText(I18N["mm.window"])) {
+                    menuToolkit.autoAddWindowMenuItems(this)
+                }
+            }
         }
-        if (Config.isMac) mainMenuBar.isUseSystemMenuBar = true
         Logger.info(
             "Menu initialized: isMac=${Config.isMac}, system=${mainMenuBar.isUseSystemMenuBar}, " +
                 "menus=${mainMenuBar.menus.map { it.text }}",
@@ -981,6 +1023,10 @@ class View(private val state: State) : BorderPane() {
 
     private fun showDict() {
         val dict = state.application.onlineDict
+        if (dict.isShowing) {
+            dict.hide()
+            return
+        }
         dict.x = state.stage.x - 16.0 + state.stage.width - dict.width
         dict.y = state.stage.y + 16.0
         dict.show()
