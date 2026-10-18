@@ -198,9 +198,9 @@ class CLigatureArea: TextArea() {
      * Unbind the bound StringProperty (if not null), and clear text.
      */
     fun unbindText() {
-        val bound = boundTextPropertyProperty.get() ?: return
+        val bound = boundTextPropertyProperty.get()
 
-        textProperty().unbindBidirectional(bound)
+        if (bound != null) textProperty().unbindBidirectional(bound)
         boundTextPropertyProperty.set(null)
         text = ""
     }

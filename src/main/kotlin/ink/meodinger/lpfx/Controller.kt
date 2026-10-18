@@ -628,7 +628,7 @@ class Controller(private val state: State) {
             if (it != NOT_FOUND) state.currentGroupId = it
         })
         cTreeView.selectedLabelProperty().addListener(onNew<Number, Int> {
-            if (it != NOT_FOUND) state.currentLabelIndex = it
+            state.currentLabelIndex = it
         })
         Logger.info("Listened for selectedGroup/Label", "Controller")
 

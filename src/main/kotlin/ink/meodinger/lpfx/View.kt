@@ -20,7 +20,9 @@ import ink.meodinger.lpfx.util.doNothing
 import ink.meodinger.lpfx.util.image.resizeByRadius
 import ink.meodinger.lpfx.util.openUrl
 import ink.meodinger.lpfx.util.property.emptyProperty
+import ink.meodinger.lpfx.util.property.eq
 import ink.meodinger.lpfx.util.property.onNew
+import ink.meodinger.lpfx.util.property.or
 import ink.meodinger.lpfx.util.property.transform
 import ink.meodinger.lpfx.util.string.deleteTrailing
 import ink.meodinger.lpfx.util.string.emptyString
@@ -548,7 +550,9 @@ class View(private val state: State) : BorderPane() {
                     withContent(cTransArea) {
                         contextMenu = cTextMenu
                         isWrapText = true
-                        disableProperty().bind(!state.openedProperty())
+                        disableProperty().bind(
+                            !state.openedProperty() or (state.currentLabelIndexProperty() eq NOT_FOUND)
+                        )
                         ligatureRulesProperty().bind(Settings.ligatureRulesProperty())
                         fontProperty().bindBidirectional(Preference.textAreaFontProperty())
                     }

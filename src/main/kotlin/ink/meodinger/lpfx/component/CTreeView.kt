@@ -135,8 +135,18 @@ class CTreeView: TreeView<String>() {
         selectionModel.selectedItemProperty().addListener(onNew {
             when (it) {
                 // These set will be ignored if select by set selected properties. (old == new)
-                is CTreeGroupItem -> selectedGroup = groups.indexOf(it.transGroup)
-                is CTreeLabelItem -> selectedLabel = it.transLabel.index
+                is CTreeGroupItem -> {
+                    selectedGroup = groups.indexOf(it.transGroup)
+                    selectedLabel = NOT_FOUND
+                }
+                is CTreeLabelItem -> {
+                    selectedGroup = NOT_FOUND
+                    selectedLabel = it.transLabel.index
+                }
+                else -> {
+                    selectedGroup = NOT_FOUND
+                    selectedLabel = NOT_FOUND
+                }
             }
         })
     }

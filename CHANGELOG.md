@@ -8,6 +8,10 @@
 - 保存specify（Next）
 - 添加校阅功能（单独开一个beta分支进行）
 
+### Fixed
+
+- 修复未选中标签时翻译输入框仍可编辑的问题（[#22](https://github.com/Lost-Swords/LabelPlusFX_New/issues/22)）
+
 ## [2.4.1] - 2026-10-18
 
 
