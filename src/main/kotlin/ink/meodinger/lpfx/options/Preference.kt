@@ -30,6 +30,7 @@ object Preference : AbstractProperties("Preference", Options.preference) {
     const val RIGHT_DIVIDER = "RightDivider"
     const val TEXTAREA_FONT_SIZE = "TextAreaFontSize"
     const val SHOW_STATS_BAR = "ShowStatsBar"
+    const val OPEN_MERGED_FILE = "OpenMergedFile"
     const val LAST_UPDATE_NOTICE = "LastUpdateNotice"
     const val CurrentLanguage = "CurrentLanguage"
 
@@ -40,6 +41,7 @@ object Preference : AbstractProperties("Preference", Options.preference) {
         CProperty(RIGHT_DIVIDER, 0.618),
         CProperty(TEXTAREA_FONT_SIZE, 24),
         CProperty(SHOW_STATS_BAR, true),
+        CProperty(OPEN_MERGED_FILE, false),
         CProperty(LAST_UPDATE_NOTICE, 0),
         // 系统语言
         CProperty(CurrentLanguage, System.getProperty("user.language").let {
@@ -79,6 +81,10 @@ object Preference : AbstractProperties("Preference", Options.preference) {
     fun showStatsBarProperty(): BooleanProperty = showStatsBarProperty
     var isShowStatsBar: Boolean by showStatsBarProperty
 
+    private val openMergedFileProperty: BooleanProperty = SimpleBooleanProperty()
+    fun openMergedFileProperty(): BooleanProperty = openMergedFileProperty
+    var openMergedFile: Boolean by openMergedFileProperty
+
     private val lastUpdateNoticeProperty: LongProperty = SimpleLongProperty()
     fun lastUpdateNoticeProperty(): LongProperty = lastUpdateNoticeProperty
     var lastUpdateNotice: Long by lastUpdateNoticeProperty
@@ -105,6 +111,7 @@ object Preference : AbstractProperties("Preference", Options.preference) {
         rightDividerPosition = this[RIGHT_DIVIDER].asDouble()
         textAreaFont = Font(TextFont, this[TEXTAREA_FONT_SIZE].asDouble())
         isShowStatsBar = this[SHOW_STATS_BAR].asBoolean()
+        openMergedFile = this[OPEN_MERGED_FILE].asBoolean()
         lastUpdateNotice = this[LAST_UPDATE_NOTICE].asLong()
         currentLanguage = this[CurrentLanguage].asString()
     }
@@ -116,6 +123,7 @@ object Preference : AbstractProperties("Preference", Options.preference) {
         this[RIGHT_DIVIDER].set(rightDividerPosition)
         this[TEXTAREA_FONT_SIZE].set(textAreaFont.size)
         this[SHOW_STATS_BAR].set(isShowStatsBar)
+        this[OPEN_MERGED_FILE].set(openMergedFile)
         this[LAST_UPDATE_NOTICE].set(lastUpdateNotice)
         this[CurrentLanguage].set(currentLanguage)
 

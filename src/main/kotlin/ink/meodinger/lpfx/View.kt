@@ -377,6 +377,13 @@ class View(private val state: State) : BorderPane() {
                     state.application.onlineDict.showingProperty().addListener(onNew(this::setSelected))
                 }
                 separator()
+                item(I18N["m.merge"]) {
+                    does {
+                        state.application.translationMerger.show()
+                        state.application.translationMerger.toFront()
+                    }
+                }
+                separator()
                 item(I18N["m.cht2zh"]) {
                     does { cht2zh() }
                     disableProperty().bind(!state.openedProperty())

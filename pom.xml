@@ -334,7 +334,6 @@
                         </goals>
                         <configuration>
                             <mainClass>lpfx/ink.meodinger.lpfx.LauncherKt</mainClass>
-                            <commandlineArgs>--add-opens nsmenufx/de.jangassen.platform.mac=lpfx</commandlineArgs>
                             <arguments>
                                 <argument>--disable-jni</argument>
                                 <argument>--no-check-update</argument>

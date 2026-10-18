@@ -8,6 +8,10 @@
 - 保存specify（Next）
 - 添加校阅功能（单独开一个beta分支进行）
 
+### Added
+
+- 添加独立的翻译文件合并工具，支持处理重复图片并在导出后打开合并结果（[#23](https://github.com/Lost-Swords/LabelPlusFX_New/issues/23)）
+
 ### Fixed
 
 - 修复未选中标签时翻译输入框仍可编辑的问题（[#22](https://github.com/Lost-Swords/LabelPlusFX_New/issues/22)）

@@ -126,6 +126,13 @@ class LabelPlusFX: HookedApplication() {
     }
 
     /**
+     * Translation Merger. Merge pictures from multiple translation files
+     */
+    val translationMerger: TranslationMerger by lazy {
+        TranslationMerger(state) withOwner state.stage
+    }
+
+    /**
      * Specify Dialog. Specify files of pictures
      */
     val dialogSpecify: SpecifyFiles by lazy {

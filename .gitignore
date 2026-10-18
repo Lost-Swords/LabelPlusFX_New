@@ -2,6 +2,7 @@
 agent.md
 AGENTS.md
 CLAUDE.md
+/.learnings/
 
 /out/
 /target/
@@ -20,6 +21,7 @@ CLAUDE.md
 !/script/jlink/*.bat
 /script/jpackage/*
 !/script/jpackage/build*.*
+!/script/jpackage/ChineseSimplified.isl
 !/script/jpackage/LabelPlusFXDict.lnk
 !/script/jpackage/*.dll
 
