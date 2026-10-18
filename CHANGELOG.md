@@ -7,15 +7,16 @@
 - 备份文件上限（Next）
 - 保存specify（Next）
 - 添加校阅功能（单独开一个beta分支进行）
-- 添加日汉词典（如moJi）
 
-## [2.4.1] 
+## [2.4.1] - 2026-10-18
 
 
-### Changed
+### Changed 
 - 修复超大图片分块渲染逻辑，增加进度条显示
 - 解除txt文件的分组限制
 - 支持10以上的分组快捷键（0xx）
+- [macOS 菜单栏平台适配](https://github.com/Lost-Swords/LabelPlusFX_New/pull/18)(夜夜)
+- [增加图片缩放滑条宽度](https://github.com/Lost-Swords/LabelPlusFX_New/pull/19)(夜夜)
 
 ### Added
 - 添加自动检测备份恢复

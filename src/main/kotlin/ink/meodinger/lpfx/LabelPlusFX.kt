@@ -290,7 +290,7 @@ class LabelPlusFX: HookedApplication() {
                 }
             }
 
-            // 兜底：Glass 还会在「场景内鼠标交互」后重设 NSApp.mainMenu（清掉业务菜单），
+            // Glass 还会在「场景内鼠标交互」后重设 NSApp.mainMenu（清掉业务菜单），
             // 例如点击图片开始标号（不伴随主窗口焦点变化，JDK-8351094）。在场景级
             // MOUSE_CLICKED 后延迟重断言，覆盖这类触发。
             state.stage.scene?.addEventFilter(MouseEvent.MOUSE_CLICKED) {

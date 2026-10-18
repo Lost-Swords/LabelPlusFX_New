@@ -42,19 +42,15 @@ fun main(vararg args: String) {
     // Use System Proxies
     if (Config.enableProxy) {
         System.setProperty("java.net.useSystemProxies", "true")
-        System.err.println("Enabled System Proxies")
     }
 
     // Load IME-related jni library
     if (Config.enableJNI) {
         if (Config.isWin) System.loadLibrary("IMEWrapper")
-        System.err.println("Loaded JNI Libraries")
     }
 
     // Global Uncaught Exception Handler
     Thread.setDefaultUncaughtExceptionHandler { t, e ->
-        System.err.println("<UncaughtHandler>: On thread ${t.name}:\n${e.stackTraceToString()}")
-
         if (Logger.isStarted) {
             Logger.error("Exception uncaught in Thread: ${t.name}", "Other")
             Logger.exception(e)
@@ -97,6 +93,9 @@ fun main(vararg args: String) {
     Options.init()
 
     Logger.start()
+    if (Config.enableProxy) Logger.info("Enabled system proxies", "Launcher")
+    if (Config.enableJNI) Logger.info("Loaded JNI libraries", "Launcher")
+
     when (app) {
         App.MAIN -> Application.launch(LabelPlusFX::class.java, *appArgs.toTypedArray())
         App.DICT -> Application.launch(LabelPlusFXDict::class.java, *appArgs.toTypedArray())

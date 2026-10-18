@@ -90,8 +90,6 @@ object Logger {
 
         writer.close()
         isStarted = false
-
-        println("<Logger>: Exit")
     }
 
     private var time: Long = 0
@@ -102,8 +100,8 @@ object Logger {
         info("Used ${Date().time - time}ms", "Logger")
     }
 
-    private fun log(type: LogLevel, text: String, from: String) {
-        if (!isStarted || type < level) return
+    private fun log(type: LogLevel, text: String, from: String, force: Boolean = false) {
+        if (!isStarted || (!force && type < level)) return
 
         val log = StringBuilder()
             .append("<Logger>: ")
@@ -139,11 +137,7 @@ object Logger {
     }
 
     fun exception(e: Throwable) {
-        val str = e.stackTraceToString()
-
-        System.err.println("<Logger>: $str")
-        writer.write(str)
-        writer.flush()
+        log(LogLevel.ERROR, e.stackTraceToString(), "Exception", force = true)
     }
 
 }
