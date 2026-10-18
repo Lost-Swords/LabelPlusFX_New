@@ -14,7 +14,7 @@
 ### Changed 
 - 修复超大图片分块渲染逻辑，增加进度条显示
 - 解除txt文件的分组限制
-- 支持10以上的分组快捷键（0xx）
+- 支持10以上的分组快捷键（通过首位按0后再按其他数字键实现）
 - [macOS 菜单栏平台适配](https://github.com/Lost-Swords/LabelPlusFX_New/pull/18)(夜夜)
 - [增加图片缩放滑条宽度](https://github.com/Lost-Swords/LabelPlusFX_New/pull/19)(夜夜)
 
