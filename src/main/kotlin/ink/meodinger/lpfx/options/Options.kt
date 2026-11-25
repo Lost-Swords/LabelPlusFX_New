@@ -20,7 +20,6 @@ import java.util.stream.Collectors
 import kotlin.collections.ArrayList
 import kotlin.io.path.name
 import kotlin.io.path.createTempFile
-import kotlin.system.exitProcess
 
 
 /**
@@ -61,8 +60,8 @@ object Options {
 
     fun load() {
         try {
-            loadProperties(RecentFiles)
             loadProperties(Preference)
+            loadProperties(RecentFiles)
             loadProperties(Settings)
             cleanLogs()
 
@@ -72,14 +71,11 @@ object Options {
             Logger.debug("Got Preference:\n$Preference", "Options")
             Logger.debug("Got Settings:\n$Settings", "Options")
         } catch (e: IOException) {
-            // Don't terminate the JVM here. Failing to load options should not hard-kill the
-            // application; instead log the problem, notify the user and continue with defaults.
+            // Runtime properties may still be uninitialized. Let the launcher report the
+            // original failure without accessing I18N or continuing with partial state.
             Logger.fatal("Load Options failed", "Options")
             Logger.exception(e)
-            showError(null, I18N["error.options.load_failed"])
-            showException(null, e)
-            // Continue without exiting; defaults will be used for missing/invalid options.
-            return
+            throw e
         }
     }
 
@@ -96,8 +92,10 @@ object Options {
         if (Files.notExists(instance.path)) {
             val file = Files.createFile(instance.path).toFile()
             // transfer old properties file to new
-            findOldProperties(instance.path)?.let { transfer(it,file) }
-            Logger.info("Loaded ${instance.name} in old version to use for the new version ", "Options")
+            findOldProperties(instance.path)?.let {
+                transfer(it, file)
+                Logger.info("Migrated ${instance.name} from ${it.parentFile.name}", "Options")
+            }
         }
 
         try {
@@ -127,16 +125,20 @@ object Options {
             showException(null, e, tempFile)
         }
     }
-    // find the old Properties to use for the new version
-    private  fun findOldProperties(nowPropsPath :Path) :File?{
-        val parentDir = nowPropsPath.parent.parent
-        if(Files.list(parentDir).count() <=1) return null
-        val oldPropsPath = Files.list(parentDir)
-            .toList()
-            .filter { Files.isDirectory(it) and (it.fileName.toString() != V.toString())  }
-            .maxWithOrNull(compareBy { Version(it.fileName.toString())})
-
-    return oldPropsPath?.resolve(nowPropsPath.fileName)?.toFile()
+    // Select the newest older version that actually contains this properties file.
+    internal fun findOldProperties(nowPropsPath: Path): File? {
+        val currentVersion = Version(nowPropsPath.parent.fileName.toString())
+        return Files.list(nowPropsPath.parent.parent).use { directories ->
+            directories.iterator().asSequence()
+                .filter { Files.isDirectory(it) }
+                .filter { Version(it.fileName.toString()).let { version ->
+                    version != Version.V0 && version < currentVersion
+                } }
+                .map { it.resolve(nowPropsPath.fileName) }
+                .filter { Files.isRegularFile(it) }
+                .maxByOrNull { Version(it.parent.fileName.toString()) }
+                ?.toFile()
+        }
     }
 
     private fun saveProperties(instance: AbstractProperties) {

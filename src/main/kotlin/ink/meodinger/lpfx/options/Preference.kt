@@ -109,6 +109,7 @@ object Preference : AbstractProperties("Preference", Options.preference) {
 
     init {
         useDefault()
+        currentLanguage = this[CurrentLanguage].asString()
     }
 
     @Throws(IOException::class, NumberFormatException::class)

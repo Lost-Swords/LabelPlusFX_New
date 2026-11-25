@@ -18,6 +18,7 @@
 ### Fixed
 
 - 修复未选中标签时翻译输入框仍可编辑的问题（[#22](https://github.com/Lost-Swords/LabelPlusFX_New/issues/22)）
+- 修复升级时可能出现的配置文件损坏问题
 
 ## [2.4.1] - 2026-10-18
 
