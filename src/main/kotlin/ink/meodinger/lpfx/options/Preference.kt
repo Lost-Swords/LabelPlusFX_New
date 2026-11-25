@@ -31,6 +31,8 @@ object Preference : AbstractProperties("Preference", Options.preference) {
     const val TEXTAREA_FONT_SIZE = "TextAreaFontSize"
     const val SHOW_STATS_BAR = "ShowStatsBar"
     const val OPEN_MERGED_FILE = "OpenMergedFile"
+    const val SHOW_PROOFREAD_AREA = "ShowProofreadArea"
+    const val COPY_TEXT_ON_NEW_PROOFREAD = "CopyTextOnNewProofread"
     const val LAST_UPDATE_NOTICE = "LastUpdateNotice"
     const val CurrentLanguage = "CurrentLanguage"
 
@@ -42,6 +44,8 @@ object Preference : AbstractProperties("Preference", Options.preference) {
         CProperty(TEXTAREA_FONT_SIZE, 24),
         CProperty(SHOW_STATS_BAR, true),
         CProperty(OPEN_MERGED_FILE, false),
+        CProperty(SHOW_PROOFREAD_AREA, false),
+        CProperty(COPY_TEXT_ON_NEW_PROOFREAD, true),
         CProperty(LAST_UPDATE_NOTICE, 0),
         // 系统语言
         CProperty(CurrentLanguage, System.getProperty("user.language").let {
@@ -85,6 +89,14 @@ object Preference : AbstractProperties("Preference", Options.preference) {
     fun openMergedFileProperty(): BooleanProperty = openMergedFileProperty
     var openMergedFile: Boolean by openMergedFileProperty
 
+    private val showProofreadAreaProperty: BooleanProperty = SimpleBooleanProperty()
+    fun showProofreadAreaProperty(): BooleanProperty = showProofreadAreaProperty
+    var isShowProofreadArea: Boolean by showProofreadAreaProperty
+
+    private val copyTextOnNewProofreadProperty: BooleanProperty = SimpleBooleanProperty()
+    fun copyTextOnNewProofreadProperty(): BooleanProperty = copyTextOnNewProofreadProperty
+    var isCopyTextOnNewProofread: Boolean by copyTextOnNewProofreadProperty
+
     private val lastUpdateNoticeProperty: LongProperty = SimpleLongProperty()
     fun lastUpdateNoticeProperty(): LongProperty = lastUpdateNoticeProperty
     var lastUpdateNotice: Long by lastUpdateNoticeProperty
@@ -112,6 +124,8 @@ object Preference : AbstractProperties("Preference", Options.preference) {
         textAreaFont = Font(TextFont, this[TEXTAREA_FONT_SIZE].asDouble())
         isShowStatsBar = this[SHOW_STATS_BAR].asBoolean()
         openMergedFile = this[OPEN_MERGED_FILE].asBoolean()
+        isShowProofreadArea = this[SHOW_PROOFREAD_AREA].asBoolean()
+        isCopyTextOnNewProofread = this[COPY_TEXT_ON_NEW_PROOFREAD].asBoolean()
         lastUpdateNotice = this[LAST_UPDATE_NOTICE].asLong()
         currentLanguage = this[CurrentLanguage].asString()
     }
@@ -124,10 +138,13 @@ object Preference : AbstractProperties("Preference", Options.preference) {
         this[TEXTAREA_FONT_SIZE].set(textAreaFont.size)
         this[SHOW_STATS_BAR].set(isShowStatsBar)
         this[OPEN_MERGED_FILE].set(openMergedFile)
+        this[SHOW_PROOFREAD_AREA].set(isShowProofreadArea)
+        this[COPY_TEXT_ON_NEW_PROOFREAD].set(isCopyTextOnNewProofread)
         this[LAST_UPDATE_NOTICE].set(lastUpdateNotice)
         this[CurrentLanguage].set(currentLanguage)
 
         save(this)
     }
+
 
 }

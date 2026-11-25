@@ -7,9 +7,11 @@ import ink.meodinger.lpfx.component.dialog.*
 import ink.meodinger.lpfx.io.TranslationConstants
 import ink.meodinger.lpfx.io.convert2Simplified
 import ink.meodinger.lpfx.io.convert2Traditional
+import ink.meodinger.lpfx.io.export
 import de.jangassen.MenuToolkit
 import ink.meodinger.lpfx.options.Logger
 import ink.meodinger.lpfx.options.Preference
+import ink.meodinger.lpfx.type.TransFile
 import ink.meodinger.lpfx.options.RecentFiles
 import ink.meodinger.lpfx.options.Settings
 import ink.meodinger.lpfx.type.LPFXTask
@@ -23,15 +25,18 @@ import ink.meodinger.lpfx.util.property.emptyProperty
 import ink.meodinger.lpfx.util.property.eq
 import ink.meodinger.lpfx.util.property.onNew
 import ink.meodinger.lpfx.util.property.or
+import ink.meodinger.lpfx.util.property.primitive
 import ink.meodinger.lpfx.util.property.transform
 import ink.meodinger.lpfx.util.string.deleteTrailing
 import ink.meodinger.lpfx.util.string.emptyString
 import ink.meodinger.lpfx.util.string.sortByDigit
+
 import javafx.animation.Interpolator
 import javafx.animation.KeyFrame
 import javafx.animation.KeyValue
 import javafx.animation.Timeline
 import javafx.application.Platform
+import javafx.beans.binding.Bindings
 import javafx.collections.ListChangeListener
 import javafx.event.ActionEvent
 import javafx.geometry.Insets
@@ -48,6 +53,7 @@ import javafx.stage.FileChooser
 import javafx.util.Callback
 import javafx.util.Duration
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
@@ -147,7 +153,30 @@ class View(private val state: State) : BorderPane() {
     /**
      * TransArea, edit label's text
      */
-    val cTransArea: CLigatureArea = CLigatureArea()
+    val cTransArea: CLigatureArea = CLigatureArea().apply {
+        promptTextProperty().bind(Bindings.createStringBinding({
+            // 使用属性本身的取值，避免未打开项目时非空代理抛出异常
+            val transFile = state.transFileProperty().value
+            if (transFile != null &&
+                transFile.isProofread &&
+                state.currentLabelIndex != NOT_FOUND
+            ) {
+                I18N["proofread.input_prompt"]
+            } else {
+                ""
+            }
+        }, state.transFileProperty(), state.currentLabelIndexProperty()))
+    }
+
+    /**
+     * Readonly TransArea for checker mode, display original translation as reference
+     */
+    val cReferenceArea: TextArea = TextArea().apply {
+        isEditable = false
+        isWrapText = true
+        style = "-fx-opacity: 0.7;"
+        fontProperty().bind(Preference.textAreaFontProperty())
+    }
 
 
     // Private Components
@@ -286,6 +315,14 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.close"]) {
                     does { closeTranslation() }
                     disableProperty().bind(!state.openedProperty())
+                }
+                separator()
+                item(I18N["m.new_proofread"]) {
+                    does { newProofread() }
+                    disableProperty().bind(!state.openedProperty() or state.transFileProperty().transform { it?.isProofread == true }.primitive())
+                }
+                item(I18N["m.open_proofread"]) {
+                    does { openProofread() }
                 }
                 separator()
                 item(I18N["m.save"]) {
@@ -523,6 +560,7 @@ class View(private val state: State) : BorderPane() {
                         installCellFactory(state, cLabelPane)
                     }
                 }
+                lateinit var translationSplitPane: SplitPane
                 add(TitledPane()) {
                     // The max-height of TitledPane is the same as pref-height by default.
                     // If we set it to Double.MAX_VALUE, the divider position will not change
@@ -554,16 +592,33 @@ class View(private val state: State) : BorderPane() {
                     textProperty().bind(state.currentLabelIndexProperty().transform {
                         if (it == NOT_FOUND) emptyString() else it.toString()
                     })
-                    withContent(cTransArea) {
-                        contextMenu = cTextMenu
-                        isWrapText = true
-                        disableProperty().bind(
-                            !state.openedProperty() or (state.currentLabelIndexProperty() eq NOT_FOUND)
-                        )
-                        ligatureRulesProperty().bind(Settings.ligatureRulesProperty())
-                        fontProperty().bindBidirectional(Preference.textAreaFontProperty())
+                    translationSplitPane = SplitPane().apply {
+                        orientation = Orientation.VERTICAL
+                        add(cTransArea) {
+                            contextMenu = cTextMenu
+                            isWrapText = true
+                            disableProperty().bind(
+                                !state.openedProperty() or (state.currentLabelIndexProperty() eq NOT_FOUND)
+                            )
+                            ligatureRulesProperty().bind(Settings.ligatureRulesProperty())
+                            fontProperty().bindBidirectional(Preference.textAreaFontProperty())
+                        }
+                    }
+                    withContent(translationSplitPane)
+                }
+
+                val updateProofreadArea: (Boolean) -> Unit = { showProofread ->
+                    if (showProofread) {
+                        if (cReferenceArea !in translationSplitPane.items) {
+                            translationSplitPane.items.add(0, cReferenceArea)
+                        }
+                        translationSplitPane.setDividerPositions(0.5)
+                    } else {
+                        translationSplitPane.items.remove(cReferenceArea)
                     }
                 }
+                Preference.showProofreadAreaProperty().addListener(onNew { updateProofreadArea(it) })
+                updateProofreadArea(Preference.isShowProofreadArea)
                 // Set divider after added children, or there were no dividers
                 dividers[0].positionProperty().bindBidirectional(Preference.rightDividerPositionProperty())
             }
@@ -680,8 +735,6 @@ class View(private val state: State) : BorderPane() {
             return
         }
 
-        state.reset()
-
         state.controller.open(file, file.parentFile)
     }
 
@@ -720,9 +773,40 @@ class View(private val state: State) : BorderPane() {
         chooserFile.selectedExtensionFilter = filterFile
         val file = chooserFile.showOpenDialog(state.stage) ?: return
 
-        state.reset()
-
         state.controller.open(file, file.parentFile)
+    }
+
+    private fun newProofread() {
+        if (state.controller.stay()) return
+
+        chooserFile.title = I18N["chooser.save"]
+        chooserFile.initialFilename = "${state.translationFile.nameWithoutExtension}_proofread.$EXTENSION_FILE_MEO"
+        chooserFile.selectedExtensionFilter = filterMEO
+        val file = chooserFile.showSaveDialog(state.stage) ?: return
+        val projectFolder = state.transFile.projectFolder
+        val fileMappings = state.transFile.transMap.keys.associateWith(state.transFile::getFile)
+
+        try {
+            export(file, state.transFile.createProofreadCopy(Preference.isCopyTextOnNewProofread))
+        } catch (e: IOException) {
+            Logger.exception(e)
+            showError(state.stage, I18N["error.export_failed"])
+            showException(state.stage, e)
+            return
+        }
+
+        state.controller.open(file, projectFolder, fileMappings, proofreadIntent = true)
+    }
+
+    private fun openProofread() {
+        if (state.controller.stay()) return
+
+        chooserFile.title = I18N["chooser.open"]
+        chooserFile.initialFilename = ""
+        chooserFile.selectedExtensionFilter = filterMEO
+        val file = chooserFile.showOpenDialog(state.stage) ?: return
+
+        state.controller.open(file, file.parentFile, proofreadIntent = true)
     }
 
     private fun saveTranslation() {
@@ -746,7 +830,6 @@ class View(private val state: State) : BorderPane() {
 
         state.reset()
     }
-
     fun bakRecovery(): Boolean {
         if (state.controller.stay()) return false
 
@@ -874,6 +957,9 @@ class View(private val state: State) : BorderPane() {
     }
 
     private fun exportTransFile(type: FileType) {
+        // Ask before choosing the file, LP can only keep the proofread text
+        if (!state.controller.confirmProofreadAsLP(type)) return
+
         val exportName =
             if (Settings.useExportNameTemplate) Settings.exportNameTemplate
                 .replace(Settings.VARIABLE_FILENAME, state.translationFile.nameWithoutExtension)
@@ -887,7 +973,7 @@ class View(private val state: State) : BorderPane() {
         chooserFile.selectedExtensionFilter = if (type == FileType.MeoFile) filterMEO else filterLP
 
         val file = chooserFile.showSaveDialog(state.stage) ?: return
-        state.controller.export(file)
+        state.controller.export(file, skipProofreadConfirm = true)
     }
 
     private fun exportTransPack() {

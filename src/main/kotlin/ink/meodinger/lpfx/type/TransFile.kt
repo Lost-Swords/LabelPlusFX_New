@@ -18,15 +18,43 @@ import java.io.File
 /**
  * A Translation file
  */
-@JsonIncludeProperties("version", "comment", "groupList", "transMap")
-class TransFile @JsonCreator constructor(
-    @JsonProperty("version")   version:   List<Int>                     = listOf(1, 0),
-    @JsonProperty("comment")   comment:   String                        = DEFAULT_COMMENT_LIST[0],
-    @JsonProperty("groupList") groupList: List<TransGroup>              = emptyList(),
-    @JsonProperty("transMap")  transMap:  Map<String, List<TransLabel>> = emptyMap()
+@JsonIncludeProperties("version", "comment", "groupList", "transMap", "proofread", "projectFolderPath", "fileMappings")
+class TransFile constructor(
+    @JsonProperty("version")           version:           List<Int>                     = listOf(1, 0),
+    @JsonProperty("comment")           comment:           String                        = DEFAULT_COMMENT_LIST[0],
+    @JsonProperty("groupList")         groupList:         List<TransGroup>              = emptyList(),
+    @JsonProperty("transMap")          transMap:          Map<String, List<TransLabel>> = emptyMap(),
+    @JsonProperty("proofread")         val isProofread:   Boolean                       = false,
+    @JsonProperty("projectFolderPath") val projectFolderPath: String?                  = null,
+    @JsonProperty("fileMappings")      val fileMappings:  Map<String, String>           = emptyMap()
 )  {
 
     companion object {
+
+        /**
+         * Create a TransFile from JSON, missing fields are filled with defaults.
+         * Files written by older versions have no proofread, project-folder
+         * and picture-mapping fields, and a constructor creator would receive null for them.
+         */
+        @JvmStatic
+        @JsonCreator
+        fun fromJson(
+            @JsonProperty("version")           version:           List<Int>?,
+            @JsonProperty("comment")           comment:           String?,
+            @JsonProperty("groupList")         groupList:         List<TransGroup>?,
+            @JsonProperty("transMap")          transMap:          Map<String, List<TransLabel>>?,
+            @JsonProperty("proofread")         proofread:         Boolean?,
+            @JsonProperty("projectFolderPath") projectFolderPath: String?,
+            @JsonProperty("fileMappings")      fileMappings:      Map<String, String>?
+        ): TransFile = TransFile(
+            version = version ?: listOf(1, 0),
+            comment = comment ?: DEFAULT_COMMENT_LIST[0],
+            groupList = groupList ?: emptyList(),
+            transMap = transMap ?: emptyMap(),
+            isProofread = proofread ?: false,
+            projectFolderPath = projectFolderPath,
+            fileMappings = fileMappings ?: emptyMap()
+        )
 
         /**
          * 0 - LPFX;
@@ -79,6 +107,34 @@ class TransFile @JsonCreator constructor(
      */
     fun setFile(picName: String, file: File?) {
         if (file == null) fileMap.remove(picName) else fileMap[picName] = file
+    }
+
+    /**
+     * Rename picture keys while preserving their labels, order and resolved files.
+     * All target names are validated before the observable map is changed.
+     *
+     * @param renamedNames old picture name to new picture name
+     * @param resolvedFiles optional replacement file for each old picture name
+     */
+    fun renamePictures(renamedNames: Map<String, String>, resolvedFiles: Map<String, File> = emptyMap()) {
+        require(renamedNames.keys.all(transMapObservable::containsKey))
+
+        val originalEntries = transMapObservable.entries.toList()
+        val finalNames = originalEntries.map { (picName, _) -> renamedNames[picName] ?: picName }
+        require(finalNames.distinct().size == finalNames.size)
+
+        val renamedEntries = LinkedHashMap<String, ObservableList<TransLabel>>()
+        val renamedFiles = LinkedHashMap<String, File>()
+        for ((picName, labels) in originalEntries) {
+            val renamedName = renamedNames[picName] ?: picName
+            renamedEntries[renamedName] = labels
+            renamedFiles[renamedName] = resolvedFiles[picName] ?: getFile(picName)
+        }
+
+        originalEntries.forEach { (picName, _) -> setFile(picName, null) }
+        transMapObservable.clear()
+        transMapObservable.putAll(renamedEntries)
+        renamedFiles.forEach(::setFile)
     }
 
     /**
@@ -204,6 +260,87 @@ class TransFile @JsonCreator constructor(
     }
     fun getTransLabel(picName: String, labelIndex: Int): TransLabel {
         return getTransList(picName).first { it.index == labelIndex }
+    }
+
+
+    /**
+     * Create a deep copy of this TransFile for proofreading
+     * Texts will be moved to originText,
+     * and texts will be cleared or copied from originText according to [copyText]
+     */
+    fun createProofreadCopy(copyText: Boolean = false): TransFile {
+        val newGroupList = groupList.map { TransGroup(it.name, it.colorHex) }
+        val newTransMap = transMap.mapValues { entry ->
+            entry.value.map { label ->
+                TransLabel(
+                    index = label.index,
+                    groupId = label.groupId,
+                    x = label.x,
+                    y = label.y,
+                    text = if (copyText) label.text else "",
+                    originText = label.text
+                )
+            }
+        }
+
+        return TransFile(
+            version = version,
+            comment = comment,
+            groupList = newGroupList,
+            transMap = newTransMap,
+            isProofread = true,
+            projectFolderPath = projectFolder.absolutePath,
+            fileMappings = transMap.keys.associateWith { getFile(it).absolutePath }
+        ).apply {
+            projectFolder = this@TransFile.projectFolder
+            this@TransFile.transMap.keys.forEach { picName ->
+                setFile(picName, this@TransFile.getFile(picName))
+            }
+        }
+    }
+
+    /**
+     * Whether proofread text is stored in this file,
+     * either marked by the proofread flag or by non-empty reference texts
+     */
+    val hasProofreadText: Boolean
+        get() = isProofread || transMap.values.any { list -> list.any { it.originText.isNotEmpty() } }
+
+    /**
+     * Create a deep copy of this TransFile as a normal translation file.
+     *
+     * Used when a proofread file is opened without proofread mode:
+     * reference texts become the translations and proofread texts are dropped.
+     */
+    fun createTranslationCopy(): TransFile {
+        val newGroupList = groupList.map { TransGroup(it.name, it.colorHex) }
+        val newTransMap = transMap.mapValues { entry ->
+            entry.value.map { label ->
+                TransLabel(
+                    index = label.index,
+                    groupId = label.groupId,
+                    x = label.x,
+                    y = label.y,
+                    text = label.originText,
+                    originText = ""
+                )
+            }
+        }
+
+        return TransFile(
+            version = version,
+            comment = comment,
+            groupList = newGroupList,
+            transMap = newTransMap,
+            isProofread = false,
+            projectFolderPath = projectFolder.absolutePath,
+            fileMappings = transMap.keys.associateWith { getFile(it).absolutePath }
+        ).apply {
+            projectFolder = this@TransFile.projectFolder
+            this@TransFile.transMap.keys.forEach { picName ->
+                setFile(picName, this@TransFile.getFile(picName))
+            }
+        }
     }
 
     // endregion

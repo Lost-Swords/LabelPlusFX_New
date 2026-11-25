@@ -150,6 +150,7 @@ class DialogSettings : AbstractPropertiesDialog() {
     private val xCheckInstTr = CheckBox(I18N["settings.other.inst_trans"])
     private val xCheckFormat = CheckBox(I18N["settings.other.check_format"])
     private val xCheckUseMeo = CheckBox(I18N["settings.other.meo_default"])
+    private val xCheckCopyProofread = CheckBox(I18N["settings.other.copy_proofread_text"])
     private val xCheckUseTmp = CheckBox(I18N["settings.other.template.enable"])
     private val xFieldTemplate = TextField()
 
@@ -499,8 +500,9 @@ class DialogSettings : AbstractPropertiesDialog() {
                     add(xCheckBackup, 0, 3, 2, 1)
                     add(xCheckFormat, 0, 4, 2, 1)
                     add(xCheckUseMeo, 0, 5, 2, 1)
-                    add(Label(I18N["settings.other.pic_prism_mode"]), 0, 6)
-                    add(xPrismMode, 0, 7, 2, 1) {
+                    add(xCheckCopyProofread, 0, 6, 2, 1)
+                    add(Label(I18N["settings.other.pic_prism_mode"]), 0, 7)
+                    add(xPrismMode, 0, 8, 2, 1) {
                         prefWidth = 280.0
                         items = FXCollections.observableList(PrismMode.entries)
                         isWrapped = true
@@ -720,44 +722,17 @@ class DialogSettings : AbstractPropertiesDialog() {
         sGridPane.add(Label(I18N["settings.shortcut.key"]), 1, row)
         row += 1
 
-        // 先显示通用快捷键（有分组标题）
-        val generalShortcuts = ShortcutRegistry.definitions.filter { it.groupKey == "settings.shortcut.group.general" }
-        if (generalShortcuts.isNotEmpty()) {
-            val groupLabel = Label(I18N["settings.shortcut.group.general"])
+        // 按分组标题依次显示：通用、文本输入框、图片查看区
+        for (groupKey in ShortcutRegistry.groupKeys) {
+            val groupShortcuts = ShortcutRegistry.definitions.filter { it.groupKey == groupKey }
+            if (groupShortcuts.isEmpty()) continue
+
+            val groupLabel = Label(I18N[groupKey])
             groupLabel.style = "-fx-font-weight: bold;"
             sGridPane.add(groupLabel, 0, row, 2, 1)
             row += 1
 
-            for (definition in generalShortcuts) {
-                val gesture = ShortcutRegistry.resolveGesture(Settings.shortcuts, definition.id)
-                shortcutEdits[definition.id] = gesture
-
-                val actionLabel = Label(I18N[definition.labelKey])
-                val editor = TextField(gesture.toDisplayString()).apply {
-                    prefWidth = 260.0
-                    isEditable = false
-                    if (!definition.editable) isDisable = true
-                }
-
-                if (definition.editable) {
-                    bindShortcutEditor(definition, editor)
-                }
-
-                sGridPane.add(actionLabel, 0, row)
-                sGridPane.add(editor, 1, row)
-                row += 1
-            }
-        }
-
-        // 再显示图片查看区快捷键（有分组标题）
-        val imageViewShortcuts = ShortcutRegistry.definitions.filter { it.groupKey == "settings.shortcut.group.image_view" }
-        if (imageViewShortcuts.isNotEmpty()) {
-            val groupLabel = Label(I18N["settings.shortcut.group.image_view"])
-            groupLabel.style = "-fx-font-weight: bold;"
-            sGridPane.add(groupLabel, 0, row, 2, 1)
-            row += 1
-
-            for (definition in imageViewShortcuts) {
+            for (definition in groupShortcuts) {
                 val gesture = ShortcutRegistry.resolveGesture(Settings.shortcuts, definition.id)
                 shortcutEdits[definition.id] = gesture
 
@@ -912,6 +887,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         xCheckBackup.isSelected = Settings.autoCheckBackup
         xCheckFormat.isSelected = Settings.checkFormatWhenSave
         xCheckUseMeo.isSelected = Settings.useMeoFileAsDefault
+        xCheckCopyProofread.isSelected = Preference.isCopyTextOnNewProofread
         xPrismMode.select(Settings.currentPrismMode)
 
         // Populate language combo box with display names from the enum
@@ -1044,6 +1020,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         map[Settings.AutoCheckBackup] = xCheckBackup.isSelected
         map[Settings.CheckFormatWhenSave] = xCheckFormat.isSelected
         map[Settings.UseMeoFileAsDefault] = xCheckUseMeo.isSelected
+        map[Preference.COPY_TEXT_ON_NEW_PROOFREAD] = xCheckCopyProofread.isSelected
         map[Settings.CurrentPrismMode] = xPrismMode.index.let(PrismMode.entries.toTypedArray()::get)
         val selectedLanguage = getLanguageCode(languageCombo.selectionModel.selectedIndex)
         map[Preference.CurrentLanguage] = selectedLanguage
@@ -1111,6 +1088,7 @@ class DialogSettings : AbstractPropertiesDialog() {
                 putAll(ShortcutRegistry.normalizeShortcutMap(ShortcutRegistry.parseShortcutMap(value as List<String>)))
             }
             Preference.CurrentLanguage        -> Preference.currentLanguage           = value as String
+            Preference.COPY_TEXT_ON_NEW_PROOFREAD -> Preference.isCopyTextOnNewProofread = value as Boolean
             else -> doNothing()
         }
     }

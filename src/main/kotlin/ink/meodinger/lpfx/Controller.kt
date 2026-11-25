@@ -99,6 +99,7 @@ class Controller(private val state: State) {
     private val cLabelPane = view.cLabelPane
     private val cTreeView = view.cTreeView
     private val cTransArea = view.cTransArea
+    private val cReferenceArea = view.cReferenceArea
 
     // endregion
 
@@ -648,13 +649,15 @@ class Controller(private val state: State) {
 
         // TextArea Text
         state.currentLabelIndexProperty().addListener(onNew<Number, Int> {
-            if (!state.isOpened) return@onNew
-            // unbind TextArea
             cTransArea.unbindText()
+            cReferenceArea.textProperty().unbind()
+            cReferenceArea.clear()
 
-            if (it == NOT_FOUND) return@onNew
-            // bind new text property
-            cTransArea.bindText(state.transFile.getTransLabel(state.currentPicName, it).textProperty())
+            if (!state.isOpened || it == NOT_FOUND) return@onNew
+
+            val transLabel = state.transFile.getTransLabel(state.currentPicName, it)
+            cTransArea.bindText(transLabel.textProperty())
+            cReferenceArea.textProperty().bind(transLabel.originTextProperty())
         })
         Logger.info("Listened for label-index change for binding text property", "Controller")
 
@@ -963,39 +966,86 @@ class Controller(private val state: State) {
      * File save type is based on the extension of the file.
      * @param file Which file will be open
      * @param projectFolder Which folder the pictures locate in
+     * @param fileMappings Explicit picture paths to restore after loading
      */
-    fun open(file: File, projectFolder: File) {
+    fun open(
+        file: File,
+        projectFolder: File,
+        fileMappings: Map<String, File> = emptyMap(),
+        proofreadIntent: Boolean = false
+    ): Boolean {
         Logger.info("Opening TransFile: ${file.path}", "Controller")
 
-        // Load File
+        // Load and validate before replacing the current workspace.
         val transFile: TransFile
 
         try {
             transFile = load(file)
-            transFile.projectFolder = projectFolder
+            transFile.projectFolder = transFile.projectFolderPath?.let(::File) ?: projectFolder
+            transFile.fileMappings.forEach { (picName, path) -> transFile.setFile(picName, File(path)) }
+            fileMappings.forEach(transFile::setFile)
         } catch (e: IOException) {
             Logger.error("Open failed", "Controller")
             Logger.exception(e)
             showError(state.stage, I18N["error.open_failed"])
             showException(state.stage, e, file)
-            return
+            return false
         } catch (e: IllegalArgumentException) {
             Logger.error("Open failed", "Controller")
             Logger.exception(e)
             showError(state.stage, I18N["error.open_failed.type"])
-            return
+            return false
         }
         Logger.info("Loaded TransFile", "Controller")
 
+        // A file storing proofread text can also be opened as a normal translation
+        val openedTransFile: TransFile
+
+        if (transFile.hasProofreadText) {
+            if (proofreadIntent) {
+                openedTransFile = transFile
+            } else {
+                when (showConfirmYesNo(state.stage, I18N["proofread.open.confirm"])) {
+                    ConfirmResult.YES -> openedTransFile = transFile
+                    ConfirmResult.NO -> {
+                        Logger.info("Opened as translation, proofread texts dropped", "Controller")
+                        openedTransFile = transFile.createTranslationCopy()
+                    }
+                    ConfirmResult.CANCEL -> {
+                        Logger.info("Open cancelled by user", "Controller")
+                        return false
+                    }
+                }
+            }
+        } else if (proofreadIntent) {
+            // Ask for proofreading a file without proofread text
+            when (showConfirmYesNoWithoutCancel(state.stage, I18N["proofread.open.no_proofread.confirm"])) {
+                ConfirmResult.YES -> openedTransFile = transFile
+                ConfirmResult.NO -> {
+                    Logger.info("Opened as proofread, translations moved to reference", "Controller")
+                    openedTransFile = transFile.createProofreadCopy(Preference.isCopyTextOnNewProofread)
+                }
+                ConfirmResult.CANCEL -> {
+                    Logger.info("Open cancelled by user", "Controller")
+                    return false
+                }
+            }
+        } else {
+            openedTransFile = transFile
+        }
+
+        if (state.isOpened) state.reset()
+
         // Opened, update state
         state.translationFile = file
-        state.transFile = transFile
+        state.transFile = openedTransFile
         state.isOpened = true
+        Preference.isShowProofreadArea = openedTransFile.isProofread
 
         // Show info if comment not in default list
         // Should do this before update RecentFiles
         if (file !in RecentFiles.recentFiles) {
-            val comment = transFile.comment.trim().replace(Regex("\n(\\s)+"), "\n")
+            val comment = openedTransFile.comment.trim().replace(Regex("\n(\\s)+"), "\n")
             if (comment !in TransFile.DEFAULT_COMMENT_LIST) {
                 Logger.info("Showed modified comment", "Controller")
                 showInfo(state.stage, I18N["m.comment.dialog.content"], comment, I18N["common.info"])
@@ -1011,7 +1061,7 @@ class Controller(private val state: State) {
         if ((bakDir.exists() && bakDir.isDirectory) || bakDir.mkdir()) {
             backupManager.schedule()
             Logger.info("Scheduled auto-backup", "Controller")
-            if (checkBackupNewer(file, bakDir)) return
+            if (checkBackupNewer(file, bakDir)) return true
         } else {
             Logger.warning("Auto-backup unavailable", "Controller")
             showWarning(state.stage, I18N["warning.auto_backup_unavailable"])
@@ -1051,6 +1101,7 @@ class Controller(private val state: State) {
         // Change title
         state.stage.title = INFO["application.name"] + " - " + file.name
         Logger.info("Opened TransFile", "Controller")
+        return true
     }
 
     /**
@@ -1134,11 +1185,48 @@ class Controller(private val state: State) {
      * @param file Which file will the TransFile write to
      * @param silent Whether the save procedure is done in silence or not
      */
+    /**
+     * LP file stores nothing but the proofread text, the reference text (originText) will be lost.
+     * Ask the user before saving a proofread TransFile as LP.
+     * @param file Target file
+     * @return true if the saving should continue
+     */
+    private fun confirmProofreadAsLP(file: File): Boolean {
+        val isLP = file.extension.equals(EXTENSION_FILE_LP, ignoreCase = true)
+        return confirmProofreadAsLP(if (isLP) FileType.LPFile else FileType.MeoFile)
+    }
+
+    /**
+     * LP file stores nothing but the proofread text, the reference text (originText) will be lost.
+     * Ask the user before saving a proofread TransFile as LP.
+     * @param type Target file type
+     * @return true if the saving should continue
+     */
+    fun confirmProofreadAsLP(type: FileType): Boolean {
+        if (!state.transFile.isProofread) return true
+        if (type != FileType.LPFile) return true
+
+        return showConfirmOk(
+            state.stage,
+            I18N["proofread.lp_fallback.header"],
+            ""
+        )
+    }
+
+    /**
+     * Save TransFile to specific file.
+     * File save type is based on the extension of the file.
+     * @param file Which file will the TransFile write to
+     * @param silent Whether to show the success message
+     */
     fun save(file: File, silent: Boolean = false) {
         // Whether overwriting existing file
         val overwrite = file.exists()
 
         Logger.info("Saving to ${file.path}, silent:$silent, overwrite:$overwrite", "Controller")
+
+        // LP file can only keep the proofread text
+        if (!confirmProofreadAsLP(file)) return
 
         // Check folder
         if (!silent) if (file.parentFile != state.transFile.projectFolder) {
@@ -1211,7 +1299,17 @@ class Controller(private val state: State) {
         Logger.info("Recovering from ${from.path}, to ${to.path}", "Controller")
 
         try {
-            export(to, load(from))
+            val transFile = load(from)
+            // LP file can only keep the proofread text
+            if (transFile.isProofread && to.extension.equals(EXTENSION_FILE_LP, ignoreCase = true)) {
+                val confirmed = showConfirmOk(
+                    state.stage,
+                    I18N["proofread.lp_fallback.header"],
+                    ""
+                )
+                if (!confirmed) return
+            }
+            export(to, transFile)
         } catch (e: Exception) {
             Logger.error("Recover failed", "Controller")
             Logger.exception(e)
@@ -1227,9 +1325,12 @@ class Controller(private val state: State) {
      * Export a TransFile in specific type.
      * File save type is based on the extension of the file.
      * @param file Which file will the TransFile write to
+     * @param skipProofreadConfirm Whether to skip the LP confirmation, the caller has confirmed already
      */
-    fun export(file: File) {
+    fun export(file: File, skipProofreadConfirm: Boolean = false) {
         Logger.info("Exporting to ${file.path}", "Controller")
+
+        if (!skipProofreadConfirm && !confirmProofreadAsLP(file)) return
 
         try {
             export(file, state.transFile)
@@ -1252,12 +1353,16 @@ class Controller(private val state: State) {
         val picName = state.currentPicName
         val picFile = state.getPicFileNow()
         val file = picFile.parentFile.resolve("${picFile.nameWithoutExtension}.$EXTENSION_FILE_LP")
+
+        // LP file can only keep the proofread text
+        if (!confirmProofreadAsLP(file)) return
+
         val transFile = TransFile(
             version = state.transFile.version,
             comment = state.transFile.comment,
             groupList = state.transFile.groupList.map { TransGroup(it.name, it.colorHex) },
             transMap = linkedMapOf(picName to state.transFile.getTransList(picName).map {
-                TransLabel(it.index, it.groupId, it.x, it.y, it.text)
+                TransLabel(it.index, it.groupId, it.x, it.y, it.text, it.originText)
             })
         )
 
@@ -1315,6 +1420,8 @@ class Controller(private val state: State) {
 
         lBackup.text = I18N["stats.not_backed"]
         cTransArea.unbindText()
+        cReferenceArea.textProperty().unbind()
+        cReferenceArea.clear()
 
         state.stage.title = INFO["application.name"]
     }

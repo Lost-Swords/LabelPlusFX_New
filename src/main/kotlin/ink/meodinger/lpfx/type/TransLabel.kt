@@ -19,18 +19,54 @@ import javafx.scene.paint.Color
  */
 
 /**
+ * Change state of a proofread text compared with its original translation
+ */
+enum class ProofreadChangeState {
+    /** Same as the original translation */
+    NONE,
+    /** Original translation is empty, the proofread text is new */
+    ADDED,
+    /** Proofread text is different from the original translation */
+    MODIFIED,
+}
+
+/**
  * A translation label
  */
-@JsonIncludeProperties("index", "groupId", "x", "y", "text")
-class TransLabel @JsonCreator constructor(
+@JsonIncludeProperties("index", "groupId", "x", "y", "text", "originText")
+class TransLabel constructor(
     @JsonProperty("index")   index:   Int    = 0,
     @JsonProperty("groupId") groupId: Int    = 0,
     @JsonProperty("x")       x:       Double = 0.0,
     @JsonProperty("y")       y:       Double = 0.0,
-    @JsonProperty("text")    text:    String = ""
+    @JsonProperty("text")    text:    String = "",
+    @JsonProperty("originText") originText: String = ""
 ) {
 
     companion object {
+
+        /**
+         * Create a TransLabel from JSON, missing fields are filled with defaults.
+         * Files written by older versions have no [originText] field,
+         * and a constructor creator would receive null for it.
+         */
+        @JvmStatic
+        @JsonCreator
+        fun fromJson(
+            @JsonProperty("index")   index:      Int?,
+            @JsonProperty("groupId") groupId:    Int?,
+            @JsonProperty("x")       x:          Double?,
+            @JsonProperty("y")       y:          Double?,
+            @JsonProperty("text")    text:       String?,
+            @JsonProperty("originText") originText: String?
+        ): TransLabel = TransLabel(
+            index = index ?: 0,
+            groupId = groupId ?: 0,
+            x = x ?: 0.0,
+            y = y ?: 0.0,
+            text = text ?: "",
+            originText = originText ?: ""
+        )
 
         /**
          * Bind TransLabel's color-property, This function should only be called within a TransFile.
@@ -96,7 +132,21 @@ class TransLabel @JsonCreator constructor(
     fun textProperty(): StringProperty = textProperty
     var text: String by textProperty
 
+    private val originTextProperty: StringProperty = SimpleStringProperty(originText)
+    fun originTextProperty(): StringProperty = originTextProperty
+    var originText: String by originTextProperty
     // endregion
+
+    /**
+     * Change state of [text] (proofread text) compared with [originText] (original translation).
+     * Only used by the proofread mode of the tree view.
+     */
+    val proofreadChangeState: ProofreadChangeState
+        get() = when {
+            originText.isBlank() -> ProofreadChangeState.ADDED
+            text != originText   -> ProofreadChangeState.MODIFIED
+            else                 -> ProofreadChangeState.NONE
+        }
 
     // region Additional
 

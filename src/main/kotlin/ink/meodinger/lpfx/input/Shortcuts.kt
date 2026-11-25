@@ -386,6 +386,20 @@ object ShortcutRegistry {
             KeyGesture(KeyCode.RIGHT, ModifierSpec(alt = true)),
             groupKey = "settings.shortcut.group.general",
         ),
+        ShortcutDefinition(
+            ShortcutAction.TRAN_FONT_SIZE_SCROLL,
+            "shortcut.action.trans_font_size_scroll",
+            setOf(ShortcutScope.GLOBAL),
+            ScrollGesture(ModifierSpec(shortcut = true)),
+            groupKey = "settings.shortcut.group.text_input",
+        ),
+    )
+
+    // 快捷键设置页中的分组显示顺序
+    val groupKeys: List<String> = listOf(
+        "settings.shortcut.group.general",
+        "settings.shortcut.group.text_input",
+        "settings.shortcut.group.image_view",
     )
 
     fun defaultShortcutStrings(): List<String> = definitions.map { "${it.id}=${it.defaultGesture.toStorageString()}" }

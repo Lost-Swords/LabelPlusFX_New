@@ -61,6 +61,15 @@ enum class DialogType {
 }
 
 /**
+ * Result of a confirm dialog, see [showConfirmYesNo]
+ */
+enum class ConfirmResult {
+    YES,
+    NO,
+    CANCEL;
+}
+
+/**
  * Show dialog
  * @param owner Dialog owner
  * @param type Dialog type
@@ -211,6 +220,27 @@ fun showConfirm(owner: Window?, header: String?, content: String, title: String)
 
 
 /**
+ * Show a confirm dialog with OK and CANCEL buttons
+ * @param owner Dialog owner
+ * @param header Dialog header text, nullable
+ * @param content Dialog content text
+ * @return true if the user pressed OK
+ */
+fun showConfirmOk(owner: Window?, header: String?, content: String): Boolean {
+    val result = showDialog(
+        owner,
+        DialogType.CONFIRM,
+        I18N["common.confirm"],
+        header,
+        content,
+        ButtonType.OK,
+        ButtonType.CANCEL
+    )
+    return result.isPresent && result.get() == ButtonType.OK
+}
+
+
+/**
  * Show message for confirm
  * @param title Dialog title
  * @param header Header text, nullable
@@ -220,6 +250,41 @@ fun showConfirm(owner: Window?, header: String?, content: String, title: String)
  */
 fun showConfirmWithoutCancel(owner: Window?, header: String?, content: String, title: String): Optional<ButtonType> {
     return showDialog(owner, DialogType.CONFIRM, title, header, content, ButtonType.YES, ButtonType.NO)
+}
+
+
+/**
+ * Show a confirm dialog with localized YES, NO and CANCEL buttons
+ * @param owner Dialog owner
+ * @param content Dialog content text
+ * @return Which button the user pressed, [ConfirmResult.CANCEL] if the dialog was closed
+ */
+fun showConfirmYesNo(owner: Window?, content: String): ConfirmResult {
+    val yes = ButtonType(I18N["common.yes"], ButtonBar.ButtonData.YES)
+    val no = ButtonType(I18N["common.no"], ButtonBar.ButtonData.NO)
+    val result = showDialog(owner, DialogType.CONFIRM, I18N["common.confirm"], null, content, yes, no, ButtonType.CANCEL)
+    return when (result.orElse(null)) {
+        yes -> ConfirmResult.YES
+        no -> ConfirmResult.NO
+        else -> ConfirmResult.CANCEL
+    }
+}
+
+/**
+ * Show a confirm dialog with localized YES and NO buttons only
+ * @param owner Dialog owner
+ * @param content Dialog content text
+ * @return Which button the user pressed, [ConfirmResult.CANCEL] if the dialog was closed
+ */
+fun showConfirmYesNoWithoutCancel(owner: Window?, content: String): ConfirmResult {
+    val yes = ButtonType(I18N["common.yes"], ButtonBar.ButtonData.YES)
+    val no = ButtonType(I18N["common.no"], ButtonBar.ButtonData.NO)
+    val result = showDialog(owner, DialogType.CONFIRM, I18N["common.confirm"], null, content, yes, no)
+    return when (result.orElse(null)) {
+        yes -> ConfirmResult.YES
+        no -> ConfirmResult.NO
+        else -> ConfirmResult.CANCEL
+    }
 }
 
 ////////////////////////////////////////////////////////////

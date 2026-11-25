@@ -6,21 +6,32 @@ import ink.meodinger.lpfx.action.ActionType
 import ink.meodinger.lpfx.action.FunctionAction
 import ink.meodinger.lpfx.action.LabelAction
 import ink.meodinger.lpfx.options.Logger
+import ink.meodinger.lpfx.type.ProofreadChangeState
 import ink.meodinger.lpfx.type.TransGroup
 import ink.meodinger.lpfx.type.TransLabel
 import ink.meodinger.lpfx.util.component.expandAll
 import ink.meodinger.lpfx.util.doNothing
 import ink.meodinger.lpfx.util.property.*
 import ink.meodinger.lpfx.util.string.emptyString
+import ink.meodinger.lpfx.util.string.pad
+import ink.meodinger.lpfx.util.string.replaceEOL
 
 import javafx.beans.property.*
 import javafx.beans.value.ChangeListener
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
+import javafx.geometry.HPos
+import javafx.geometry.Pos
+import javafx.geometry.VPos
+import javafx.scene.Node
 import javafx.scene.control.*
 import javafx.scene.input.*
+import javafx.scene.layout.GridPane
 import javafx.scene.paint.Color
+import javafx.scene.shape.Circle
+import javafx.scene.shape.Rectangle
+import javafx.scene.text.Text
 
 
 
@@ -370,6 +381,22 @@ class CTreeView: TreeView<String>() {
         /** Drag data format: comma-separated label indices as String, e.g. "1,3,5" */
         private val LABEL_DRAG_FORMAT: DataFormat =
             DataFormat.lookupMimeType("application/x-lpfx-label-drag") ?: DataFormat("application/x-lpfx-label-drag")
+
+        /** Size of the marker square in front of the proofread text */
+        private const val CHANGE_MARKER_SIZE: Double = 9.0
+
+        /** Spacing between the marker square and its text */
+        private const val CHANGE_MARKER_SPACING: Double = 4.0
+
+        /** Spacing between the translation line and the proofread line */
+        private const val PROOFREAD_LINE_SPACING: Double = 2.0
+
+        /** Color of the marker square of each proofread change state */
+        private val CHANGE_MARKER_COLORS: Map<ProofreadChangeState, Color> = mapOf(
+            ProofreadChangeState.NONE     to Color.GRAY,
+            ProofreadChangeState.ADDED    to Color.web("#3CB371"),
+            ProofreadChangeState.MODIFIED to Color.web("#1E90FF"),
+        )
     }
 
     /**
@@ -488,15 +515,76 @@ class CTreeView: TreeView<String>() {
                     textFill = Color.BLACK
 
                     val actualItem = treeItem
-                    if (item != null && !empty) {
-                        text = item
-                        graphic = actualItem.graphic
-                        if (actualItem is CTreeLabelItem && actualItem.transLabel.isMarked) {
-                            textFill = Color.RED
-                        }
-                    } else {
+                    if (item == null || empty) {
                         text = emptyString()
                         graphic = null
+                        return@updateItem
+                    }
+
+                    val transLabel = (actualItem as? CTreeLabelItem)?.transLabel
+                    // 校对模式：上行显示原翻译，下行显示校对文本，并标记校对文本的改动
+                    if (transLabel != null && state.transFile?.isProofread == true) {
+                        text = emptyString()
+                        graphic = createProofreadGraphic(actualItem.graphic, transLabel)
+                        return@updateItem
+                    }
+
+                    text = item
+                    graphic = actualItem.graphic
+                    if (transLabel != null && transLabel.isMarked) textFill = Color.RED
+                }
+
+                /**
+                 * Create the two-line graphic of a label in proofread mode.
+                 *
+                 * Layout (three columns, two rows):
+                 * ```
+                 * ●  01:  original translation
+                 *        ■  proofread text
+                 * ```
+                 * The upper row is the original translation with the index, the lower row is the
+                 * proofread text prefixed by a square that shows whether it is changed.
+                 * Both texts share the last column, so they start at the same x.
+                 */
+                private fun createProofreadGraphic(groupGraphic: Node?, transLabel: TransLabel): Node {
+                    val textColor = if (transLabel.isMarked) Color.RED else Color.BLACK
+                    val markerColor = CHANGE_MARKER_COLORS.getValue(transLabel.proofreadChangeState)
+                    // 单元格自身的字体，作为两行文字的字体
+                    val cellFont = font
+                    val groupCircle = (groupGraphic as? Circle)?.let {
+                        Circle(CTreeLabelItem.GRAPHICS_CIRCLE_RADIUS, it.fill)
+                    }
+                    val indexLine = Text("${transLabel.index.pad(2)}:").apply {
+                        font = cellFont
+                        fill = textColor
+                    }
+                    val translationLine = Text(transLabel.originText.replaceEOL(" ")).apply {
+                        font = cellFont
+                        fill = textColor
+                    }
+                    val proofreadLine = Text(transLabel.text.replaceEOL(" ")).apply {
+                        font = cellFont
+                        fill = textColor
+                    }
+                    val marker = Rectangle(CHANGE_MARKER_SIZE, CHANGE_MARKER_SIZE, markerColor)
+
+                    return GridPane().apply {
+                        alignment = Pos.CENTER_LEFT
+                        hgap = CHANGE_MARKER_SPACING
+                        vgap = PROOFREAD_LINE_SPACING
+
+                        if (groupCircle != null) add(groupCircle, 0, 0)
+                        // 序号列：上行是序号，下行是改动方块
+                        add(indexLine, 1, 0)
+                        add(marker, 1, 1)
+                        add(translationLine, 2, 0)
+                        add(proofreadLine, 2, 1)
+
+                        // 列宽由两行共同决定，文字统一左对齐即可对齐两行起点
+                        GridPane.setHalignment(indexLine, HPos.LEFT)
+                        GridPane.setHalignment(translationLine, HPos.LEFT)
+                        GridPane.setHalignment(proofreadLine, HPos.LEFT)
+                        GridPane.setValignment(marker, VPos.CENTER)
                     }
                 }
             }

@@ -62,7 +62,8 @@ class LabelAction(
                     targetTransLabel.groupId,
                     targetTransLabel.x,
                     targetTransLabel.y,
-                    targetTransLabel.text
+                    targetTransLabel.text,
+                    targetTransLabel.originText
                 )
                 removeTransLabel(targetPicName,targetTransLabel)
                 addTransLabel(targetPicName,transLabel)

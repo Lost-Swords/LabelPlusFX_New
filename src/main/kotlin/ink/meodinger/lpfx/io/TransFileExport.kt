@@ -148,9 +148,12 @@ fun TransFile.toJsonString(): String {
     return ObjectMapper()
         .enable(SerializationFeature.INDENT_OUTPUT)
         .writeValueAsString(TransFile(
-            version,
-            comment,
-            groupList,
-            sortedPicNames.associateWithTo(LinkedHashMap()) { transMap[it]!!.sortedBy(TransLabel::index) }
+            version = version,
+            comment = comment,
+            groupList = groupList,
+            transMap = sortedPicNames.associateWithTo(LinkedHashMap()) { transMap[it]!!.sortedBy(TransLabel::index) },
+            isProofread = isProofread,
+            projectFolderPath = projectFolderPath,
+            fileMappings = fileMappings
         ))
 }

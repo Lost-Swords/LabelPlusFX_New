@@ -11,6 +11,9 @@
 ### Added
 
 - 添加独立的翻译文件合并工具，支持处理重复图片并在导出后打开合并结果（[#23](https://github.com/Lost-Swords/LabelPlusFX_New/issues/23)）
+- 文本框字体大小支持快捷键调节，可在设置-快捷键中修改（默认 Ctrl/⌘+滚轮）
+- 新增校对模式
+
 
 ### Fixed
 

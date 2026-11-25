@@ -32,7 +32,7 @@ class CTreeLabelItem(val transLabel: TransLabel, showGraphics: Boolean = false) 
     init {
         valueProperty().bind(Bindings.createStringBinding(
             { "${transLabel.index.pad(2)}: ${transLabel.text.replaceEOL(" ")}" },
-            transLabel.indexProperty(), transLabel.textProperty()
+            transLabel.indexProperty(), transLabel.textProperty(), transLabel.originTextProperty()
         ))
         if (showGraphics) {
             graphicProperty().bind(transLabel.colorProperty().transform { Circle(GRAPHICS_CIRCLE_RADIUS, it) })
