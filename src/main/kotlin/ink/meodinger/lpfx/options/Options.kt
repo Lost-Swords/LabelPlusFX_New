@@ -16,7 +16,6 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.Path
-import java.util.stream.Collectors
 import kotlin.collections.ArrayList
 import kotlin.io.path.name
 import kotlin.io.path.createTempFile
@@ -156,11 +155,14 @@ object Options {
 
         try {
             var count = 0
-            Files
-                .walk(logs, 1).filter { it.name != logs.name }
-                .map(Path::toFile).collect(Collectors.toList())
-                .apply { sortByDescending(File::lastModified) }
-                .forEach { file ->
+            val logFiles = Files.walk(logs, 1).use { paths ->
+                paths.filter { it.name != logs.name }
+                    .map(Path::toFile)
+                    .map { file -> file to file.lastModified() }
+                    .toList()
+            }
+            logFiles.sortedByDescending { it.second }
+                .forEach { (file, _) ->
                     val del = count++ > Logfile_MAXCOUNT || !file.nameWithoutExtension.isMathematicalNatural()
                     if (del && !file.delete()) failed.add(file)
                 }
